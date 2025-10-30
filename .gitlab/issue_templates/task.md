@@ -1,8 +1,8 @@
 ### Task / Chore Title:
-Short description of the task or maintenance work
+Short, clear description of the task or maintenance work
 
 ### Description:
-Explain what needs to be done and why. Include context if necessary (e.g., updating dependencies, refactoring code, adding tests, CI/CD setup, or cleaning up code).
+Explain what needs to be done and why. Include context if necessary (e.g., updating dependencies, refactoring code, adding tests, CI/CD setup, cleaning up code, documentation, or preparing presentations).
 
 ### Acceptance Criteria (Definition of Done):
 - [ ] Task completed as described
