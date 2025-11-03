@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config, Csv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cal)y5hj0hz1gq2-a^g*-=icxoh$cdfp1d)*md02=fxh+)#*s&'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-cal)y5hj0hz1gq2-a^g*-=icxoh$cdfp1d)*md02=fxh+)#*s&')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 
 
 # Application definition
@@ -37,11 +40,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Custom apps
-    'users',
-    'Praktikumsamt',
-    'rest_framework',  # later for API
+    
+    # Third-party apps
+    'rest_framework',  # DRF for API
     'corsheaders',
+    
+    # Local apps (Domain-Driven Design)
+    'subjects',           # Subject & PraktikumType models
+    'schools',            # School model
+    'praktikums_lehrkraft',  # PraktikumsLehrkraft models
+    'students',           # Student models
+    'system_settings',    # SystemSettings model
+    'assignments',        # Assignment algorithm (future)
 ]
 
 MIDDLEWARE = [
@@ -78,12 +88,35 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Option 1: Use DATABASE_URL (recommended)
+if config('DATABASE_URL', default=None):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+# Option 2: Use individual database settings
+elif config('DB_ENGINE', default=None):
+    DATABASES = {
+        'default': {
+            'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
+            'NAME': config('DB_NAME', default='praktikumsamt'),
+            'USER': config('DB_USER', default='praktikumsamt_user'),
+            'PASSWORD': config('DB_PASSWORD', default='praktikumsamt_pass_dev'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432', cast=int),
+        }
+    }
+# Option 3: Fallback to SQLite for local development
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -123,8 +156,25 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Additional locations of static files
+STATICFILES_DIRS = [
+    # BASE_DIR / 'static',
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Caching Configuration
+# https://docs.djangoproject.com/en/4.2/topics/cache/
+
+# Dummy cache (no caching, no extra setup needed)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
