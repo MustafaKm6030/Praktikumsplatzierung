@@ -1,4 +1,7 @@
 from django.test import TestCase
+from rest_framework.test import APITestCase, APIClient
+from rest_framework import status
+from django.core.files.uploadedfile import SimpleUploadedFile
 from datetime import date
 from subjects.models import Subject, PraktikumType
 from schools.models import School
@@ -6,10 +9,8 @@ from .models import Student, StudentPraktikumPreference
 
 
 class StudentModelTests(TestCase):
-    """Test cases for Student model."""
     
     def setUp(self):
-        """Set up test data."""
         self.deutsch = Subject.objects.create(code='DE', name='Deutsch')
         self.math = Subject.objects.create(code='MA', name='Mathematik')
         
@@ -26,28 +27,22 @@ class StudentModelTests(TestCase):
         )
     
     def test_student_creation(self):
-        """Test that student is created correctly."""
         self.assertEqual(self.student.student_id, '12345')
         self.assertEqual(self.student.first_name, 'Max')
         self.assertEqual(self.student.program, 'GS')
     
     def test_student_string_representation(self):
-        """Test the string representation."""
         expected = '12345 - Mustermann, Max'
         self.assertEqual(str(self.student), expected)
     
     def test_student_primary_subject(self):
-        """Test that student has a primary subject."""
         self.assertEqual(self.student.primary_subject.name, 'Deutsch')
     
     def test_student_additional_subjects(self):
-        """Test that student can have additional subjects."""
         self.student.additional_subjects.add(self.math)
         self.assertEqual(self.student.additional_subjects.count(), 1)
     
     def test_filter_students_by_program(self):
-        """Test filtering students by program."""
-        # Create MS student
         Student.objects.create(
             student_id='67890',
             first_name='Anna',
@@ -64,11 +59,152 @@ class StudentModelTests(TestCase):
         self.assertEqual(ms_students.count(), 1)
 
 
-class StudentPraktikumPreferenceTests(TestCase):
-    """Test cases for Student Praktikum Preferences."""
+class StudentAPITests(APITestCase):
     
     def setUp(self):
-        """Set up test data."""
+        self.client = APIClient()
+        
+        self.subject = Subject.objects.create(
+            code='MA',
+            name='Mathematik'
+        )
+        
+        self.student1 = Student.objects.create(
+            student_id='ST001',
+            first_name='John',
+            last_name='Doe',
+            email='john@test.com',
+            program='GS',
+            primary_subject=self.subject,
+            home_region='Passau'
+        )
+        
+        self.student2 = Student.objects.create(
+            student_id='ST002',
+            first_name='Jane',
+            last_name='Smith',
+            email='jane@test.com',
+            program='MS',
+            home_region='Regen'
+        )
+    
+    def test_get_students_list(self):
+        response = self.client.get('/api/students/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+    
+    def test_get_student_detail(self):
+        response = self.client.get(f'/api/students/{self.student1.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['student_id'], 'ST001')
+    
+    def test_create_student(self):
+        data = {
+            'student_id': 'ST003',
+            'first_name': 'Bob',
+            'last_name': 'Johnson',
+            'email': 'bob@test.com',
+            'program': 'GS'
+        }
+        response = self.client.post('/api/students/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Student.objects.count(), 3)
+    
+    def test_update_student(self):
+        data = {
+            'student_id': 'ST001',
+            'first_name': 'John',
+            'last_name': 'Doe Updated',
+            'email': 'john@test.com',
+            'program': 'GS',
+            'home_region': 'Passau-Land'
+        }
+        response = self.client.put(f'/api/students/{self.student1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.student1.refresh_from_db()
+        self.assertEqual(self.student1.last_name, 'Doe Updated')
+    
+    def test_delete_student(self):
+        response = self.client.delete(f'/api/students/{self.student1.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Student.objects.count(), 1)
+    
+    def test_filter_by_program(self):
+        response = self.client.get('/api/students/?program=GS')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['program'], 'GS')
+    
+    def test_filter_by_region(self):
+        response = self.client.get('/api/students/?home_region=Passau')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+    
+    def test_search_students(self):
+        response = self.client.get('/api/students/?search=John')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['first_name'], 'John')
+    
+    def test_by_program_endpoint(self):
+        response = self.client.get('/api/students/by_program/?program=MS')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+    
+    def test_by_region_endpoint(self):
+        response = self.client.get('/api/students/by_region/?region=Regen')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+    
+    def test_export_csv(self):
+        response = self.client.get('/api/students/export/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('attachment', response['Content-Disposition'])
+    
+    def test_import_csv(self):
+        csv_content = """student_id,first_name,last_name,email,program,home_region
+ST003,Alice,Brown,alice@test.com,GS,Passau"""
+        
+        csv_file = SimpleUploadedFile(
+            "students.csv",
+            csv_content.encode('utf-8'),
+            content_type="text/csv"
+        )
+        
+        response = self.client.post(
+            '/api/students/import_csv/',
+            {'file': csv_file},
+            format='multipart'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['created'], 1)
+        self.assertEqual(Student.objects.count(), 3)
+    
+    def test_import_csv_no_file(self):
+        response = self.client.post('/api/students/import_csv/', {}, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_import_csv_invalid_file_type(self):
+        txt_file = SimpleUploadedFile(
+            "students.txt",
+            b"not a csv",
+            content_type="text/plain"
+        )
+        
+        response = self.client.post(
+            '/api/students/import_csv/',
+            {'file': txt_file},
+            format='multipart'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class StudentPraktikumPreferenceTests(TestCase):
+    
+    def setUp(self):
         self.deutsch = Subject.objects.create(code='DE', name='Deutsch')
         
         self.pdp1 = PraktikumType.objects.create(
@@ -102,7 +238,6 @@ class StudentPraktikumPreferenceTests(TestCase):
         )
     
     def test_student_can_have_praktikum_preferences(self):
-        """Test that students can declare which praktikum they want."""
         preference = StudentPraktikumPreference.objects.create(
             student=self.student,
             praktikum_type=self.pdp1,
@@ -114,7 +249,6 @@ class StudentPraktikumPreferenceTests(TestCase):
         self.assertEqual(preference.status, 'UNPLACED')
     
     def test_student_can_prefer_specific_schools(self):
-        """Test that students can prefer specific schools."""
         preference = StudentPraktikumPreference.objects.create(
             student=self.student,
             praktikum_type=self.pdp1,
@@ -125,7 +259,6 @@ class StudentPraktikumPreferenceTests(TestCase):
         self.assertEqual(preference.preferred_schools.count(), 1)
     
     def test_student_can_have_multiple_preferences(self):
-        """Test that students can have preferences for different praktikum types."""
         StudentPraktikumPreference.objects.create(
             student=self.student,
             praktikum_type=self.pdp1,
@@ -142,7 +275,6 @@ class StudentPraktikumPreferenceTests(TestCase):
         self.assertEqual(preferences.count(), 2)
     
     def test_filter_unplaced_preferences(self):
-        """Test filtering preferences by status."""
         StudentPraktikumPreference.objects.create(
             student=self.student,
             praktikum_type=self.pdp1,

@@ -21,12 +21,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # API endpoints
-    path('api/', include('subjects.urls')),         # /api/subjects/, /api/praktikum-types/
-    path('api/schools/', include('schools.urls')),  # /api/schools/
-    # path('api/pls/', include('pls.urls')),          # TODO: Create pls/urls.py
-    # path('api/students/', include('students.urls')),  # TODO: Create students/urls.py
-    # path('api/settings/', include('system_settings.urls')),  # TODO: Create system_settings/urls.py
+    path('api/', include('subjects.urls')),
+    path('api/schools/', include('schools.urls')),
+    path('api/', include('students.urls')),
 ]
 
 # Serve static files in development
