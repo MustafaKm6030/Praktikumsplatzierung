@@ -41,17 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Third-party apps
-    'rest_framework',  # DRF for API
+    'rest_framework',
     'corsheaders',
+    'django_filters',
     
-    # Local apps (Domain-Driven Design)
-    'subjects',           # Subject & PraktikumType models
-    'schools',            # School model
-    'praktikums_lehrkraft',  # PraktikumsLehrkraft models
-    'students',           # Student models
-    'system_settings',    # SystemSettings model
-    'assignments',        # Assignment algorithm (future)
+    'subjects',
+    'schools',
+    'praktikums_lehrkraft',
+    'students',
+    'system_settings',
+    'assignments',
 ]
 
 MIDDLEWARE = [

@@ -40,6 +40,14 @@ unit_test_backend:
   image: python:3.11
   dependencies:
     - build_backend
+  services:
+    - postgres:14
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    POSTGRES_HOST: postgres
+    DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
   script:
     - cd $BACKEND_DIR
     - pip install --break-system-packages -r requirements.txt
@@ -68,6 +76,8 @@ integration_test_backend:
     POSTGRES_DB: test_db
     POSTGRES_USER: test_user
     POSTGRES_PASSWORD: test_password
+    POSTGRES_HOST: postgres
+    DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
   script:
     - cd $BACKEND_DIR
     - pip install --break-system-packages -r requirements.txt psycopg2-binary

@@ -3,7 +3,6 @@ from .models import School
 
 
 class SchoolListSerializer(serializers.ModelSerializer):
-    """Serializer for listing schools (minimal fields)."""
     
     class Meta:
         model = School
@@ -11,9 +10,23 @@ class SchoolListSerializer(serializers.ModelSerializer):
 
 
 class SchoolDetailSerializer(serializers.ModelSerializer):
-    """Serializer for school details (all fields)."""
     
     class Meta:
         model = School
         fields = '__all__'
+
+
+class SchoolImportSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = School
+        fields = '__all__'
+        extra_kwargs = {
+            'latitude': {'required': False},
+            'longitude': {'required': False},
+            'contact_person': {'required': False},
+            'phone': {'required': False},
+            'email': {'required': False},
+            'notes': {'required': False},
+        }
 
