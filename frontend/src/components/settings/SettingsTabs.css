@@ -1,0 +1,47 @@
+.settings-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 24px;
+}
+
+.settings-tab {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.settings-tab:hover:not(.disabled) {
+    color: #1e3a8a;
+    background-color: #f3f4f6;
+}
+
+.settings-tab.active {
+    color: #1e3a8a;
+    border-bottom-color: #1e3a8a;
+    font-weight: 600;
+}
+
+.settings-tab.disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.settings-tab .coming-soon {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background-color: #fef3c7;
+    color: #92400e;
+    font-size: 11px;
+    border-radius: 12px;
+    font-weight: 600;
+}

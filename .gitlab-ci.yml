@@ -1,0 +1,95 @@
+stages:
+  - build
+  - unit_test
+  - integration_test
+
+variables:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+
+
+# BUILD STAGE
+build_backend:
+  stage: build
+  image: python:3.11
+  script:
+    - cd $BACKEND_DIR
+    - pip install --break-system-packages -r requirements.txt
+    - python manage.py check
+  artifacts:
+    paths:
+      - $BACKEND_DIR/
+    expire_in: 1 hour
+
+build_frontend:
+  stage: build
+  image: node:18
+  script:
+    - cd $FRONTEND_DIR
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - $FRONTEND_DIR/
+    expire_in: 1 hour
+
+
+# UNIT TEST STAGE
+unit_test_backend:
+  stage: unit_test
+  image: python:3.11
+  dependencies:
+    - build_backend
+  services:
+    - postgres:14
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    POSTGRES_HOST: postgres
+    DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
+  script:
+    - cd $BACKEND_DIR
+    - pip install --break-system-packages -r requirements.txt
+    - python manage.py test
+
+unit_test_frontend:
+  stage: unit_test
+  image: node:18
+  dependencies:
+    - build_frontend
+  script:
+    - cd $FRONTEND_DIR
+    - npm install
+    - npm test -- --watchAll=false
+
+
+# INTEGRATION TEST STAGE
+integration_test_backend:
+  stage: integration_test
+  image: python:3.11
+  dependencies:
+    - build_backend
+  services:
+    - postgres:14
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    POSTGRES_HOST: postgres
+    DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
+  script:
+    - cd $BACKEND_DIR
+    - pip install --break-system-packages -r requirements.txt psycopg2-binary
+    - python manage.py test
+
+integration_test_frontend:
+  stage: integration_test
+  image: node:18
+  dependencies:
+    - build_frontend
+  script:
+    - cd $FRONTEND_DIR
+    - npm install
+    - npm test -- --watchAll=false
+  allow_failure: true

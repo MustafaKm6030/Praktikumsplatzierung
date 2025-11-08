@@ -1,0 +1,4 @@
+student_id,first_name,last_name,email,program,major,home_region,preferred_zone,enrollment_date
+TEST001,Max,Mustermann,max.mustermann@test.com,GS,Grundschullehramt,Passau,ZONE_1,2024-10-01
+TEST002,Anna,Schmidt,anna.schmidt@test.com,MS,Mittelschullehramt,Regen,ZONE_2,2024-10-01
+TEST003,Hans,Weber,hans.weber@test.com,GS,Grundschullehramt,Passau-Land,ZONE_1,2023-10-01
