@@ -1,0 +1,272 @@
+.teachers-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.teachers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.teachers-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.filters-section {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.search-box {
+  margin-bottom: 12px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-banner {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-icon {
+  font-size: 18px;
+}
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.pl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pl-table thead {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.pl-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pl-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.pl-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.pl-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pl-id {
+  font-family: 'Courier New', monospace;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pl-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.center {
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-program-GS {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-program-MS {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.praktikum-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 8px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.schulamt-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-available {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-unavailable {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.empty-message {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 20px;
+  font-style: italic;
+}
+
+.table-footer {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 0 0 12px 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-stats {
+  display: flex;
+  gap: 32px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.footer-stats strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+

@@ -1,27 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import settingsService from '../../api/settingsService';
+import { getErrorMessage } from '../../api/config';
 import './SettingsGeneral.css';
 
 function SettingsGeneral() {
-  // Dummy data - will be replaced with API call
   const [settings, setSettings] = useState({
-    academicYear: '2024/2025',
-    pdpDefaultDeadline: '2025-05-01',
-    sfpZspDefaultDeadline: '2025-06-15',
-    universityName: 'Universität Passau',
-    universityAddress: 'Innstraße 41, 94032 Passau',
-    contactEmail: 'praktikumsamt@uni-passau.de',
-    contactPhone: '+49 851 509-0',
+    id: null,
+    academicYear: '',
+    pdpDefaultDeadline: '',
+    sfpZspDefaultDeadline: '',
+    universityName: '',
+    universityAddress: '',
+    contactEmail: '',
+    contactPhone: '',
+    totalBudget: '',
+    gsPercentage: '',
+    msPercentage: '',
   });
 
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const response = await settingsService.getActive();
+      const data = response.data;
+      
+      setSettings({
+        id: data.id,
+        academicYear: data.current_academic_year || '',
+        pdpDefaultDeadline: data.pdp_i_demand_deadline || '',
+        sfpZspDefaultDeadline: data.pl_assignment_deadline || '',
+        universityName: data.university_name || '',
+        universityAddress: data.university_name || '',
+        contactEmail: data.contact_email || '',
+        contactPhone: data.contact_phone || '',
+        totalBudget: data.total_anrechnungsstunden_budget || '',
+        gsPercentage: data.gs_budget_percentage || '',
+        msPercentage: data.ms_budget_percentage || '',
+      });
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      setSaveMessage('Fehler beim Laden der Einstellungen: ' + getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (field, value) => {
     setSettings({
       ...settings,
       [field]: value,
     });
-    setSaveMessage(''); // Clear save message when editing
+    setSaveMessage('');
   };
 
   const handleSave = async (e) => {
@@ -30,20 +67,54 @@ function SettingsGeneral() {
     setSaveMessage('');
 
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // await axios.put('/api/settings', settings);
+      if (!settings.id) {
+        setSaveMessage('Fehler: Keine aktiven Einstellungen gefunden. ❌');
+        return;
+      }
+
+      const updateData = {
+        current_academic_year: settings.academicYear,
+        pdp_i_demand_deadline: settings.pdpDefaultDeadline,
+        pl_assignment_deadline: settings.sfpZspDefaultDeadline,
+        university_name: settings.universityName,
+        contact_email: settings.contactEmail,
+        contact_phone: settings.contactPhone,
+      };
+
+      if (settings.totalBudget) {
+        updateData.total_anrechnungsstunden_budget = settings.totalBudget;
+      }
+      if (settings.gsPercentage) {
+        updateData.gs_budget_percentage = settings.gsPercentage;
+      }
+      if (settings.msPercentage) {
+        updateData.ms_budget_percentage = settings.msPercentage;
+      }
+
+      await settingsService.partialUpdate(settings.id, updateData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSaveMessage('Settings saved successfully! ✅');
+      setSaveMessage('Einstellungen erfolgreich gespeichert! ✅');
       setTimeout(() => setSaveMessage(''), 3000);
+      
+      await loadSettings();
     } catch (error) {
-      setSaveMessage('Error saving settings. Please try again. ❌');
+      console.error('Error saving settings:', error);
+      setSaveMessage('Fehler beim Speichern: ' + getErrorMessage(error) + ' ❌');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="settings-general">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Lade Einstellungen...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-general">
@@ -117,14 +188,13 @@ function SettingsGeneral() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="universityAddress">Address *</label>
+            <label htmlFor="universityAddress">Address</label>
             <textarea
               id="universityAddress"
               value={settings.universityAddress}
               onChange={(e) => handleChange('universityAddress', e.target.value)}
               placeholder="Full university address"
               rows="2"
-              required
             />
           </div>
 
@@ -150,6 +220,52 @@ function SettingsGeneral() {
                 onChange={(e) => handleChange('contactPhone', e.target.value)}
                 placeholder="+49 851 509-0"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Budget Section */}
+        <div className="settings-section">
+          <h3 className="section-title">Budget Allocation</h3>
+          
+          <div className="form-group">
+            <label htmlFor="totalBudget">Total Anrechnungsstunden Budget</label>
+            <input
+              type="number"
+              id="totalBudget"
+              value={settings.totalBudget}
+              onChange={(e) => handleChange('totalBudget', e.target.value)}
+              placeholder="e.g., 210"
+              step="0.01"
+            />
+            <span className="field-hint">Total budget hours available for allocation</span>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="gsPercentage">GS Budget Percentage</label>
+              <input
+                type="number"
+                id="gsPercentage"
+                value={settings.gsPercentage}
+                onChange={(e) => handleChange('gsPercentage', e.target.value)}
+                placeholder="e.g., 80.48"
+                step="0.01"
+              />
+              <span className="field-hint">Grundschule percentage</span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="msPercentage">MS Budget Percentage</label>
+              <input
+                type="number"
+                id="msPercentage"
+                value={settings.msPercentage}
+                onChange={(e) => handleChange('msPercentage', e.target.value)}
+                placeholder="e.g., 19.52"
+                step="0.01"
+              />
+              <span className="field-hint">Mittelschule percentage</span>
             </div>
           </div>
         </div>
