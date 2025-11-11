@@ -1,0 +1,44 @@
+/* Custom Loader Animation */
+.loader {
+    width: 40px;
+    aspect-ratio: 1;
+    position: relative;
+    transform: rotate(45deg);
+}
+
+.loader:before,
+.loader:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50% 50% 0 50%;
+    background: #e38d13;
+    mask: radial-gradient(circle 10px at 50% 50%, transparent 94%, #000);
+}
+
+.loader:after {
+    animation: l6 1s infinite;
+    transform: perspective(300px) translateZ(0px);
+}
+
+@keyframes l6 {
+    to {
+        transform: perspective(300px) translateZ(150px);
+        opacity: 0;
+    }
+}
+
+.loader.loader-primary:before,
+.loader.loader-primary:after {
+    background: #1976d2;
+}
+
+.loader.loader-dark:before,
+.loader.loader-dark:after {
+    background: #000000;
+}
+
+.loader.loader-light:before,
+.loader.loader-light:after {
+    background: #ffffff;
+}
