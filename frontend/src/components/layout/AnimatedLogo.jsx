@@ -1,6 +1,7 @@
 import React from 'react';
 import './Animatedlogo.css';
 import logoImage from './image-removebg-preview (1).png';
+import {LogoutIcon, UserIcon} from "../utils/icons";
 
 const AnimatedLogo = ({ animationState = 'animating' }) => {
     const getContainerClass = () => {
@@ -86,16 +87,16 @@ const AnimatedLogo = ({ animationState = 'animating' }) => {
 
                     <div className="header-right">
                         <div className="header-user">
-                            <span className="header-user-icon">👤</span>
+                            <span
+                                className="header-user-icon"
+                                dangerouslySetInnerHTML={{ __html: UserIcon }}
+                            />
                             <div className="header-user-info">
                                 <span className="header-user-name">Team 2 Admin</span>
                                 <span className="header-user-role">Administrator</span>
                             </div>
                         </div>
 
-                        <button className="header-logout-btn" title="Logout">
-                            🚪
-                        </button>
                     </div>
                 </div>
             )}
