@@ -1,0 +1,323 @@
+/* Container during animation - centered, fullscreen */
+.logo-container-animating {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f5f5f5;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+}
+
+/* Container during transition - moving to header */
+.logo-container-transitioning {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    padding: 0 30px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    animation: moveToHeader 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Container as final header - stays fixed */
+.logo-container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    padding: 0 30px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+@keyframes moveToHeader {
+    from {
+        justify-content: center;
+        min-height: 100vh;
+        height: 100vh;
+        background: #f5f5f5;
+        padding: 0;
+        box-shadow: none;
+        position: fixed;
+    }
+    to {
+        justify-content: flex-start;
+        min-height: 70px;
+        height: 70px;
+        background: #ffffff;
+        padding: 0 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: fixed;
+    }
+}
+
+/* Logo wrapper */
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+/* SVG sizing - during animation (very large) */
+.logo-svg-animating {
+    width: 800px;
+    max-width: 90vw;
+    height: auto;
+}
+
+/* SVG sizing - during transition (scaling down) */
+.logo-svg-transitioning {
+    width: 180px;
+    height: auto;
+    animation: scaleToHeader 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* SVG sizing - final header size */
+.logo-svg-header {
+    width: 180px;
+    height: auto;
+}
+
+@keyframes scaleToHeader {
+    from {
+        width: 800px;
+    }
+    to {
+        width: 180px;
+    }
+}
+
+/* Header content (title and user info) */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+    margin-left: 20px;
+    opacity: 0;
+    animation: fadeInHeader 0.5s ease forwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInHeader {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.header-user-icon {
+    font-size: 1.5rem;
+}
+
+.header-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.header-user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.header-user-role {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.header-logout-btn {
+    background: #ff4444;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.header-logout-btn:hover {
+    background: #cc0000;
+}
+
+/* Path animations during falling */
+.path-draw {
+    transform: translateY(-150px);
+    opacity: 0;
+    stroke: #e38d13;
+    animation: fallSettle 1.5s ease forwards, colorShift 1.5s ease forwards;
+}
+
+/* Static paths after animation */
+.path-static {
+    opacity: 1;
+    stroke: #666;
+    transform: none;
+}
+
+/* Stagger animation delays */
+.path-draw:nth-child(1) { animation-delay: 0s; }
+.path-draw:nth-child(2) { animation-delay: 0.2s; }
+.path-draw:nth-child(3) { animation-delay: 0.4s; }
+.path-draw:nth-child(4) { animation-delay: 0.6s; }
+.path-draw:nth-child(5) { animation-delay: 0.8s; }
+.path-draw:nth-child(6) { animation-delay: 1s; }
+.path-draw:nth-child(7) { animation-delay: 1.2s; }
+
+@keyframes fallSettle {
+    0%   { transform: translateY(-150px); opacity: 0; }
+    70%  { transform: translateY(10px); opacity: 1; }
+    100% { transform: translateY(0px); opacity: 1; }
+}
+
+@keyframes colorShift {
+    0%   { stroke: #666; }
+    50%  { stroke: #e38d13; }
+    100% { stroke: #666; }
+}
+
+/* Text fade-in during animation */
+.logo-text {
+    opacity: 0;
+    animation: fadeIn 1s ease forwards;
+    animation-delay: 2s;
+}
+
+/* Static text after animation */
+.text-static {
+    opacity: 1;
+}
+
+/* System title - fades in with logo text */
+.system-title {
+    opacity: 0;
+    animation: fadeIn 1s ease forwards;
+    animation-delay: 2.5s;
+}
+
+/* System title - fades out during transition */
+.system-title-hidden {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+/* Falling image animation */
+.falling-image {
+    transform: translateY(-200px);
+    opacity: 0;
+    animation: imageFall 2.2s ease-out forwards;
+    animation-delay: 1.4s;
+    cursor: pointer;
+}
+
+/* Static image after animation */
+.image-static {
+    opacity: 1;
+    transform: none;
+    cursor: pointer;
+}
+
+@keyframes imageFall {
+    0%   { transform: translateY(-200px); opacity: 0; }
+    60%  { transform: translateY(100px); opacity: 1; }
+    75%  { transform: translateY(20px); }
+    85%  { transform: translateY(35px); }
+    92%  { transform: translateY(28px); }
+    100% { transform: translateY(30px); opacity: 1; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 968px) {
+    .header-title {
+        font-size: 1.2rem;
+    }
+
+    .logo-svg-animating {
+        width: 600px;
+    }
+
+    .logo-svg-transitioning,
+    .logo-svg-header {
+        width: 140px;
+    }
+}
+
+@media (max-width: 768px) {
+    .logo-container-transitioning,
+    .logo-container-header {
+        height: 60px;
+        padding: 0 15px;
+        position: fixed;
+    }
+
+    .header-title {
+        font-size: 1rem;
+    }
+
+    .logo-svg-animating {
+        width: 500px;
+    }
+
+    .logo-svg-transitioning,
+    .logo-svg-header {
+        width: 120px;
+    }
+
+    .header-user-info {
+        display: none;
+    }
+
+    .header-right {
+        gap: 10px;
+    }
+
+    .header-content {
+        margin-left: 10px;
+    }
+}
