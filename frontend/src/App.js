@@ -37,7 +37,7 @@ function App() {
 
         {/* Main app content - visible after animation starts transitioning */}
         {animationState !== 'animating' && (
-            <Router>
+            <Router >
               {/* Pass AnimatedLogo as the header component */}
               <Layout CustomHeader={null}>
                 <Routes>
