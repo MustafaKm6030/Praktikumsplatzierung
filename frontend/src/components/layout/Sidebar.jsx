@@ -13,11 +13,7 @@ function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <h1 className="sidebar-title">Praktikumsamt</h1>
-        <p className="sidebar-subtitle">Universität Passau</p>
-      </div>
-      
+
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink

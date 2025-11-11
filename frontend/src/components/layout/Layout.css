@@ -10,6 +10,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Add top padding to account for fixed header */
+  padding-top: 70px;
 }
 
 .layout-content {
@@ -26,7 +28,12 @@
   .layout {
     flex-direction: column;
   }
-  
+
+  .layout-main {
+    /* Smaller padding for mobile (header is 60px on mobile) */
+    padding-top: 60px;
+  }
+
   .layout-content {
     margin: 8px;
     padding: 16px;
