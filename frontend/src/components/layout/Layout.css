@@ -19,9 +19,9 @@
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  background-color: #ffffff;
-  margin: 16px;
-  border-radius: 8px;
+  background-color: #FFFFFF;
+  margin: 40px 16px;
+  border-radius: 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 

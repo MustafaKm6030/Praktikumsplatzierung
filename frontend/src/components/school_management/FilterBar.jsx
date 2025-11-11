@@ -3,21 +3,6 @@ import { Paper, Stack } from '@mui/material';
 import SearchBar from './SearchBar';
 import FilterSelect from './FilterSelect';
 
-/**
- * Filter Bar Component
- * @param {Object} props
- * @param {string} props.searchQuery
- * @param {function} props.onSearchChange
- * @param {string} props.selectedDistrict
- * @param {function} props.onDistrictChange
- * @param {string[]} props.districts
- * @param {string} props.selectedType
- * @param {function} props.onTypeChange
- * @param {string[]} props.types
- * @param {string} props.selectedZone
- * @param {function} props.onZoneChange
- * @param {string[]} props.zones
- */
 const FilterBar = ({
                        searchQuery,
                        onSearchChange,
@@ -32,7 +17,14 @@ const FilterBar = ({
                        zones,
                    }) => {
     return (
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Paper sx={{
+            p: 2,
+            mb: 2,
+            borderRadius: '12px',
+            backgroundColor: 'white',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
+            border: '1px solid rgba(248, 151, 28, 0.15)'
+        }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <SearchBar
                     value={searchQuery}

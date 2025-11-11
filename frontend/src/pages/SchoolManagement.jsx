@@ -67,7 +67,7 @@ const SchoolManagement = () => {
     };
 
     return (
-        <Box sx={{ p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+        <Box sx={{ p: 3,  minHeight: '100vh' }}>
             {/* Header */}
             <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
                 School Management

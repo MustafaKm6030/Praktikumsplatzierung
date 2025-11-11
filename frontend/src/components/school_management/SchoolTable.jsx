@@ -10,20 +10,16 @@ import {
 } from '@mui/material';
 import SchoolTableRow from './SchoolTableRow';
 
-/**
- * School Table Component
- * @param {Object} props
- * @param {Array} props.schools - Array of school objects
- * @param {function} [props.onView] - Handler for view action
- * @param {function} [props.onEdit] - Handler for edit action
- * @param {function} [props.onDelete] - Handler for delete action
- */
 const SchoolTable = ({ schools, onView, onEdit, onDelete }) => {
     return (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{
+            borderRadius: '12px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
+            backgroundColor: 'white'
+        }}>
             <Table>
                 <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
+                    <TableRow sx={{ backgroundColor: '#fef9f3' }}>
                         <TableCell><strong>School Name</strong></TableCell>
                         <TableCell><strong>District</strong></TableCell>
                         <TableCell><strong>Type</strong></TableCell>

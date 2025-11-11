@@ -13,6 +13,26 @@ const ViewToggle = ({ viewMode, onViewChange }) => {
                 }
             }}
             size="small"
+            sx={{
+                '& .MuiToggleButton-root': {
+                    borderRadius: '8px',
+                    margin: '0 4px',
+                    border: '2px solid #F8971C',
+                    color: '#F8971C',
+                    backgroundColor: 'white',
+                    '&.Mui-selected': {
+                        background: 'linear-gradient(135deg, #F8971C 0%, #fbbd61 100%)',
+                        color: 'white',
+                        boxShadow: '0 0 12px rgba(248, 151, 28, 0.35)',
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #e88716 0%, #f5a842 100%)',
+                        }
+                    },
+                    '&:hover': {
+                        backgroundColor: 'rgba(248, 151, 28, 0.08)',
+                    }
+                }
+            }}
         >
             <ToggleButton value="map">
                 <MapIcon sx={{ mr: 1 }} />
