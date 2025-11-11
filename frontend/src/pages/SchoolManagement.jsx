@@ -32,7 +32,7 @@ const SchoolManagement = () => {
         districts,
         types,
         zones,
-        fetchSchools,
+
     } = useSchoolData();
 
     // Action handlers

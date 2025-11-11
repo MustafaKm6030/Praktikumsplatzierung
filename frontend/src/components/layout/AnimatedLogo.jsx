@@ -1,7 +1,7 @@
 import React from 'react';
 import './Animatedlogo.css';
 import logoImage from './image-removebg-preview (1).png';
-import {LogoutIcon, UserIcon} from "../utils/icons";
+import {UserIcon} from "../utils/icons";
 
 const AnimatedLogo = ({ animationState = 'animating' }) => {
     const getContainerClass = () => {
