@@ -20,7 +20,7 @@ const FilterBar = ({
         <Paper sx={{
             p: 2,
             mb: 2,
-            borderRadius: '12px',
+            borderRadius: '16px',
             backgroundColor: 'white',
             boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
             border: '1px solid rgba(248, 151, 28, 0.15)'

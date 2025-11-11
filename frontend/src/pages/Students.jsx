@@ -134,7 +134,6 @@ function Students() {
     <div className="students-page">
       <header className="students-header">
         <div>
-          <h1>👨‍🎓 Studenten Verwaltung</h1>
           <p className="subtitle">
             Verwalten Sie Studentendaten, Fächerkombinationen und Praktikumswünsche
           </p>

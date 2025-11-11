@@ -19,11 +19,43 @@ const SearchBar = ({ value, onChange, placeholder = 'Search...' }) => {
             InputProps={{
                 startAdornment: (
                     <InputAdornment position="start">
-                        <SearchIcon />
+                        <SearchIcon sx={{ color: '#F8971C' }} />
                     </InputAdornment>
                 ),
             }}
-            sx={{ flex: 1 }}
+            sx={{
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    '& fieldset': {
+                        borderColor: '#FAB95A',
+                        borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                        borderColor: '#FAB95A',
+                    },
+                    '&.Mui-focused fieldset': {
+                        borderColor: '#FAB95A',
+                        borderWidth: '2px',
+                    },
+                    '& input': {
+                        color: '#333',
+                        fontWeight: 500,
+                        '&::placeholder': {
+                            color: '#F8971C',
+                            opacity: 0.7,
+                        },
+                    },
+                },
+                '& .MuiInputLabel-root': {
+                    color: '#F8971C',
+                    fontWeight: 500,
+                    '&.Mui-focused': {
+                        color: '#F8971C',
+                    },
+                },
+            }}
         />
     );
 };

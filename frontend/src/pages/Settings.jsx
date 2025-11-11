@@ -7,7 +7,6 @@ function Settings() {
 
   return (
     <div>
-      <h1>⚙️ System Settings</h1>
       <p style={{ color: '#6b7280', marginBottom: '24px' }}>
         Configure system-wide parameters, deadlines, and information.
       </p>

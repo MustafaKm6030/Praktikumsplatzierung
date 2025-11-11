@@ -1,16 +1,6 @@
 import React from 'react';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
-/**
- * Reusable Filter Select Component
- * @param {Object} props
- * @param {string} props.label - Label for the select
- * @param {string} props.value - Current selected value
- * @param {function} props.onChange - Change handler
- * @param {string[]} props.options - Array of options to display
- * @param {boolean} [props.disabled] - Whether the select is disabled
- * @param {number} [props.minWidth] - Minimum width in pixels
- */
 const FilterSelect = ({
                           label,
                           value,
@@ -20,13 +10,69 @@ const FilterSelect = ({
                           minWidth = 150
                       }) => {
     return (
-        <FormControl sx={{ minWidth }} disabled={disabled}>
+        <FormControl
+            sx={{
+                minWidth,
+                '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    '& fieldset': {
+                        borderColor: '#FAB95A',
+                        borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                        borderColor: '#FAB95A',
+                    },
+                    '&.Mui-focused fieldset': {
+                        borderColor: '#FAB95A',
+                        borderWidth: '2px',
+                    },
+                },
+                '& .MuiInputLabel-root': {
+                    color: '#F8971C',
+                    fontWeight: 500,
+                    '&.Mui-focused': {
+                        color: '#F8971C',
+                    },
+                },
+                '& .MuiSelect-icon': {
+                    color: '#F8971C',
+                },
+            }}
+            disabled={disabled}
+        >
             <InputLabel>{label}</InputLabel>
             <Select
                 value={value}
                 label={label}
                 variant="outlined"
                 onChange={onChange}
+                sx={{
+                    '& .MuiSelect-select': {
+                        color: '#333',
+                        fontWeight: 500,
+                    },
+                }}
+                MenuProps={{
+                    PaperProps: {
+                        sx: {
+                            borderRadius: '10px',
+                            marginTop: '4px',
+                            boxShadow: '0 4px 12px rgba(248, 151, 28, 0.15)',
+                            '& .MuiMenuItem-root': {
+                                '&:hover': {
+                                    backgroundColor: 'rgba(248, 151, 28, 0.1)',
+                                },
+                                '&.Mui-selected': {
+                                    backgroundColor: 'rgba(248, 151, 28, 0.2)',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(248, 151, 28, 0.25)',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                }}
             >
                 <MenuItem value="all">All {label}s</MenuItem>
                 {options.map(option => (
