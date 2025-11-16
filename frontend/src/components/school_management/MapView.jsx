@@ -21,7 +21,6 @@ const MapView = () => {
         <div style={{
             width: '100%',
             height: '600px',
-            backgroundColor: '#e0e0e0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

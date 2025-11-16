@@ -1,7 +1,7 @@
 import React from 'react';
 import { Paper, Stack } from '@mui/material';
 import SearchBar from './SearchBar';
-import FilterSelect from './FilterSelect';
+import Select from '../utils/Select';
 
 const FilterBar = ({
                        searchQuery,
@@ -32,33 +32,41 @@ const FilterBar = ({
                     placeholder="Search by School Name, District, City..."
                 />
 
-                <FilterSelect
+                <Select
                     label="District"
                     value={selectedDistrict}
                     onChange={onDistrictChange}
                     options={districts}
+                    fullWidth={false}
+                    minWidth={150}
                 />
 
-                <FilterSelect
+                <Select
                     label="Type"
                     value={selectedType}
                     onChange={onTypeChange}
                     options={types}
+                    fullWidth={false}
+                    minWidth={150}
                 />
 
-                <FilterSelect
+                <Select
                     label="Zone"
                     value={selectedZone}
                     onChange={onZoneChange}
                     options={zones}
+                    fullWidth={false}
+                    minWidth={150}
                 />
 
-                <FilterSelect
+                <Select
                     label="Filter"
                     value="all"
                     onChange={() => {}}
                     options={[]}
                     disabled
+                    fullWidth={false}
+                    minWidth={150}
                 />
             </Stack>
         </Paper>
