@@ -1,6 +1,6 @@
 import React from "react";
 
-function Icon({ svg, size = 24, color = "currentColor" }) {
+function icon({ svg, size = 24, color = "currentColor" }) {
     return (
         <span
             style={{
@@ -15,4 +15,4 @@ function Icon({ svg, size = 24, color = "currentColor" }) {
     );
 }
 
-export default Icon;
+export default icon;

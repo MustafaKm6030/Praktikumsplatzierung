@@ -1,7 +1,7 @@
 import React from 'react';
 import './Animatedlogo.css';
 import logoImage from './image-removebg-preview (1).png';
-import {UserIcon} from "../utils/icons";
+import {USER_ICON} from "../utils/icons";
 import { UniversityLogo } from "../utils/UniversityLogo";
 
 
@@ -50,7 +50,7 @@ const AnimatedLogo = ({ animationState = 'animating' }) => {
                         <div className="header-user">
                             <span
                                 className="header-user-icon"
-                                dangerouslySetInnerHTML={{ __html: UserIcon }}
+                                dangerouslySetInnerHTML={{ __html: USER_ICON }}
                             />
                             <div className="header-user-info">
                                 <span className="header-user-name">Team 2 Admin</span>

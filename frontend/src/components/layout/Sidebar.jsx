@@ -1,22 +1,22 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import Icon from "../utils/Icon";
+import icon from "../utils/Icon";
 import {
-    dashboardIcon,
-    studentsIcon,
-    teachersIcon,
-    schoolsIcon,
-    settingsIcon, LogoutIcon,
+    DASHBOARD_ICON,
+    STUDENT_ICON,
+    TEACHER_ICON,
+    SCHOOLS_ICON,
+    SETTINGS_ICON, LOGOUT_ICON,
 } from "../utils/icons";
 import "./Sidebar.css";
 
 function Sidebar() {
     const navItems = [
-        { path: "/", label: "Dashboard", icon: dashboardIcon },
-        { path: "/students", label: "Students", icon: studentsIcon },
-        { path: "/teachers", label: "Teachers", icon: teachersIcon },
-        { path: "/schools", label: "Schools", icon: schoolsIcon },
-        { path: "/settings", label: "Settings", icon: settingsIcon },
+        { path: "/", label: "Dashboard", icon: DASHBOARD_ICON },
+        { path: "/students", label: "Students", icon: STUDENT_ICON },
+        { path: "/teachers", label: "Teachers", icon: TEACHER_ICON },
+        { path: "/schools", label: "Schools", icon: SCHOOLS_ICON },
+        { path: "/settings", label: "Settings", icon: SETTINGS_ICON },
     ];
 
     const handleLogout = () => {
@@ -35,7 +35,7 @@ function Sidebar() {
                         }
                         end={item.path === "/"}
                     >
-                        <Icon svg={item.icon} size={20} />
+                        <icon svg={item.icon} size={20} />
                         <span className="sidebar-label">{item.label}</span>
                     </NavLink>
                 ))}
@@ -43,7 +43,7 @@ function Sidebar() {
                     className="sidebar-link sidebar-logout"
                     onClick={handleLogout}
                 >
-                    <Icon svg={LogoutIcon} size={20} />
+                    <icon svg={LOGOUT_ICON} size={20} />
                     <span className="sidebar-label">Logout</span>
                 </button>
             </nav>
