@@ -1,0 +1,42 @@
+{
+  "GS": {
+    "ZSP": {
+      "Geschichte": "Heimat- und Sachunterricht (HSU)",
+      "Geographie": "Heimat- und Sachunterricht (HSU)",
+      "Sozialkunde": "Heimat- und Sachunterricht (HSU)",
+      "Biologie": "Heimat- und Sachunterricht (HSU)",
+      "Chemie": "Heimat- und Sachunterricht (HSU)",
+      "Physik": "Heimat- und Sachunterricht (HSU)",
+      "Deutsch als Zweitsprache": "Deutsch als Zweitsprache (DaZ)",
+      "Kath. Religion": "Kath. Religion (KRel)",
+      "Evang. Religion": "Kath. Religion (KRel)"
+    },
+    "SFP": {
+      "Sozialkunde": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Politik": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Deutsch als Zweitsprache": "Deutsch als Zweitsprache (DaZ)",
+      "Kath. Religion": "Kath. Religion (KRel)",
+      "Evang. Religion": "Kath. Religion (KRel)"
+    }
+  },
+  "MS": {
+    "ZSP": {
+      "Arbeitslehre": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Wirtschaft": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Berufskunde": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Sozialkunde": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Politik": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Kath. Religion": "Kath. Religion (KRel)",
+      "Evang. Religion": "Kath. Religion (KRel)"
+    },
+    "SFP": {
+      "Arbeitslehre": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Wirtschaft": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Berufskunde": "Arbeitslehre (AL), Wirtschaft und Beruf (WIB)",
+      "Sozialkunde": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Politik": "Sozialkunde (SK), Politik und Gesellschaft (PUG)",
+      "Kath. Religion": "Kath. Religion (KRel)",
+      "Evang. Religion": "Kath. Religion (KRel)"
+    }
+  }
+}
