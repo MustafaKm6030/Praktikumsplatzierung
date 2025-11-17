@@ -3,11 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import StudentsPage from './pages/students/StudentsPage';
-import Teachers from './pages/Teachers';
+import Teachers from './pages/teachers/TeachersPage';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
 import './App.css';
+import TeachersPage from './pages/teachers/TeachersPage';
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
@@ -43,7 +44,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
-                  <Route path="/teachers" element={<Teachers />} />
+                  <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/schools" element={<SchoolManagement />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
