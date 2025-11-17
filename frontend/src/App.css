@@ -2,6 +2,21 @@
   text-align: center;
 }
 
+:root {
+  --primary-bg: #f1f1f1;
+}
+
+p, span, a, li {
+  font-weight: 400;
+  color: #2d2f38;
+}
+
+.small-text, .label {
+  font-weight: 300;
+  font-size: 0.9rem;
+  color: #777;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;

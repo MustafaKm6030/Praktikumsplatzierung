@@ -1,44 +1,58 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import './Sidebar.css';
+import React from "react";
+import { NavLink } from "react-router-dom";
+import Icon from "../utils/Icon";
+import {
+    DASHBOARD_ICON,
+    STUDENT_ICON,
+    TEACHER_ICON,
+    SCHOOLS_ICON,
+    SETTINGS_ICON, LOGOUT_ICON,
+} from "../utils/icons";
+import "./Sidebar.css";
 
 function Sidebar() {
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/students', label: 'Students', icon: '👨‍🎓' },
-    { path: '/teachers', label: 'Teachers', icon: '👨‍🏫' },
-    { path: '/schools', label: 'Schools', icon: '🏫' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
-  ];
+    const navItems = [
+        { path: "/", label: "Dashboard", icon: DASHBOARD_ICON },
+        { path: "/students", label: "Students", icon: STUDENT_ICON },
+        { path: "/teachers", label: "Teachers", icon: TEACHER_ICON },
+        { path: "/schools", label: "Schools", icon: SCHOOLS_ICON },
+        { path: "/settings", label: "Settings", icon: SETTINGS_ICON },
+    ];
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <h1 className="sidebar-title">Praktikumsamt</h1>
-        <p className="sidebar-subtitle">Universität Passau</p>
-      </div>
-      
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => 
-              isActive ? 'sidebar-link active' : 'sidebar-link'
-            }
-            end={item.path === '/'}
-          >
-            <span className="sidebar-icon">{item.icon}</span>
-            <span className="sidebar-label">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+    const handleLogout = () => {
+        console.log("Logging out...");
+    };
 
-      <div className="sidebar-footer">
-        <p className="sidebar-footer-text">Team 2 - ASPD 2025</p>
-      </div>
-    </aside>
-  );
+    return (
+        <aside className="sidebar">
+            <nav className="sidebar-nav">
+                {navItems.map((item) => (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                            isActive ? "sidebar-link active" : "sidebar-link"
+                        }
+                        end={item.path === "/"}
+                    >
+                        <Icon svg={item.icon} size={20} />
+                        <span className="sidebar-label">{item.label}</span>
+                    </NavLink>
+                ))}
+                <button
+                    className="sidebar-link sidebar-logout"
+                    onClick={handleLogout}
+                >
+                    <Icon svg={LOGOUT_ICON} size={20} />
+                    <span className="sidebar-label">Logout</span>
+                </button>
+            </nav>
+
+            <div className="sidebar-footer">
+                <p className="sidebar-footer-text">Team 2 - ASPD 2025</p>
+            </div>
+        </aside>
+    );
 }
 
 export default Sidebar;

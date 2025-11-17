@@ -1,0 +1,313 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+  MIN_COVERAGE: 80
+
+jobs:
+  ###################
+  # BACKEND JOBS
+  ###################
+  
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Check Django configuration
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: python manage.py check
+    
+    - name: Cache backend dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: build-backend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage
+    
+    - name: Run tests with coverage
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        coverage run --source='.' manage.py test
+        coverage report
+        coverage xml
+        coverage html
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-coverage
+        path: |
+          ${{ env.BACKEND_DIR }}/htmlcov/
+          ${{ env.BACKEND_DIR }}/coverage.xml
+        retention-days: 7
+    
+    - name: Upload coverage to Codecov (optional)
+      uses: codecov/codecov-action@v4
+      with:
+        files: ${{ env.BACKEND_DIR }}/coverage.xml
+        flags: backend
+        name: backend-coverage
+      continue-on-error: true
+
+  check-backend-coverage:
+    name: Check Backend Coverage
+    runs-on: ubuntu-latest
+    needs: test-backend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage
+    
+    - name: Run coverage check
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        coverage run --source='.' manage.py test
+        COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//')
+        echo "Backend coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+          echo "ERROR: Backend coverage ${COVERAGE}% is below minimum ${MIN_COVERAGE}%"
+          exit 1
+        else
+          echo "SUCCESS: Backend coverage ${COVERAGE}% meets minimum ${MIN_COVERAGE}%"
+        fi
+
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: pip install flake8
+    
+    - name: Run flake8
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        # Stop on critical errors
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Show warnings but don't fail
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+  ###################
+  # FRONTEND JOBS
+  ###################
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm ci
+    
+    - name: Build production bundle
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm run build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: ${{ env.FRONTEND_DIR }}/build/
+        retention-days: 7
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm ci
+    
+    - name: Run tests with coverage
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: CI=true npm test -- --coverage --watchAll=false
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-coverage
+        path: ${{ env.FRONTEND_DIR }}/coverage/
+        retention-days: 7
+    
+    - name: Upload coverage to Codecov (optional)
+      uses: codecov/codecov-action@v4
+      with:
+        files: ${{ env.FRONTEND_DIR }}/coverage/cobertura-coverage.xml
+        flags: frontend
+        name: frontend-coverage
+      continue-on-error: true
+
+  check-frontend-coverage:
+    name: Check Frontend Coverage
+    runs-on: ubuntu-latest
+    needs: test-frontend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm ci
+    
+    - name: Run coverage check
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: |
+        CI=true npm test -- --coverage --watchAll=false
+        if [ ! -f coverage/coverage-summary.json ]; then
+          echo "ERROR: Coverage summary not found"
+          exit 1
+        fi
+        COVERAGE=$(node -pe "require('./coverage/coverage-summary.json').total.lines.pct")
+        echo "Frontend coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+          echo "ERROR: Frontend coverage ${COVERAGE}% is below minimum ${MIN_COVERAGE}%"
+          exit 1
+        else
+          echo "SUCCESS: Frontend coverage ${COVERAGE}% meets minimum ${MIN_COVERAGE}%"
+        fi
+
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm ci
+    
+    - name: Run build (includes linting)
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: npm run build
+      continue-on-error: true
+
+  ###################
+  # SUMMARY
+  ###################
+
+  all-checks-passed:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: 
+      - check-backend-coverage
+      - check-frontend-coverage
+      - lint-backend
+      - lint-frontend
+    if: always()
+    
+    steps:
+    - name: Check if all jobs succeeded
+      run: |
+        if [ "${{ needs.check-backend-coverage.result }}" != "success" ] || \
+           [ "${{ needs.check-frontend-coverage.result }}" != "success" ]; then
+          echo "❌ Some checks failed!"
+          exit 1
+        else
+          echo "✅ All checks passed!"
+        fi

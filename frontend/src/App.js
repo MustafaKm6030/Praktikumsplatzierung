@@ -1,26 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Teachers from './pages/Teachers';
-import Schools from './pages/Schools';
+import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
+import AnimatedLogo from './components/layout/AnimatedLogo';
 import './App.css';
 
 function App() {
+  const [animationState, setAnimationState] = useState(() => {
+    const hasShown = sessionStorage.getItem('animationShown');
+    return hasShown ? 'done' : 'animating';
+  });
+
+  useEffect(() => {
+    let timer;
+
+    if (animationState === 'animating') {
+      timer = setTimeout(() => setAnimationState('transitioning'), 3000);
+    } else if (animationState === 'transitioning') {
+      timer = setTimeout(() => {
+        setAnimationState('done');
+        sessionStorage.setItem('animationShown', 'true');
+      }, 800);
+    }
+
+    return () => clearTimeout(timer);
+  }, [animationState]);
+
+  if (animationState === 'animating') {
+    return <AnimatedLogo animationState={animationState} />;
+  }
+
+  // --- MAIN APP CONTENT ---
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/teachers" element={<Teachers />} />
-          <Route path="/schools" element={<Schools />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Layout>
-    </Router>
+      <>
+        <AnimatedLogo animationState={animationState} />
+
+        <Router>
+          <Layout CustomHeader={null}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/students" element={<Students />} />
+              <Route path="/teachers" element={<Teachers />} />
+              <Route path="/schools" element={<SchoolManagement />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </>
   );
 }
 
