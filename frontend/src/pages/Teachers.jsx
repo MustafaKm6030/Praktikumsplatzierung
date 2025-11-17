@@ -110,7 +110,6 @@ function Teachers() {
     <div className="teachers-page">
       <header className="teachers-header">
         <div>
-          <h1>👨‍🏫 Praktikumslehrkräfte Verwaltung</h1>
           <p className="subtitle">
             Verwalten Sie PL Profile, Fachqualifikationen und Verfügbarkeiten
           </p>
