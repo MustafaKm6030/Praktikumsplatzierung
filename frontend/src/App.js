@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
+import StudentsPage from './pages/students/StudentsPage';
 import Teachers from './pages/Teachers';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
@@ -42,7 +42,7 @@ function App() {
               <Layout CustomHeader={null}>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/students" element={<Students />} />
+                  <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<Teachers />} />
                   <Route path="/schools" element={<SchoolManagement />} />
                   <Route path="/settings" element={<Settings />} />

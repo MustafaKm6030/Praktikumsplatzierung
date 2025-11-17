@@ -1,0 +1,100 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+
+/**
+ * Student type (reference)
+ * {
+ *   id, student_id, first_name, last_name,
+ *   program ('GS'|'MS'), primary_subject_name, additional_subjects_names[],
+ *   email, home_region, preferred_zone
+ * }
+ */
+
+const useStudentData = () => {
+  const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProgram, setSelectedProgram] = useState('all');
+  const [selectedRegion, setSelectedRegion] = useState('all');
+
+  // options
+  const [programs, setPrograms] = useState(['GS', 'MS']);
+  const [regions, setRegions] = useState([]);
+
+  const extractOptions = useCallback((data) => {
+    const uniqueRegions = [...new Set(data.map(s => s.home_region).filter(Boolean))];
+    setRegions(uniqueRegions);
+    setPrograms(['GS', 'MS']); // fixed, but you can derive if needed
+  }, []);
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/students');
+      if (!res.ok) {
+        console.error('Failed to fetch students:', res.status, res.statusText);
+        setStudents([]);
+        setFilteredStudents([]);
+        return;
+      }
+      const data = await res.json();
+      setStudents(data || []);
+      setFilteredStudents(data || []);
+      extractOptions(data || []);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [extractOptions]);
+
+  useEffect(() => {
+    void fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
+    let filtered = students;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(s =>
+        (s.first_name && s.first_name.toLowerCase().includes(q)) ||
+        (s.last_name && s.last_name.toLowerCase().includes(q)) ||
+        (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q))
+      );
+    }
+
+    if (selectedProgram !== 'all') {
+      filtered = filtered.filter(s => s.program === selectedProgram);
+    }
+
+    if (selectedRegion !== 'all') {
+      filtered = filtered.filter(s => s.home_region === selectedRegion);
+    }
+
+    setFilteredStudents(filtered);
+  }, [searchQuery, selectedProgram, selectedRegion, students]);
+
+  const stats = useMemo(() => {
+    const gs = students.filter(s => s.program === 'GS').length;
+    const ms = students.filter(s => s.program === 'MS').length;
+    return { gs, ms };
+  }, [students]);
+
+  return {
+    students,
+    filteredStudents,
+    loading,
+    searchQuery, setSearchQuery,
+    selectedProgram, setSelectedProgram,
+    selectedRegion, setSelectedRegion,
+    programs,
+    regions,
+    stats,
+  };
+};
+
+export default useStudentData;

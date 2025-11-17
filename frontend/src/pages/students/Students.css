@@ -1,0 +1,260 @@
+/* ====== PAGE LAYOUT (mirror Schools page spacing) ====== */
+
+.students-page {
+  padding: 24px;
+  width: 100%;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  padding: 20px;
+}
+
+/* Header with title and left-aligned actions (same feel as Schools) */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.page-header-left {
+  flex: 1;
+  min-width: 280px;
+}
+
+.page-title {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Actions: left-aligned group (like Schools) */
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.file-btn-wrap {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+}
+
+/* Make all header buttons look/size consistent with Schools orange buttons */
+.btn-lg {
+  height: 40px;
+  min-width: 160px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* If your <Button variant="primary"> renders white by default, this enforces orange */
+.btn-lg,
+.btn-lg:where(button) {
+  background-color: #f59e0b !important; /* orange like Schools */
+  color: #fff !important;
+  border: none !important;
+}
+
+/* ====== FILTERS (single horizontal row like Schools) ====== */
+
+.filters-wrap {
+  margin-top: 10px;
+  margin-bottom: 14px;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filters-search {
+  flex: 1;
+}
+
+.filters-select {
+  width: 220px; /* align with Schools dropdowns */
+}
+
+/* ====== ERROR BANNER ====== */
+
+.error-banner {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-icon {
+  font-size: 18px;
+}
+
+/* ====== TABLE (full width inside card, like Schools) ====== */
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-table thead {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.students-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.students-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #1f2937;
+  background: #fff;
+}
+
+.students-table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+.students-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Cells */
+.student-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.student-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.email {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.center {
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-program-GS {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-program-MS {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.subjects-list {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.region-badge,
+.zone-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.empty-message {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 20px;
+  font-style: italic;
+}
+
+/* ====== FOOTER ====== */
+
+.table-footer {
+  background: #f9fafb;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  border-radius: 0 0 12px 12px;
+  margin-top: 6px;
+}
+
+.footer-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.footer-stats strong {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+/* ====== RESPONSIVE ====== */
+
+@media (max-width: 920px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .page-actions {
+    padding-top: 8px;
+  }
+  .filters-row {
+    flex-wrap: wrap;
+  }
+  .filters-select {
+    width: 100%;
+    max-width: 100%;
+  }
+}
