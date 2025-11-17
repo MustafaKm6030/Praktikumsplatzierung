@@ -2,8 +2,46 @@
 Business logic for Subjects and PraktikumTypes.
 Keep views thin by moving complex logic here.
 """
+
+import json
+from pathlib import Path
 from .models import Subject, PraktikumType
 
+
+_rules= {}
+
+try:
+    rules_path= Path(__file__).parent / "data" / "subject_grouping_rules.json"
+    with open(rules_path, 'r', encoding='utf-8') as f:
+        _rules= json.load(f)
+except FileNotFoundError:
+    # If the file is missing, the rules dict will be empty.
+    print("WARNING: subject_grouping_rules.json not found. Subject grouping will not be applied.")
+    pass
+
+def apply_subject_grouping(program_type: str, practicum_type: str, subject: str) -> str:
+    """
+    Applies the official subject grouping rules for SFP and ZSP internships.
+
+    If no specific rule is found for a subject, it returns the original subject name.
+
+    Args:
+        program_type: The student's program, e.g., 'GS' or 'MS'.
+        practicum_type: The internship type, e.g., 'SFP' or 'ZSP'.
+        subject: The raw subject from the student data (e.g., 'Biologie').
+
+    Returns:
+        The grouped subject name (e.g., 'Heimat- und Sachunterricht (HSU)') or the original subject.
+    """
+    try:
+        # Navigate through the rules dictionary to find the mapping.
+        # The .get(subject, subject) is the key: it tries to find the subject,
+        # but if it fails, it returns the original subject itself.
+        return _rules[program_type][practicum_type].get(subject, subject)
+    except KeyError:
+        # This handles cases where a program_type or practicum_type might not be in the rules file.
+        # It safely defaults to returning the original subject.
+        return subject
 
 def get_active_subjects():
     """
