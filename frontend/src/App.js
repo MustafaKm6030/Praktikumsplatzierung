@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
-import Teachers from './pages/Teachers';
+import Students from './pages/Students/StudentsPage';
+import Teachers from './pages/Teachers/TeachersPage';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
 import './App.css';
+
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
