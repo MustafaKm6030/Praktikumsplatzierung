@@ -11,11 +11,6 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  // Fetch CSRF token on app load
-  useEffect(() => {
-    axios.get('/api/csrf/', { withCredentials: true })
-      .catch(error => console.error('Failed to get CSRF token:', error));
-  }, []);
   const [animationState, setAnimationState] = useState(() => {
     try {
       const hasShown = sessionStorage.getItem('animationShown');
@@ -26,6 +21,12 @@ function App() {
       return 'animating';
     }
   });
+
+  // Fetch CSRF token on app load
+  useEffect(() => {
+    axios.get('/api/csrf/', { withCredentials: true })
+      .catch(error => console.error('Failed to get CSRF token:', error));
+  }, []);
 
   useEffect(() => {
     let timer;
