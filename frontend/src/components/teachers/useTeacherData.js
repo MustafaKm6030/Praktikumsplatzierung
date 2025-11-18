@@ -17,9 +17,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 /** Fetch list of PLs (teachers) from API. Swap to plService if you prefer. */
 async function fetchTeachersFromApi() {
   const res = await fetch('/api/pls');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch PLs: ${res.status} ${res.statusText}`);
-  }
+  if (!res.ok) throw new Error(`Failed to fetch PLs: ${res.status} ${res.statusText}`);
   return res.json();
 }
 
