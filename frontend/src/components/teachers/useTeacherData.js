@@ -91,9 +91,9 @@ function computeStats(teachers) {
   return { available };
 }
 
-/* -------------------- Base data hook -------------------- */
+/* -------------------- Small state + loader hooks -------------------- */
 
-function useTeacherBase() {
+function useTeacherStateCore() {
   const [teachers, setTeachers] = useState([]);
   const [schulamtOptions, setSchulamtOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -105,6 +105,18 @@ function useTeacherBase() {
     []
   );
 
+  return {
+    teachers,
+    setTeachers,
+    schulamtOptions,
+    setSchulamtOptions,
+    loading,
+    setLoading,
+    programOptions,
+  };
+}
+
+function useTeacherLoader(setTeachers, setSchulamtOptions, setLoading) {
   const load = useCallback(
     async function loadTeachers() {
       setLoading(true);
@@ -122,19 +134,12 @@ function useTeacherBase() {
         setLoading(false);
       }
     },
-    []
+    [setTeachers, setSchulamtOptions, setLoading]
   );
 
   useEffect(() => {
     load();
   }, [load]);
-
-  return {
-    teachers,
-    schulamtOptions,
-    programOptions,
-    loading,
-  };
 }
 
 /* -------------------- Filter state hook -------------------- */
@@ -173,15 +178,20 @@ function useTeacherFilters(teachers) {
   };
 }
 
-/* -------------------- Main hook (tiny) -------------------- */
+/* -------------------- Main hook (now very small) -------------------- */
 
 export default function useTeacherData() {
   const {
     teachers,
+    setTeachers,
     schulamtOptions,
-    programOptions,
+    setSchulamtOptions,
     loading,
-  } = useTeacherBase();
+    setLoading,
+    programOptions,
+  } = useTeacherStateCore();
+
+  useTeacherLoader(setTeachers, setSchulamtOptions, setLoading);
 
   const {
     filteredTeachers,

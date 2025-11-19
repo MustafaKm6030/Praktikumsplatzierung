@@ -68,7 +68,7 @@ function filterStudentsByProgram(students, selectedProgram) {
     return students;
   }
 
-  return students.filter((s) => s.program === selectedProgram);
+  return students.filter(s => s.program === selectedProgram);
 }
 
 function filterStudentsByRegion(students, selectedRegion) {
