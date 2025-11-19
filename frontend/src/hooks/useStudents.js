@@ -21,7 +21,7 @@ function buildStudentParams(filters) {
   return params;
 }
 
-async function loadStudents(filters, setStudents, setError, setLoading) {
+async function loadStudentsList(filters, setStudents, setError, setLoading) {
   setLoading(true);
   setError(null);
 
@@ -108,7 +108,7 @@ function useStudentFetchCore() {
 
   const fetchStudents = useCallback(
     function fetchStudentsCallback(filters = {}) {
-      loadStudents(filters, setStudents, setError, setLoading);
+      loadStudentsList(filters, setStudents, setError, setLoading);
     },
     []
   );
@@ -120,6 +120,12 @@ function useStudentFetchCore() {
     fetchStudents,
     setError,
   };
+}
+
+function useInitialStudentFetch(fetchStudents) {
+  useEffect(() => {
+    fetchStudents({});
+  }, [fetchStudents]);
 }
 
 function useStudentExportImport(fetchStudents, setError) {
@@ -143,13 +149,32 @@ function useStudentExportImport(fetchStudents, setError) {
   };
 }
 
-function useStudentsInitialLoad(fetchStudents) {
-  useEffect(() => {
-    fetchStudents({});
-  }, [fetchStudents]);
+function filterStudentsList(students, searchTerm, programFilter, regionFilter) {
+  let filtered = students;
+
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    filtered = filtered.filter(
+      (s) =>
+        (s.first_name && s.first_name.toLowerCase().includes(q)) ||
+        (s.last_name && s.last_name.toLowerCase().includes(q)) ||
+        (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q))
+    );
+  }
+
+  if (programFilter) {
+    filtered = filtered.filter((s) => s.program === programFilter);
+  }
+
+  if (regionFilter) {
+    filtered = filtered.filter((s) => s.home_region === regionFilter);
+  }
+
+  return filtered;
 }
 
-function useStudentsFilters(students, fetchStudents) {
+function useStudentFilterState(students, fetchStudents) {
   const [searchTerm, setSearchTermState] = useState('');
   const [programFilter, setProgramFilterState] = useState('');
   const [regionFilter, setRegionFilterState] = useState('');
@@ -216,11 +241,11 @@ export default function useStudents() {
     setError,
   } = useStudentFetchCore();
 
-  useStudentsInitialLoad(fetchStudents);
+  useInitialStudentFetch(fetchStudents);
 
   const { onExport, onImport } = useStudentExportImport(fetchStudents, setError);
 
-  const filterState = useStudentsFilters(students, fetchStudents);
+  const filterState = useStudentFilterState(students, fetchStudents);
 
   return {
     students,
