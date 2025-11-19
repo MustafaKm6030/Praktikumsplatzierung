@@ -2,29 +2,109 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import studentService from '../api/studentService';
 import { getErrorMessage } from '../api/config';
 
+function buildStudentParams(filters) {
+  const params = {};
+  const searchValue = filters.search ? filters.search.trim() : '';
+
+  if (searchValue) {
+    params.search = searchValue;
+  }
+
+  if (filters.program) {
+    params.program = filters.program;
+  }
+
+  if (filters.home_region) {
+    params.home_region = filters.home_region;
+  }
+
+  return params;
+}
+
+async function exportStudentsCSV(setError) {
+  try {
+    const response = await studentService.exportCSV();
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.setAttribute(
+      'download',
+      `students_export_${new Date().toISOString().split('T')[0]}.csv`
+    );
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    setError(getErrorMessage(err));
+    // eslint-disable-next-line no-console
+    console.error('Error exporting students:', err);
+  }
+}
+
+async function importStudentsFromFile(event, setError, fetchStudents) {
+  const input = event.target;
+  const file = input && input.files ? input.files[0] : null;
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    await studentService.importCSV(file);
+    await fetchStudents();
+  } catch (err) {
+    setError(getErrorMessage(err));
+    // eslint-disable-next-line no-console
+    console.error('Error importing students:', err);
+  } finally {
+    // reset input so the same file can be selected again
+    input.value = '';
+  }
+}
+
+function computeRegionOptions(students) {
+  const uniqueRegions = [
+    ...new Set(
+      students
+        .map((s) => s.home_region)
+        .filter((region) => Boolean(region))
+    ),
+  ];
+
+  return uniqueRegions.sort();
+}
+
+function computeStats(students) {
+  return {
+    total: students.length,
+    gs: students.filter((s) => s.program === 'GS').length,
+    ms: students.filter((s) => s.program === 'MS').length,
+  };
+}
+
 export default function useStudents() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [programFilter, setProgramFilter] = useState('');
-  const [regionFilter, setRegionFilter] = useState('');
+  const [searchTerm, setSearchTermState] = useState('');
+  const [programFilter, setProgramFilterState] = useState('');
+  const [regionFilter, setRegionFilterState] = useState('');
 
   const fetchStudents = useCallback(async (filters = {}) => {
     setLoading(true);
     setError(null);
 
     try {
-      const params = {};
-      if (filters.search?.trim()) params.search = filters.search.trim();
-      if (filters.program) params.program = filters.program;
-      if (filters.home_region) params.home_region = filters.home_region;
-
+      const params = buildStudentParams(filters);
       const response = await studentService.getAll(params);
       setStudents(response.data);
     } catch (err) {
       setError(getErrorMessage(err));
+      // eslint-disable-next-line no-console
       console.error('Error fetching students:', err);
     } finally {
       setLoading(false);
@@ -35,76 +115,60 @@ export default function useStudents() {
     fetchStudents();
   }, [fetchStudents]);
 
-  const onSearchChange = (val) => {
-    setSearchTerm(val);
+  function onSearchChange(val) {
+    setSearchTermState(val);
     fetchStudents({
       search: val,
       program: programFilter,
       home_region: regionFilter,
     });
-  };
+  }
 
-  const onProgramChange = (val) => {
-    setProgramFilter(val);
+  function onProgramChange(val) {
+    setProgramFilterState(val);
     fetchStudents({
       search: searchTerm,
       program: val,
       home_region: regionFilter,
     });
-  };
+  }
 
-  const onRegionChange = (val) => {
-    setRegionFilter(val);
+  function onRegionChange(val) {
+    setRegionFilterState(val);
     fetchStudents({
       search: searchTerm,
       program: programFilter,
       home_region: val,
     });
-  };
+  }
 
-  const regionOptions = useMemo(() => {
-    const unique = [...new Set(students.map((s) => s.home_region).filter(Boolean))];
-    return unique.sort();
-  }, [students]);
+  const regionOptions = useMemo(
+    function computeRegionOptionsMemo() {
+      return computeRegionOptions(students);
+    },
+    [students]
+  );
 
-  const onExport = async () => {
-    try {
-      const response = await studentService.exportCSV();
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        `students_export_${new Date().toISOString().split('T')[0]}.csv`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Fehler beim Exportieren: ' + getErrorMessage(err));
-    }
-  };
+  const stats = useMemo(
+    function computeStatsMemo() {
+      return computeStats(students);
+    },
+    [students]
+  );
 
-  const onImport = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleExport = useCallback(
+    function handleExportCallback() {
+      exportStudentsCSV(setError);
+    },
+    []
+  );
 
-    try {
-      await studentService.importCSV(file);
-      alert('Studenten erfolgreich importiert!');
-      fetchStudents();
-    } catch (err) {
-      alert('Fehler beim Importieren: ' + getErrorMessage(err));
-    }
-    e.target.value = '';
-  };
-
-  const stats = useMemo(() => ({
-    total: students.length,
-    gs: students.filter((s) => s.program === 'GS').length,
-    ms: students.filter((s) => s.program === 'MS').length,
-  }), [students]);
+  const handleImport = useCallback(
+    function handleImportCallback(event) {
+      importStudentsFromFile(event, setError, fetchStudents);
+    },
+    [fetchStudents]
+  );
 
   return {
     students,
@@ -117,8 +181,8 @@ export default function useStudents() {
     regionFilter,
     setRegionFilter: onRegionChange,
     regionOptions,
-    onExport,
-    onImport,
+    onExport: handleExport,
+    onImport: handleImport,
     stats,
   };
 }

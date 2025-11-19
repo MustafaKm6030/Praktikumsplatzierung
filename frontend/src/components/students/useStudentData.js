@@ -23,35 +23,50 @@ const useStudentData = () => {
   const [programs, setPrograms] = useState(['GS', 'MS']);
   const [regions, setRegions] = useState([]);
 
-  const extractOptions = useCallback((data) => {
-    const uniqueRegions = [...new Set(data.map(s => s.home_region).filter(Boolean))];
-    setRegions(uniqueRegions);
-    setPrograms(['GS', 'MS']); // fixed, but you can derive if needed
-  }, []);
+  const extractOptions = useCallback(
+    function extractOptions(data) {
+      const uniqueRegions = [
+        ...new Set(
+          data
+            .map((s) => s.home_region)
+            .filter((region) => Boolean(region))
+        ),
+      ];
+      setRegions(uniqueRegions);
+      setPrograms(['GS', 'MS']); // fixed, but you can derive if needed
+    },
+    []
+  );
 
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/students');
-      if (!res.ok) {
-        console.error('Failed to fetch students:', res.status, res.statusText);
-        setStudents([]);
-        setFilteredStudents([]);
-        return;
+  const fetchStudents = useCallback(
+    async function fetchStudentsCallback() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/students');
+        if (!res.ok) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to fetch students:', res.status, res.statusText);
+          setStudents([]);
+          setFilteredStudents([]);
+          return;
+        }
+        const data = await res.json();
+        const safeData = data || [];
+        setStudents(safeData);
+        setFilteredStudents(safeData);
+        extractOptions(safeData);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching students:', err);
+      } finally {
+        setLoading(false);
       }
-      const data = await res.json();
-      setStudents(data || []);
-      setFilteredStudents(data || []);
-      extractOptions(data || []);
-    } catch (err) {
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [extractOptions]);
+    },
+    [extractOptions]
+  );
 
   useEffect(() => {
-    void fetchStudents();
+    fetchStudents();
   }, [fetchStudents]);
 
   useEffect(() => {
@@ -59,38 +74,45 @@ const useStudentData = () => {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(s =>
-        (s.first_name && s.first_name.toLowerCase().includes(q)) ||
-        (s.last_name && s.last_name.toLowerCase().includes(q)) ||
-        (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
-        (s.email && s.email.toLowerCase().includes(q))
+      filtered = filtered.filter(
+        (s) =>
+          (s.first_name && s.first_name.toLowerCase().includes(q)) ||
+          (s.last_name && s.last_name.toLowerCase().includes(q)) ||
+          (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
+          (s.email && s.email.toLowerCase().includes(q))
       );
     }
 
     if (selectedProgram !== 'all') {
-      filtered = filtered.filter(s => s.program === selectedProgram);
+      filtered = filtered.filter((s) => s.program === selectedProgram);
     }
 
     if (selectedRegion !== 'all') {
-      filtered = filtered.filter(s => s.home_region === selectedRegion);
+      filtered = filtered.filter((s) => s.home_region === selectedRegion);
     }
 
     setFilteredStudents(filtered);
   }, [searchQuery, selectedProgram, selectedRegion, students]);
 
-  const stats = useMemo(() => {
-    const gs = students.filter(s => s.program === 'GS').length;
-    const ms = students.filter(s => s.program === 'MS').length;
-    return { gs, ms };
-  }, [students]);
+  const stats = useMemo(
+    function computeStats() {
+      const gs = students.filter((s) => s.program === 'GS').length;
+      const ms = students.filter((s) => s.program === 'MS').length;
+      return { gs, ms };
+    },
+    [students]
+  );
 
   return {
     students,
     filteredStudents,
     loading,
-    searchQuery, setSearchQuery,
-    selectedProgram, setSelectedProgram,
-    selectedRegion, setSelectedRegion,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedRegion,
+    setSelectedRegion,
     programs,
     regions,
     stats,
