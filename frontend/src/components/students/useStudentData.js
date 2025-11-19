@@ -23,14 +23,13 @@ async function requestStudents() {
 }
 
 function collectRegions(data) {
-  const uniqueRegions = [
+  return [
     ...new Set(
       data
         .map((s) => s.home_region)
         .filter((region) => Boolean(region))
     ),
   ];
-  return uniqueRegions;
 }
 
 async function loadStudentData(setStudents, setLoading, setPrograms, setRegions) {
