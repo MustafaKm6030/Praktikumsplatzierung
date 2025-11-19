@@ -38,8 +38,8 @@ describe('SettingsGeneral Component', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/Current Academic Year/i)).toBeInTheDocument();
     });
-    expect(screen.getByLabelText(/PDP I\/II Default Deadline/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/SFP\/ZSP Default Deadline/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/PDP I\/II Deadline/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/SFP\/ZSP Deadline/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/University Name/i)).toBeInTheDocument();
   });
 
