@@ -111,14 +111,12 @@ class DemandAPITests(APITestCase):
         sfp_demand = response_data[1]
         self.assertEqual(sfp_demand["practicum_type"], "SFP")
         self.assertEqual(sfp_demand["program_type"], "MS")
-        self.assertEqual(
-            sfp_demand["subject"], "Sozialkunde (SK), Politik und Gesellschaft (PUG)"
-        )
+        self.assertEqual(sfp_demand["subject"], "SK/PuG")
         self.assertEqual(sfp_demand["required_slots"], 1)
 
         # Assert ZSP demand (grouped subject)
         zsp_demand = response_data[2]
         self.assertEqual(zsp_demand["practicum_type"], "ZSP")
         self.assertEqual(zsp_demand["program_type"], "GS")
-        self.assertEqual(zsp_demand["subject"], "Heimat- und Sachunterricht (HSU)")
+        self.assertEqual(zsp_demand["subject"], "HSU")
         self.assertEqual(zsp_demand["required_slots"], 2)
