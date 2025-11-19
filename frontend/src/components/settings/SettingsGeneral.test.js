@@ -12,7 +12,7 @@ const mockSettings = {
   university_name: 'Universität Passau',
   contact_email: 'test@uni-passau.de',
   contact_phone: '+49 851 509-0',
-  total_anrechnungsstunden_budget: 210.00,
+  total_credit_hour_budget: 210.00,
   gs_budget_percentage: 80.48,
   ms_budget_percentage: 19.52,
 };

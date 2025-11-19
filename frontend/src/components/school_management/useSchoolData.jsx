@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
  * @typedef {Object} School
@@ -19,8 +19,6 @@ import { useState, useEffect, useCallback } from 'react';
 const useSchoolData = () => {
     /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
     const [schools, setSchools] = useState([]);
-    /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
-    const [filteredSchools, setFilteredSchools] = useState([]);
     const [loading, setLoading] = useState(false);
 
     // Filter states
@@ -28,25 +26,6 @@ const useSchoolData = () => {
     const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [selectedType, setSelectedType] = useState('all');
     const [selectedZone, setSelectedZone] = useState('all');
-
-    // Unique filter options
-    const [districts, setDistricts] = useState([]);
-    const [types, setTypes] = useState([]);
-    const [zones, setZones] = useState([]);
-
-    /**
-     * Extract unique filter values from schools data
-     * @param {School[]} data
-     */
-    const extractFilterOptions = useCallback((data) => {
-        const uniqueDistricts = [...new Set(data.map(s => s.district).filter(Boolean))];
-        const uniqueTypes = [...new Set(data.map(s => s.type).filter(Boolean))];
-        const uniqueZones = [...new Set(data.map(s => s.zone).filter(Boolean))];
-
-        setDistricts(uniqueDistricts);
-        setTypes(uniqueTypes);
-        setZones(uniqueZones);
-    }, []);
 
     // Fetch schools from API
     const fetchSchools = useCallback(async () => {
@@ -65,14 +44,12 @@ const useSchoolData = () => {
                         url: response.url
                     });
                 }
-
-                setLoading(false);
-                return;
+                throw new Error('Failed to fetch');
             }
+
             const data = await response.json();
             setSchools(data);
-            setFilteredSchools(data);
-            extractFilterOptions(data);
+
         } catch (err) {
             // Log error for debugging
             console.error('Error fetching schools:', err);
@@ -84,41 +61,43 @@ const useSchoolData = () => {
                     stack: err instanceof Error ? err.stack : undefined
                 });
             }
+            // Fallback to avoid crash
+            setSchools([]);
         } finally {
             setLoading(false);
         }
-    }, [extractFilterOptions]);
+    }, []);
 
     // Initial fetch
     useEffect(() => {
         void fetchSchools();
     }, [fetchSchools]);
 
-    // Apply filters
-    useEffect(() => {
-        let filtered = schools;
+    // derived state: Unique Filter Options
+    // We use useMemo so these don't recalculate unless 'schools' data changes
+    const { districts, types, zones } = useMemo(() => {
+        return {
+            districts: [...new Set(schools.map(s => s.district).filter(Boolean))],
+            types: [...new Set(schools.map(s => s.type).filter(Boolean))],
+            zones: [...new Set(schools.map(s => s.zone).filter(Boolean))]
+        };
+    }, [schools]);
 
-        if (searchQuery) {
-            filtered = filtered.filter(school =>
+    // derived state: Filtered Schools
+    // This replaces the useEffect + setFilteredSchools pattern
+    const filteredSchools = useMemo(() => {
+        return schools.filter(school => {
+            const matchesSearch = !searchQuery ||
                 school.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 school.district?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                school.city?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+                school.city?.toLowerCase().includes(searchQuery.toLowerCase());
 
-        if (selectedDistrict !== 'all') {
-            filtered = filtered.filter(school => school.district === selectedDistrict);
-        }
+            const matchesDistrict = selectedDistrict === 'all' || school.district === selectedDistrict;
+            const matchesType = selectedType === 'all' || school.type === selectedType;
+            const matchesZone = selectedZone === 'all' || school.zone === selectedZone;
 
-        if (selectedType !== 'all') {
-            filtered = filtered.filter(school => school.type === selectedType);
-        }
-
-        if (selectedZone !== 'all') {
-            filtered = filtered.filter(school => school.zone === selectedZone);
-        }
-
-        setFilteredSchools(filtered);
+            return matchesSearch && matchesDistrict && matchesType && matchesZone;
+        });
     }, [searchQuery, selectedDistrict, selectedType, selectedZone, schools]);
 
     return {

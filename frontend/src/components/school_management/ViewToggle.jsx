@@ -3,19 +3,20 @@ import React from 'react';
 import MapIcon from '@mui/icons-material/Map';
 import ListIcon from '@mui/icons-material/List';
 
-import ButtonGroup from '../utils/ButtonGroup';
+import ButtonGroup from '../ui/ButtonGroup';
+
+// Defined outside component to prevent recreation on every render
+const VIEW_OPTIONS = [
+    { value: 'map', label: 'Map View', icon: <MapIcon /> },
+    { value: 'list', label: 'List View', icon: <ListIcon /> }
+];
 
 const ViewToggle = ({ viewMode, onViewChange }) => {
-    const options = [
-        { value: 'map', label: 'Map View', icon: <MapIcon /> },
-        { value: 'list', label: 'List View', icon: <ListIcon /> }
-    ];
-
     return (
         <ButtonGroup
             value={viewMode}
             onChange={onViewChange}
-            options={options}
+            options={VIEW_OPTIONS}
             size="medium"
         />
     );

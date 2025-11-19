@@ -7,7 +7,6 @@ import Teachers from './pages/Teachers';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
-import './App.css';
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
