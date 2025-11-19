@@ -48,29 +48,36 @@ async function loadStudentData(setStudents, setLoading, setPrograms, setRegions)
   }
 }
 
-function filterStudents(students, searchQuery, selectedProgram, selectedRegion) {
-  let filtered = students;
-
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(
-      (s) =>
-        (s.first_name && s.first_name.toLowerCase().includes(q)) ||
-        (s.last_name && s.last_name.toLowerCase().includes(q)) ||
-        (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
-        (s.email && s.email.toLowerCase().includes(q))
-    );
+function filterStudentsBySearch(students, searchQuery) {
+  if (!searchQuery) {
+    return students;
   }
 
-  if (selectedProgram !== 'all') {
-    filtered = filtered.filter((s) => s.program === selectedProgram);
+  const q = searchQuery.toLowerCase();
+
+  return students.filter(
+    (s) =>
+      (s.first_name && s.first_name.toLowerCase().includes(q)) ||
+      (s.last_name && s.last_name.toLowerCase().includes(q)) ||
+      (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
+      (s.email && s.email.toLowerCase().includes(q))
+  );
+}
+
+function filterStudentsByProgram(students, selectedProgram) {
+  if (selectedProgram === 'all') {
+    return students;
   }
 
-  if (selectedRegion !== 'all') {
-    filtered = filtered.filter((s) => s.home_region === selectedRegion);
+  return students.filter((s) => s.program === selectedProgram);
+}
+
+function filterStudentsByRegion(students, selectedRegion) {
+  if (selectedRegion === 'all') {
+    return students;
   }
 
-  return filtered;
+  return students.filter((s) => s.home_region === selectedRegion);
 }
 
 function computeStats(students) {
@@ -104,20 +111,20 @@ function useStudentBaseCore() {
   };
 }
 
-function useStudentFilterState(students) {
+function useStudentFilters(students) {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('all');
   const [selectedRegion, setSelectedRegion] = useState('all');
 
   useEffect(() => {
-    const next = filterStudents(
-      students,
-      searchQuery,
-      selectedProgram,
-      selectedRegion
-    );
-    setFilteredStudents(next);
+    let result = students;
+
+    result = filterStudentsBySearch(result, searchQuery);
+    result = filterStudentsByProgram(result, selectedProgram);
+    result = filterStudentsByRegion(result, selectedRegion);
+
+    setFilteredStudents(result);
   }, [searchQuery, selectedProgram, selectedRegion, students]);
 
   const stats = useMemo(
@@ -141,7 +148,7 @@ function useStudentFilterState(students) {
 
 const useStudentData = () => {
   const base = useStudentBaseCore();
-  const filters = useStudentFilterState(base.students);
+  const filters = useStudentFilters(base.students);
 
   return {
     students: base.students,
