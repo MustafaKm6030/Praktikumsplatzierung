@@ -9,15 +9,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
  * }
  */
 
-const useStudentData = () => {
+function useStudentBase() {
   const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState('all');
-  const [selectedRegion, setSelectedRegion] = useState('all');
 
   // options
   const [programs, setPrograms] = useState(['GS', 'MS']);
@@ -47,13 +41,11 @@ const useStudentData = () => {
           // eslint-disable-next-line no-console
           console.error('Failed to fetch students:', res.status, res.statusText);
           setStudents([]);
-          setFilteredStudents([]);
           return;
         }
         const data = await res.json();
         const safeData = data || [];
         setStudents(safeData);
-        setFilteredStudents(safeData);
         extractOptions(safeData);
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -68,6 +60,20 @@ const useStudentData = () => {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  return {
+    students,
+    loading,
+    programs,
+    regions,
+  };
+}
+
+function useStudentFilters(students) {
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProgram, setSelectedProgram] = useState('all');
+  const [selectedRegion, setSelectedRegion] = useState('all');
 
   useEffect(() => {
     let filtered = students;
@@ -102,6 +108,32 @@ const useStudentData = () => {
     },
     [students]
   );
+
+  return {
+    filteredStudents,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedRegion,
+    setSelectedRegion,
+    stats,
+  };
+}
+
+const useStudentData = () => {
+  const { students, loading, programs, regions } = useStudentBase();
+
+  const {
+    filteredStudents,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedRegion,
+    setSelectedRegion,
+    stats,
+  } = useStudentFilters(students);
 
   return {
     students,

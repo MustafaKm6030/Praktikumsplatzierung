@@ -85,14 +85,10 @@ function computeStats(students) {
   };
 }
 
-export default function useStudents() {
+function useStudentFetch() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [searchTerm, setSearchTermState] = useState('');
-  const [programFilter, setProgramFilterState] = useState('');
-  const [regionFilter, setRegionFilterState] = useState('');
 
   const fetchStudents = useCallback(async (filters = {}) => {
     setLoading(true);
@@ -114,6 +110,35 @@ export default function useStudents() {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  const onExport = useCallback(
+    function onExportCallback() {
+      exportStudentsCSV(setError);
+    },
+    []
+  );
+
+  const onImport = useCallback(
+    function onImportCallback(event) {
+      importStudentsFromFile(event, setError, fetchStudents);
+    },
+    [fetchStudents]
+  );
+
+  return {
+    students,
+    loading,
+    error,
+    fetchStudents,
+    onExport,
+    onImport,
+  };
+}
+
+function useStudentFilters(students, fetchStudents) {
+  const [searchTerm, setSearchTermState] = useState('');
+  const [programFilter, setProgramFilterState] = useState('');
+  const [regionFilter, setRegionFilterState] = useState('');
 
   function onSearchChange(val) {
     setSearchTermState(val);
@@ -143,46 +168,65 @@ export default function useStudents() {
   }
 
   const regionOptions = useMemo(
-    function computeRegionOptionsMemo() {
+    function regionOptionsMemo() {
       return computeRegionOptions(students);
     },
     [students]
   );
 
   const stats = useMemo(
-    function computeStatsMemo() {
+    function statsMemo() {
       return computeStats(students);
     },
     [students]
   );
 
-  const handleExport = useCallback(
-    function handleExportCallback() {
-      exportStudentsCSV(setError);
-    },
-    []
-  );
+  return {
+    searchTerm,
+    programFilter,
+    regionFilter,
+    setSearchTerm: onSearchChange,
+    setProgramFilter: onProgramChange,
+    setRegionFilter: onRegionChange,
+    regionOptions,
+    stats,
+  };
+}
 
-  const handleImport = useCallback(
-    function handleImportCallback(event) {
-      importStudentsFromFile(event, setError, fetchStudents);
-    },
-    [fetchStudents]
-  );
+export default function useStudents() {
+  const {
+    students,
+    loading,
+    error,
+    fetchStudents,
+    onExport,
+    onImport,
+  } = useStudentFetch();
+
+  const {
+    searchTerm,
+    programFilter,
+    regionFilter,
+    setSearchTerm,
+    setProgramFilter,
+    setRegionFilter,
+    regionOptions,
+    stats,
+  } = useStudentFilters(students, fetchStudents);
 
   return {
     students,
     loading,
     error,
     searchTerm,
-    setSearchTerm: onSearchChange,
+    setSearchTerm,
     programFilter,
-    setProgramFilter: onProgramChange,
+    setProgramFilter,
     regionFilter,
-    setRegionFilter: onRegionChange,
+    setRegionFilter,
     regionOptions,
-    onExport: handleExport,
-    onImport: handleImport,
+    onExport,
+    onImport,
     stats,
   };
 }
