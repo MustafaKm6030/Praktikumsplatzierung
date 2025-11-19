@@ -44,7 +44,7 @@ async function exportStudentsCSV(setError) {
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
 
-    link.href = url;
+  link.href = url;
     link.setAttribute(
       'download',
       `students_export_${new Date().toISOString().split('T')[0]}.csv`
@@ -85,8 +85,8 @@ function computeRegionOptions(students) {
   const uniqueRegions = [
     ...new Set(
       students
-        .map((s) => s.home_region)
-        .filter((region) => Boolean(region))
+        .map(s => s.home_region)
+        .filter(region => Boolean(region))
     ),
   ];
 
@@ -96,8 +96,8 @@ function computeRegionOptions(students) {
 function computeStats(students) {
   return {
     total: students.length,
-    gs: students.filter((s) => s.program === 'GS').length,
-    ms: students.filter((s) => s.program === 'MS').length,
+    gs: students.filter(s => s.program === 'GS').length,
+    ms: students.filter(s => s.program === 'MS').length,
   };
 }
 
@@ -149,32 +149,7 @@ function useStudentExportImport(fetchStudents, setError) {
   };
 }
 
-function filterStudentsList(students, searchTerm, programFilter, regionFilter) {
-  let filtered = students;
-
-  if (searchTerm) {
-    const q = searchTerm.toLowerCase();
-    filtered = filtered.filter(
-      (s) =>
-        (s.first_name && s.first_name.toLowerCase().includes(q)) ||
-        (s.last_name && s.last_name.toLowerCase().includes(q)) ||
-        (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
-        (s.email && s.email.toLowerCase().includes(q))
-    );
-  }
-
-  if (programFilter) {
-    filtered = filtered.filter((s) => s.program === programFilter);
-  }
-
-  if (regionFilter) {
-    filtered = filtered.filter((s) => s.home_region === regionFilter);
-  }
-
-  return filtered;
-}
-
-function useStudentFilterState(students, fetchStudents) {
+function useFilterControls(fetchStudents) {
   const [searchTerm, setSearchTermState] = useState('');
   const [programFilter, setProgramFilterState] = useState('');
   const [regionFilter, setRegionFilterState] = useState('');
@@ -206,6 +181,17 @@ function useStudentFilterState(students, fetchStudents) {
     });
   }
 
+  return {
+    searchTerm,
+    programFilter,
+    regionFilter,
+    onSearchChange,
+    onProgramChange,
+    onRegionChange,
+  };
+}
+
+function useFilterDerived(students, searchTerm, programFilter, regionFilter) {
   const regionOptions = useMemo(
     function regionOptionsMemo() {
       return computeRegionOptions(students);
@@ -220,13 +206,9 @@ function useStudentFilterState(students, fetchStudents) {
     [students]
   );
 
+  // NOTE: filtering happens in backend via fetchStudents params,
+  // so here we only return derived info.
   return {
-    searchTerm,
-    programFilter,
-    regionFilter,
-    setSearchTerm: onSearchChange,
-    setProgramFilter: onProgramChange,
-    setRegionFilter: onRegionChange,
     regionOptions,
     stats,
   };
@@ -245,7 +227,21 @@ export default function useStudents() {
 
   const { onExport, onImport } = useStudentExportImport(fetchStudents, setError);
 
-  const filterState = useStudentFilterState(students, fetchStudents);
+  const {
+    searchTerm,
+    programFilter,
+    regionFilter,
+    onSearchChange,
+    onProgramChange,
+    onRegionChange,
+  } = useFilterControls(fetchStudents);
+
+  const { regionOptions, stats } = useFilterDerived(
+    students,
+    searchTerm,
+    programFilter,
+    regionFilter
+  );
 
   return {
     students,
@@ -253,6 +249,13 @@ export default function useStudents() {
     error,
     onExport,
     onImport,
-    ...filterState,
+    searchTerm,
+    programFilter,
+    regionFilter,
+    setSearchTerm: onSearchChange,
+    setProgramFilter: onProgramChange,
+    setRegionFilter: onRegionChange,
+    regionOptions,
+    stats,
   };
 }
