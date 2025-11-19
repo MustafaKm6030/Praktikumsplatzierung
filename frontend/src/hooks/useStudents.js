@@ -21,6 +21,23 @@ function buildStudentParams(filters) {
   return params;
 }
 
+async function loadStudents(filters, setStudents, setError, setLoading) {
+  setLoading(true);
+  setError(null);
+
+  try {
+    const params = buildStudentParams(filters);
+    const response = await studentService.getAll(params);
+    setStudents(response.data);
+  } catch (err) {
+    setError(getErrorMessage(err));
+    // eslint-disable-next-line no-console
+    console.error('Error fetching students:', err);
+  } finally {
+    setLoading(false);
+  }
+}
+
 async function exportStudentsCSV(setError) {
   try {
     const response = await studentService.exportCSV();
@@ -54,13 +71,12 @@ async function importStudentsFromFile(event, setError, fetchStudents) {
 
   try {
     await studentService.importCSV(file);
-    await fetchStudents();
+    await fetchStudents({});
   } catch (err) {
     setError(getErrorMessage(err));
     // eslint-disable-next-line no-console
     console.error('Error importing students:', err);
   } finally {
-    // reset input so the same file can be selected again
     input.value = '';
   }
 }
@@ -85,44 +101,16 @@ function computeStats(students) {
   };
 }
 
-function useStudentFetch() {
+function useStudentFetchCore() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchStudents = useCallback(async (filters = {}) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = buildStudentParams(filters);
-      const response = await studentService.getAll(params);
-      setStudents(response.data);
-    } catch (err) {
-      setError(getErrorMessage(err));
-      // eslint-disable-next-line no-console
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
-
-  const onExport = useCallback(
-    function onExportCallback() {
-      exportStudentsCSV(setError);
+  const fetchStudents = useCallback(
+    function fetchStudentsCallback(filters = {}) {
+      loadStudents(filters, setStudents, setError, setLoading);
     },
     []
-  );
-
-  const onImport = useCallback(
-    function onImportCallback(event) {
-      importStudentsFromFile(event, setError, fetchStudents);
-    },
-    [fetchStudents]
   );
 
   return {
@@ -130,12 +118,38 @@ function useStudentFetch() {
     loading,
     error,
     fetchStudents,
+    setError,
+  };
+}
+
+function useStudentExportImport(fetchStudents, setError) {
+  const onExport = useCallback(
+    function onExportCallback() {
+      exportStudentsCSV(setError);
+    },
+    [setError]
+  );
+
+  const onImport = useCallback(
+    function onImportCallback(event) {
+      importStudentsFromFile(event, setError, fetchStudents);
+    },
+    [fetchStudents, setError]
+  );
+
+  return {
     onExport,
     onImport,
   };
 }
 
-function useStudentFilters(students, fetchStudents) {
+function useStudentsInitialLoad(fetchStudents) {
+  useEffect(() => {
+    fetchStudents({});
+  }, [fetchStudents]);
+}
+
+function useStudentsFilters(students, fetchStudents) {
   const [searchTerm, setSearchTermState] = useState('');
   const [programFilter, setProgramFilterState] = useState('');
   const [regionFilter, setRegionFilterState] = useState('');
@@ -199,34 +213,21 @@ export default function useStudents() {
     loading,
     error,
     fetchStudents,
-    onExport,
-    onImport,
-  } = useStudentFetch();
+    setError,
+  } = useStudentFetchCore();
 
-  const {
-    searchTerm,
-    programFilter,
-    regionFilter,
-    setSearchTerm,
-    setProgramFilter,
-    setRegionFilter,
-    regionOptions,
-    stats,
-  } = useStudentFilters(students, fetchStudents);
+  useStudentsInitialLoad(fetchStudents);
+
+  const { onExport, onImport } = useStudentExportImport(fetchStudents, setError);
+
+  const filterState = useStudentsFilters(students, fetchStudents);
 
   return {
     students,
     loading,
     error,
-    searchTerm,
-    setSearchTerm,
-    programFilter,
-    setProgramFilter,
-    regionFilter,
-    setRegionFilter,
-    regionOptions,
     onExport,
     onImport,
-    stats,
+    ...filterState,
   };
 }
