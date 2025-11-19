@@ -9,5 +9,6 @@ class DemandSerializer(serializers.Serializer):
 
     practicum_type = serializers.CharField()
     program_type = serializers.CharField()
-    subject = serializers.CharField(allow_null=True)
+    subject_code = serializers.CharField(allow_null=True)
+    subject_display_name = serializers.CharField(allow_null=True)
     required_slots = serializers.IntegerField()
