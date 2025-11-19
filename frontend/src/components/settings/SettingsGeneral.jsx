@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Paper, Box, Typography, Grid, Stack, Snackbar, Alert } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import settingsService from '../../api/settingsService';
@@ -7,6 +7,7 @@ import TextField from '../ui/TextField';
 import Button from '../ui/Button';
 import Loader from '../ui/Loader';
 
+// --- Internal Helper Component for DRY Sections ---
 const SettingsSection = ({ title, children }) => (
     <Paper sx={{
         p: 3,
@@ -23,6 +24,7 @@ const SettingsSection = ({ title, children }) => (
 );
 
 function SettingsGeneral() {
+    // 1. State Definitions
     const [settings, setSettings] = useState({
         id: null,
         academicYear: '',
@@ -39,19 +41,29 @@ function SettingsGeneral() {
 
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-
-    // State for Feedback (Snackbar)
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
-        severity: 'success' // 'success' | 'error'
+        severity: 'success'
     });
 
-    useEffect(() => {
-        loadSettings();
+    // 2. Helpers (Must be defined BEFORE loadSettings)
+
+    // FIX: Wrapped in useCallback to prevent infinite loops
+    const showSnackbar = useCallback((message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
     }, []);
 
-    const loadSettings = async () => {
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, open: false }));
+    };
+
+    const handleChange = (field, value) => {
+        setSettings(prev => ({ ...prev, [field]: value }));
+    };
+
+    // 3. Data Loading (Wrapped in useCallback)
+    const loadSettings = useCallback(async () => {
         setLoading(true);
         try {
             const response = await settingsService.getActive();
@@ -71,26 +83,21 @@ function SettingsGeneral() {
             });
         } catch (error) {
             console.error('Error loading settings:', error);
+            // Now safe to use because showSnackbar is stable
             showSnackbar('Error loading settings: ' + getErrorMessage(error), 'error');
         } finally {
             setLoading(false);
         }
-    };
+    }, [showSnackbar]); // Dependency is safe now
 
-    const handleChange = (field, value) => {
-        setSettings(prev => ({ ...prev, [field]: value }));
-    };
+    // 4. Effect
+    useEffect(() => {
+        loadSettings();
+    }, [loadSettings]);
 
-    const showSnackbar = (message, severity = 'success') => {
-        setSnackbar({ open: true, message, severity });
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbar(prev => ({ ...prev, open: false }));
-    };
-
+    // 5. Action Handlers
     const handleSave = async (e) => {
-        e.preventDefault(); // Prevent default form submission if triggered by enter key
+        e.preventDefault();
         setIsSaving(true);
 
         try {
@@ -110,8 +117,6 @@ function SettingsGeneral() {
 
             await settingsService.partialUpdate(settings.id, updateData);
             showSnackbar('Settings saved successfully!', 'success');
-
-            // Reload to ensure data consistency
             await loadSettings();
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -125,16 +130,14 @@ function SettingsGeneral() {
 
     return (
         <Box>
-            {/* 1. Header Area: Title & Save Action */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 4
-            }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937' }}>
                         General Settings
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 0.5 }}>
+                        Manage university details and defaults
                     </Typography>
                 </Box>
 
@@ -151,10 +154,8 @@ function SettingsGeneral() {
 
             <form id="settings-form" onSubmit={handleSave}>
                 <Stack spacing={3}>
-
                     <SettingsSection title="Academic Year Settings">
                         <Grid container spacing={3}>
-                            {/* Width limited to half (md={6}) for better aesthetics */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Current Academic Year"
@@ -269,11 +270,9 @@ function SettingsGeneral() {
                             </Grid>
                         </Grid>
                     </SettingsSection>
-
                 </Stack>
             </form>
 
-            {/* 3. Feedback Snackbar */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}
