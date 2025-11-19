@@ -179,7 +179,6 @@ function useTeacherFilters(teachers) {
 }
 
 /* -------------------- Main hook (now very small) -------------------- */
-
 export default function useTeacherData() {
   const {
     teachers,
@@ -193,32 +192,20 @@ export default function useTeacherData() {
 
   useTeacherLoader(setTeachers, setSchulamtOptions, setLoading);
 
-  const {
-    filteredTeachers,
-    searchQuery,
-    setSearchQuery,
-    selectedProgram,
-    setSelectedProgram,
-    selectedSchulamt,
-    setSelectedSchulamt,
-    stats,
-  } = useTeacherFilters(teachers);
+  const filterState = useTeacherFilters(teachers);
 
   return {
     teachers,
-    filteredTeachers,
+    filteredTeachers: filterState.filteredTeachers,
     loading,
-    // filters
-    searchQuery,
-    setSearchQuery,
-    selectedProgram,
-    setSelectedProgram,
-    selectedSchulamt,
-    setSelectedSchulamt,
-    // options
+    searchQuery: filterState.searchQuery,
+    setSearchQuery: filterState.setSearchQuery,
+    selectedProgram: filterState.selectedProgram,
+    setSelectedProgram: filterState.setSelectedProgram,
+    selectedSchulamt: filterState.selectedSchulamt,
+    setSelectedSchulamt: filterState.setSelectedSchulamt,
     programOptions,
     schulamtOptions,
-    // stats
-    stats,
+    stats: filterState.stats,
   };
 }
