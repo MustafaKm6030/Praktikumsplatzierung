@@ -26,8 +26,8 @@ function collectRegions(data) {
   return [
     ...new Set(
       data
-        .map((s) => s.home_region)
-        .filter((region) => Boolean(region))
+        .map(s => s.home_region)
+        .filter(region => Boolean(region))
     ),
   ];
 }
@@ -55,7 +55,7 @@ function filterStudentsBySearch(students, searchQuery) {
   const q = searchQuery.toLowerCase();
 
   return students.filter(
-    (s) =>
+    s =>
       (s.first_name && s.first_name.toLowerCase().includes(q)) ||
       (s.last_name && s.last_name.toLowerCase().includes(q)) ||
       (s.student_id && String(s.student_id).toLowerCase().includes(q)) ||
@@ -76,12 +76,12 @@ function filterStudentsByRegion(students, selectedRegion) {
     return students;
   }
 
-  return students.filter((s) => s.home_region === selectedRegion);
+  return students.filter(s => s.home_region === selectedRegion);
 }
 
 function computeStats(students) {
-  const gs = students.filter((s) => s.program === 'GS').length;
-  const ms = students.filter((s) => s.program === 'MS').length;
+  const gs = students.filter(s => s.program === 'GS').length;
+  const ms = students.filter(s => s.program === 'MS').length;
   return { gs, ms };
 }
 

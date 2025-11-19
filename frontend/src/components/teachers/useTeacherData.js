@@ -1,122 +1,210 @@
-// frontend/src/components/teachers/useTeacherData.js
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 /**
- * ---- Types (for reference) ----
- * Teacher = {
- *   id, first_name, last_name, email, school_name,
- *   program, program_display, main_subject_name,
- *   available_praktikum_types: Array<string|{name?:string, code?:string}>,
- *   max_simultaneous_praktikum, max_students_per_praktikum,
- *   schulamt, is_available
+ * Teacher (PL) type – reference
+ * {
+ *   id,
+ *   name,
+ *   program ('GS' | 'MS'),
+ *   schulamt,
+ *   is_available,
+ *   ...other fields
  * }
  */
 
-/* -------------------- Small pure helpers -------------------- */
+/* -------------------- API + helper functions -------------------- */
 
-/** Fetch list of PLs (teachers) from API. Swap to plService if you prefer. */
 async function fetchTeachersFromApi() {
   const res = await fetch('/api/pls');
+
   if (!res.ok) {
-    throw new Error(`Failed to fetch PLs: ${res.status} ${res.statusText}`);}
-  return res.json();
+    // eslint-disable-next-line no-console
+    console.error('Failed to fetch teachers:', res.status, res.statusText);
+    return [];
+  }
+
+  const data = await res.json();
+  return data || [];
 }
 
-/** Derive unique Schulamt options from data */
-function extractSchulamtOptions(list) {
-  return [...new Set((list || []).map(pl => pl?.schulamt).filter(Boolean))];
+function extractSchulamtOptions(teachers) {
+  const options = [
+    ...new Set(
+      teachers
+        .map(pl => pl.schulamt)
+        .filter(schulamt => Boolean(schulamt))
+    ),
+  ];
+
+  return options.sort();
 }
 
-/** Case-insensitive includes */
-function includesCI(haystack, needle) {
-  if (!haystack || !needle) return false;
-  return String(haystack).toLowerCase().includes(String(needle).toLowerCase());
-}
+function filterTeachersBySearch(teachers, searchQuery) {
+  if (!searchQuery) {
+    return teachers;
+  }
 
-/** Apply all filters to the list */
-function filterTeachers(list, { searchQuery, selectedProgram, selectedSchulamt }) {
-  let out = list || [];
+  const q = searchQuery.toLowerCase();
 
-  if (searchQuery) {
-    out = out.filter(pl =>
-      includesCI(pl.first_name, searchQuery) ||
-      includesCI(pl.last_name, searchQuery) ||
-      includesCI(pl.email, searchQuery) ||
-      includesCI(pl.school_name, searchQuery)
+  return teachers.filter(pl => {
+    const name = (pl.name || '').toLowerCase();
+    const id = pl.id ? String(pl.id).toLowerCase() : '';
+    const email = (pl.email || '').toLowerCase();
+
+    return (
+      name.includes(q) ||
+      id.includes(q) ||
+      email.includes(q)
     );
+  });
+}
+
+function filterTeachersByProgram(teachers, selectedProgram) {
+  if (!selectedProgram || selectedProgram === 'all') {
+    return teachers;
   }
 
-  if (selectedProgram && selectedProgram !== 'all') {
-    out = out.filter(pl => pl.program === selectedProgram);
+  return teachers.filter(pl => pl.program === selectedProgram);
+}
+
+function filterTeachersBySchulamt(teachers, selectedSchulamt) {
+  if (!selectedSchulamt || selectedSchulamt === 'all') {
+    return teachers;
   }
 
-  if (selectedSchulamt && selectedSchulamt !== 'all') {
-    out = out.filter(pl => pl.schulamt === selectedSchulamt);
-  }
+  return teachers.filter(pl => pl.schulamt === selectedSchulamt);
+}
+
+function filterTeachers(teachers, filters) {
+  const { searchQuery, selectedProgram, selectedSchulamt } = filters;
+  let out = teachers;
+
+  out = filterTeachersBySearch(out, searchQuery);
+  out = filterTeachersByProgram(out, selectedProgram);
+  out = filterTeachersBySchulamt(out, selectedSchulamt);
 
   return out;
 }
 
-/* -------------------- Main hook (now short) -------------------- */
+function computeStats(teachers) {
+  const available = teachers.filter(pl => pl.is_available).length;
+  return { available };
+}
 
-export default function useTeacherData() {
+/* -------------------- Base data hook -------------------- */
+
+function useTeacherBase() {
   const [teachers, setTeachers] = useState([]);
-  const [filteredTeachers, setFilteredTeachers] = useState([]);
+  const [schulamtOptions, setSchulamtOptions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // filters
+  const programOptions = useMemo(
+    function programOptionsMemo() {
+      return ['GS', 'MS'];
+    },
+    []
+  );
+
+  const load = useCallback(
+    async function loadTeachers() {
+      setLoading(true);
+      try {
+        const data = await fetchTeachersFromApi();
+        const safe = data || [];
+        setTeachers(safe);
+        setSchulamtOptions(extractSchulamtOptions(safe));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(err);
+        setTeachers([]);
+        setSchulamtOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return {
+    teachers,
+    schulamtOptions,
+    programOptions,
+    loading,
+  };
+}
+
+/* -------------------- Filter state hook -------------------- */
+
+function useTeacherFilters(teachers) {
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('all');
   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
 
-  // options (programs fixed; schulamt derived)
-  const programOptions = useMemo(() => ['GS', 'MS'], []);
-  const [schulamtOptions, setSchulamtOptions] = useState([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchTeachersFromApi();
-      setTeachers(data || []);
-      setSchulamtOptions(extractSchulamtOptions(data || []));
-      // initial filtered view = full list
-      setFilteredTeachers(data || []);
-    } catch (err) {
-      console.error(err);
-      setTeachers([]);
-      setFilteredTeachers([]);
-      setSchulamtOptions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // initial/data reload
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  // re-apply filters whenever inputs change
-  useEffect(() => {
-    setFilteredTeachers(
-      filterTeachers(teachers, { searchQuery, selectedProgram, selectedSchulamt })
-    );
+    const next = filterTeachers(teachers, {
+      searchQuery,
+      selectedProgram,
+      selectedSchulamt,
+    });
+    setFilteredTeachers(next);
   }, [teachers, searchQuery, selectedProgram, selectedSchulamt]);
 
-  // quick stats for header
   const stats = useMemo(
-    () => ({ available: teachers.filter(pl => pl.is_available).length }),
+    function statsMemo() {
+      return computeStats(teachers);
+    },
     [teachers]
   );
+
+  return {
+    filteredTeachers,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedSchulamt,
+    setSelectedSchulamt,
+    stats,
+  };
+}
+
+/* -------------------- Main hook (tiny) -------------------- */
+
+export default function useTeacherData() {
+  const {
+    teachers,
+    schulamtOptions,
+    programOptions,
+    loading,
+  } = useTeacherBase();
+
+  const {
+    filteredTeachers,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedSchulamt,
+    setSelectedSchulamt,
+    stats,
+  } = useTeacherFilters(teachers);
 
   return {
     teachers,
     filteredTeachers,
     loading,
     // filters
-    searchQuery, setSearchQuery,
-    selectedProgram, setSelectedProgram,
-    selectedSchulamt, setSelectedSchulamt,
+    searchQuery,
+    setSearchQuery,
+    selectedProgram,
+    setSelectedProgram,
+    selectedSchulamt,
+    setSelectedSchulamt,
     // options
     programOptions,
     schulamtOptions,
