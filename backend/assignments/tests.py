@@ -29,7 +29,7 @@ class DemandAPITests(APITestCase):
             last_name="S1",
             program="GS",
             primary_subject=self.sub_bio,
-            email="s1@test.com",  # ADDED unique email
+            email="s1@test.com",
         )
         self.student_gs_2 = Student.objects.create(
             student_id="222",
@@ -37,7 +37,7 @@ class DemandAPITests(APITestCase):
             last_name="S2",
             program="GS",
             primary_subject=self.sub_gesch,
-            email="s2@test.com",  # ADDED unique email
+            email="s2@test.com",
         )
         self.student_ms_1 = Student.objects.create(
             student_id="333",
@@ -45,7 +45,7 @@ class DemandAPITests(APITestCase):
             last_name="S3",
             program="MS",
             primary_subject=self.sub_soz,
-            email="s3@test.com",  # ADDED unique email
+            email="s3@test.com",
         )
         self.student_gs_3 = Student.objects.create(
             student_id="444",
@@ -53,7 +53,7 @@ class DemandAPITests(APITestCase):
             last_name="S4",
             program="GS",
             primary_subject=self.sub_de,
-            email="s4@test.com",  # ADDED unique email
+            email="s4@test.com",
         )
 
         # --- Create the actual source of demand: The Preferences ---
@@ -88,37 +88,40 @@ class DemandAPITests(APITestCase):
 
     def test_get_demand_api_aggregates_correctly(self):
         """
-        Ensure the demand API aggregates preferences correctly based on status and rules.
+        Ensure the demand API aggregates preferences correctly and returns both
+        subject_code and subject_display_name.
         """
-        url = reverse("demand-api")  # Assumes the URL is named 'demand-api'
+        url = reverse("demand-api")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # We expect 3 distinct demand groups from the 'UNPLACED' preferences
         self.assertEqual(len(response.data), 3)
 
-        # Convert response to a more easily searchable format by sorting
-        response_data = sorted(response.data, key=lambda x: x["practicum_type"])
+        response_data = {item["practicum_type"]: item for item in response.data}
 
-        # Assert PDP I demand (bulk, no subject)
-        pdp_demand = response_data[0]
-        self.assertEqual(pdp_demand["practicum_type"], "PDP I")
+        # --- Assert PDP I demand (bulk, no subject) ---
+        pdp_demand = response_data["PDP I"]
         self.assertEqual(pdp_demand["program_type"], "GS")
-        self.assertEqual(pdp_demand["subject"], "N/A")
+        self.assertEqual(pdp_demand["subject_code"], "N/A")
+        self.assertEqual(pdp_demand["subject_display_name"], "N/A")
         self.assertEqual(pdp_demand["required_slots"], 3)
 
-        # Assert SFP demand (grouped subject)
-        sfp_demand = response_data[1]
-        self.assertEqual(sfp_demand["practicum_type"], "SFP")
+        # --- Assert SFP demand (grouped subject) ---
+        sfp_demand = response_data["SFP"]
         self.assertEqual(sfp_demand["program_type"], "MS")
+        self.assertEqual(sfp_demand["subject_code"], "SK/PuG")
         self.assertEqual(
-            sfp_demand["subject"], "Sozialkunde (SK), Politik und Gesellschaft (PUG)"
+            sfp_demand["subject_display_name"],
+            "Sozialkunde/Politik und Gesellschaft (SK/PuG)",
         )
         self.assertEqual(sfp_demand["required_slots"], 1)
 
-        # Assert ZSP demand (grouped subject)
-        zsp_demand = response_data[2]
-        self.assertEqual(zsp_demand["practicum_type"], "ZSP")
+        # --- Assert ZSP demand (grouped subject) ---
+        zsp_demand = response_data["ZSP"]
         self.assertEqual(zsp_demand["program_type"], "GS")
-        self.assertEqual(zsp_demand["subject"], "Heimat- und Sachunterricht (HSU)")
+        self.assertEqual(zsp_demand["subject_code"], "HSU")
+        self.assertEqual(
+            zsp_demand["subject_display_name"], "Heimat- und Sachunterricht (HSU)"
+        )
         self.assertEqual(zsp_demand["required_slots"], 2)
