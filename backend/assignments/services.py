@@ -1,58 +1,70 @@
+# in assignments/services.py
+
 from collections import defaultdict
-from students.models import StudentPraktikumPreference
+from students.models import Student
 from subjects.services import get_subject_code, get_subject_display_name
-
-
-def _fetch_unplaced_preferences():
-    """Helper function to query the database for all active preferences."""
-    return StudentPraktikumPreference.objects.filter(status="UNPLACED").select_related(
-        "student", "praktikum_type", "student__primary_subject"
-    )
-
-
-def _format_demand_output(demand_counts: defaultdict) -> list:
-    """Helper function to format the aggregated counts into the final API structure."""
-    formatted_demand = []
-    for (ptype, pprog, psub_code, psub_display), count in demand_counts.items():
-        formatted_demand.append(
-            {
-                "practicum_type": ptype,
-                "program_type": pprog,
-                "subject_code": psub_code,
-                "subject_display_name": psub_display,
-                "required_slots": count,
-            }
-        )
-    return formatted_demand
 
 
 def aggregate_demand():
     """
-    Calculates the total demand for practicum slots, providing both a machine-readable
-    code (for the solver) and a human-readable name (for the dashboard).
+    Calculates the total forecasted demand for the upcoming academic year.
+    It counts every internship a student is currently eligible for and has not yet completed,
+    respecting that PDP II requires PDP I to be completed first.
     """
     demand_counts = defaultdict(int)
-    preferences = _fetch_unplaced_preferences()
+    code_to_display_map = {"N/A": "N/A"}
 
-    for pref in preferences:
-        practikum_type = pref.praktikum_type.code
-        program_type = pref.student.program
+    unplaced_students = Student.objects.filter(
+        placement_status="UNPLACED"
+    ).select_related("primary_subject")
+
+    for student in unplaced_students:
+        program_type = student.program
         original_subject = (
-            pref.student.primary_subject.name if pref.student.primary_subject else "N/A"
+            student.primary_subject.name if student.primary_subject else "N/A"
         )
 
-        subject_code = "N/A"
-        subject_display_name = "N/A"
+        # --- Rule 1: Check for PDP I ---
+        if student.pdp1_completed_date is None:
+            key = ("PDP_I", program_type, "N/A")
+            demand_counts[key] += 1
 
-        if not pref.praktikum_type.is_block_praktikum:
-            subject_code = get_subject_code(
-                program_type, practikum_type, original_subject
-            )
-            subject_display_name = get_subject_display_name(
-                program_type, practikum_type, original_subject
-            )
+        # --- Rule 2: Check for PDP II (The only conditional check) ---
+        # A student is ONLY eligible for PDP II if PDP I is already done.
+        if (
+            student.pdp1_completed_date is not None
+            and student.pdp2_completed_date is None
+        ):
+            key = ("PDP_II", program_type, "N/A")
+            demand_counts[key] += 1
 
-        demand_key = (practikum_type, program_type, subject_code, subject_display_name)
-        demand_counts[demand_key] += 1
+        # --- Rule 3: Check for SFP (No prerequisite) ---
+        if student.sfp_completed_date is None:
+            code = get_subject_code(program_type, "SFP", original_subject)
+            display = get_subject_display_name(program_type, "SFP", original_subject)
+            code_to_display_map[code] = display
+            key = ("SFP", program_type, code)
+            demand_counts[key] += 1
 
-    return _format_demand_output(demand_counts)
+        # --- Rule 4: Check for ZSP (No prerequisite) ---
+        if student.zsp_completed_date is None:
+            code = get_subject_code(program_type, "ZSP", original_subject)
+            display = get_subject_display_name(program_type, "ZSP", original_subject)
+            code_to_display_map[code] = display
+            key = ("ZSP", program_type, code)
+            demand_counts[key] += 1
+
+    # --- Formatting the output (no changes here) ---
+    formatted_demand = []
+    for (ptype, pprog, pcode), count in demand_counts.items():
+        formatted_demand.append(
+            {
+                "practicum_type": ptype,
+                "program_type": pprog,
+                "subject_code": pcode,
+                "subject_display_name": code_to_display_map.get(pcode, pcode),
+                "required_slots": count,
+            }
+        )
+
+    return formatted_demand

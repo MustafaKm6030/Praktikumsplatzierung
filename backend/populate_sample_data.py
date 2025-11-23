@@ -235,7 +235,15 @@ def create_sample_data():
             "email": "anna.hofmann@stud.uni-passau.de",
             "program": "GS",
             "primary_subject": subjects["DEU"],
+            "home_address": "Spitalhofstraße 22, 94032 Passau",
+            "semester_address": "Innstraße 41, 94032 Passau",
             "home_region": "Passau",
+            # Needs PDP I (Date is None)
+            "pdp1_completed_date": None,
+            "pdp2_completed_date": None,
+            "sfp_completed_date": None,
+            "zsp_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-002",
@@ -244,7 +252,15 @@ def create_sample_data():
             "email": "max.schneider@stud.uni-passau.de",
             "program": "MS",
             "primary_subject": subjects["ENG"],
+            "home_address": "Bahnhofstraße 10, 94469 Deggendorf",
+            "semester_address": "Dr.-Hans-Kapfinger-Straße 14, 94032 Passau",
             "home_region": "Deggendorf",
+            # Has PDP I, Needs SFP (SFP Date is None)
+            "pdp1_completed_date": date(2023, 3, 15),
+            "pdp2_completed_date": None,
+            "sfp_completed_date": None,
+            "zsp_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-003",
@@ -253,7 +269,15 @@ def create_sample_data():
             "email": "sophie.wagner@stud.uni-passau.de",
             "program": "GS",
             "primary_subject": subjects["MAT"],
+            "home_address": "Stadtplatz 5, 94209 Regen",
+            "semester_address": "Neuburger Straße 30, 94032 Passau",
             "home_region": "Regen",
+            # Has PDP I & SFP, Needs ZSP (ZSP Date is None)
+            "pdp1_completed_date": date(2023, 3, 15),
+            "pdp2_completed_date": None,
+            "sfp_completed_date": date(2023, 7, 20),
+            "zsp_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-004",
@@ -262,7 +286,15 @@ def create_sample_data():
             "email": "lukas.becker@stud.uni-passau.de",
             "program": "GS",
             "primary_subject": subjects["DEU"],
+            "home_address": "Innstraße 100, 94032 Passau",
+            "semester_address": "Innstraße 100, 94032 Passau",
             "home_region": "Passau",
+            # Needs PDP II (Has PDP I, PDP II is None)
+            "pdp1_completed_date": date(2023, 3, 15),
+            "pdp2_completed_date": None,
+            "sfp_completed_date": None,
+            "zsp_completed_date": None,
+            "placement_status": "PLACED",
         },
         {
             "student_id": "ST-2024-005",
@@ -271,7 +303,12 @@ def create_sample_data():
             "email": "emma.meyer@stud.uni-passau.de",
             "program": "MS",
             "primary_subject": subjects["BIO"],
+            "home_address": "Ludwigsplatz 8, 94315 Straubing",
+            "semester_address": "Schmiedgasse 2, 94032 Passau",
             "home_region": "Straubing",
+            # Needs PDP I
+            "pdp1_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-006",
@@ -280,7 +317,13 @@ def create_sample_data():
             "email": "jonas.zimmermann@stud.uni-passau.de",
             "program": "GS",
             "primary_subject": subjects["MAT"],
+            "home_address": "Donaupromenade 1, 94032 Passau",
+            "semester_address": "Donaupromenade 1, 94032 Passau",
             "home_region": "Passau",
+            # Needs SFP
+            "pdp1_completed_date": date(2023, 9, 1),
+            "sfp_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-007",
@@ -289,7 +332,14 @@ def create_sample_data():
             "email": "lena.koch@stud.uni-passau.de",
             "program": "MS",
             "primary_subject": subjects["DEU"],
+            "home_address": "Graflinger Straße 20, 94469 Deggendorf",
+            "semester_address": "Nikolastraße 12, 94032 Passau",
             "home_region": "Deggendorf",
+            # Needs ZSP
+            "pdp1_completed_date": date(2023, 3, 15),
+            "sfp_completed_date": date(2023, 7, 15),
+            "zsp_completed_date": None,
+            "placement_status": "UNPLACED",
         },
         {
             "student_id": "ST-2024-008",
@@ -298,16 +348,21 @@ def create_sample_data():
             "email": "tim.richter@stud.uni-passau.de",
             "program": "GS",
             "primary_subject": subjects["SPO"],
+            "home_address": "Am Regen 4, 94209 Regen",
+            "semester_address": "Grünaustraße 5, 94032 Passau",
             "home_region": "Regen",
+            "pdp1_completed_date": None,
+            "placement_status": "UNPLACED",
         },
     ]
 
     for student_data in students_data:
-        student, created = Student.objects.get_or_create(
+        # We use defaults to ensure all fields are set/updated
+        student, created = Student.objects.update_or_create(
             student_id=student_data["student_id"], defaults=student_data
         )
         print(
-            f"  {'Created' if created else 'Found'}: {student.first_name} {student.last_name} ({student.student_id})"
+            f"  {'Created/Updated'}: {student.first_name} {student.last_name} ({student.student_id})"
         )
 
     print("\n6. Creating System Settings...")

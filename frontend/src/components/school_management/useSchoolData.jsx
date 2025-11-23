@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+// in useSchoolData.js
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
  * @typedef {Object} School
@@ -16,118 +18,91 @@ import { useState, useEffect, useCallback } from 'react';
  */
 
 /**
- * Custom hook for managing school data
- * @returns {Object} School management state and functions
+ * Custom hook for managing school data.
+ * This hook is the single source of truth for fetching, filtering,
+ * and providing school data to the UI.
  */
 const useSchoolData = () => {
     /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
     const [schools, setSchools] = useState([]);
-    /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
-    const [filteredSchools, setFilteredSchools] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Filter states
+    // --- State for user's filter selections ---
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [selectedType, setSelectedType] = useState('all');
     const [selectedZone, setSelectedZone] = useState('all');
 
-    // Unique filter options
-    const [districts, setDistricts] = useState([]);
-    const [types, setTypes] = useState([]);
-    const [zones, setZones] = useState([]);
-
-    /**
-     * Extract unique filter values from schools data
-     * @param {School[]} data
-     */
-    const extractFilterOptions = useCallback((data) => {
-        const uniqueDistricts = [...new Set(data.map(s => s.district).filter(Boolean))];
-        const uniqueTypes = [...new Set(data.map(s => s.school_type).filter(Boolean))];
-        const uniqueZones = [...new Set(data.map(s => s.zone).filter(Boolean))].sort((a, b) => a - b);
-
-        setDistricts(uniqueDistricts);
-        setTypes(uniqueTypes);
-        setZones(uniqueZones);
-    }, []);
-
-    // Fetch schools from API
+    // --- Data Fetching Logic ---
     const fetchSchools = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
-            const response = await fetch('/api/schools');
+            const response = await fetch('/api/schools/'); // Correct endpoint
             if (!response.ok) {
-                // Log error for debugging but don't show to user
-                console.error('Failed to fetch schools:', response.status, response.statusText);
-
-                // For development: show more details
-                if (process.env.NODE_ENV === 'development') {
-                    console.error('Response details:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        url: response.url
-                    });
-                }
-
-                setLoading(false);
-                return;
+                console.error('Failed to fetch schools:', response.statusText);
+                throw new Error('Network response was not ok');
             }
+            /** @type {School[]} */
             const data = await response.json();
             setSchools(data);
-            setFilteredSchools(data);
-            extractFilterOptions(data);
         } catch (err) {
-            // Log error for debugging
             console.error('Error fetching schools:', err);
-
-            // For development: show full error
-            if (process.env.NODE_ENV === 'development') {
-                console.error('Full error details:', {
-                    message: err instanceof Error ? err.message : 'Unknown error',
-                    stack: err instanceof Error ? err.stack : undefined
-                });
-            }
+            setError('Could not load school data. Please try refreshing the page.');
+            setSchools([]); // Ensure schools is an empty array on error
         } finally {
             setLoading(false);
         }
-    }, [extractFilterOptions]);
+    }, []);
 
-    // Initial fetch
+    // Initial data fetch on component mount
     useEffect(() => {
         void fetchSchools();
     }, [fetchSchools]);
 
-    // Apply filters
-    useEffect(() => {
-        let filtered = schools;
+    // --- DERIVED STATE using useMemo for efficiency ---
 
-        if (searchQuery) {
-            filtered = filtered.filter(school =>
+    // 1. Unique filter options are derived from the master 'schools' list.
+    // This recalculates ONLY when the 'schools' array changes.
+    const { districts, types, zones } = useMemo(() => {
+        const uniqueDistricts = [...new Set(schools.map(s => s.district).filter(Boolean))].sort();
+        const uniqueTypes = [...new Set(schools.map(s => s.school_type).filter(Boolean))].sort();
+        const uniqueZones = [...new Set(schools.map(s => s.zone).filter(Boolean))].sort((a, b) => a - b);
+
+        return { districts: uniqueDistricts, types: uniqueTypes, zones: uniqueZones };
+    }, [schools]);
+
+    // 2. The list of filtered schools is derived from the master 'schools' list and the current filter states.
+    // This recalculates ONLY when schools or any filter value changes.
+    const filteredSchools = useMemo(() => {
+        return schools.filter(school => {
+            // Search Query Filter
+            const matchesSearch = !searchQuery ||
                 school.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 school.district?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                school.city?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+                school.city?.toLowerCase().includes(searchQuery.toLowerCase());
 
-        if (selectedDistrict !== 'all') {
-            filtered = filtered.filter(school => school.district === selectedDistrict);
-        }
+            // Dropdown Filters
+            const matchesDistrict = selectedDistrict === 'all' || school.district === selectedDistrict;
+            const matchesType = selectedType === 'all' || school.school_type === selectedType;
+            const matchesZone = selectedZone === 'all' || school.zone === parseInt(selectedZone, 10);
 
-        if (selectedType !== 'all') {
-            filtered = filtered.filter(school => school.school_type === selectedType);
-        }
-
-        if (selectedZone !== 'all') {
-            filtered = filtered.filter(school => school.zone === parseInt(selectedZone, 10));
-        }
-
-        setFilteredSchools(filtered);
+            return matchesSearch && matchesDistrict && matchesType && matchesZone;
+        });
     }, [searchQuery, selectedDistrict, selectedType, selectedZone, schools]);
 
     return {
+        // Master data and status
         schools,
-        filteredSchools,
         loading,
+        error,
+        fetchSchools, // Expose refetch function
+
+        // Filtered data for display
+        filteredSchools,
+
+        // State and setters for filter controls
         searchQuery,
         setSearchQuery,
         selectedDistrict,
@@ -136,10 +111,11 @@ const useSchoolData = () => {
         setSelectedType,
         selectedZone,
         setSelectedZone,
+
+        // Derived options for filter dropdowns
         districts,
         types,
         zones,
-        fetchSchools,
     };
 };
 

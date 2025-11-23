@@ -1,294 +1,295 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Paper, Box, Typography, Grid, Stack, Snackbar, Alert } from '@mui/material';
+import { Save as SaveIcon } from '@mui/icons-material';
 import settingsService from '../../api/settingsService';
 import { getErrorMessage } from '../../api/config';
-import './SettingsGeneral.css';
+import TextField from '../ui/TextField';
+import Button from '../ui/Button';
+import Loader from '../ui/Loader';
+
+// --- Internal Helper Component for DRY Sections ---
+const SettingsSection = ({ title, children }) => (
+    <Paper sx={{
+        p: 3,
+        borderRadius: '16px',
+        backgroundColor: 'white',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
+        border: '1px solid rgba(248, 151, 28, 0.15)'
+    }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: '#374151', mb: 3 }}>
+            {title}
+        </Typography>
+        {children}
+    </Paper>
+);
 
 function SettingsGeneral() {
-  const [settings, setSettings] = useState({
-    id: null,
-    academicYear: '',
-    pdpDefaultDeadline: '',
-    sfpZspDefaultDeadline: '',
-    universityName: '',
-    universityAddress: '',
-    contactEmail: '',
-    contactPhone: '',
-    totalBudget: '',
-    gsPercentage: '',
-    msPercentage: '',
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    setLoading(true);
-    try {
-      const response = await settingsService.getActive();
-      const data = response.data;
-      
-      setSettings({
-        id: data.id,
-        academicYear: data.current_academic_year || '',
-        pdpDefaultDeadline: data.pdp_i_demand_deadline || '',
-        sfpZspDefaultDeadline: data.pl_assignment_deadline || '',
-        universityName: data.university_name || '',
-        universityAddress: data.university_name || '',
-        contactEmail: data.contact_email || '',
-        contactPhone: data.contact_phone || '',
-        totalBudget: data.total_anrechnungsstunden_budget || '',
-        gsPercentage: data.gs_budget_percentage || '',
-        msPercentage: data.ms_budget_percentage || '',
-      });
-    } catch (error) {
-      console.error('Error loading settings:', error);
-      setSaveMessage('Fehler beim Laden der Einstellungen: ' + getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (field, value) => {
-    setSettings({
-      ...settings,
-      [field]: value,
+    // 1. State Definitions
+    const [settings, setSettings] = useState({
+        id: null,
+        academicYear: '',
+        pdpDefaultDeadline: '',
+        sfpZspDefaultDeadline: '',
+        universityName: '',
+        universityAddress: '',
+        contactEmail: '',
+        contactPhone: '',
+        totalBudget: '',
+        gsPercentage: '',
+        msPercentage: '',
     });
-    setSaveMessage('');
-  };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveMessage('');
+    const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
 
-    try {
-      if (!settings.id) {
-        setSaveMessage('Fehler: Keine aktiven Einstellungen gefunden. ❌');
-        return;
-      }
+    // 2. Helpers (Must be defined BEFORE loadSettings)
 
-      const updateData = {
-        current_academic_year: settings.academicYear,
-        pdp_i_demand_deadline: settings.pdpDefaultDeadline,
-        pl_assignment_deadline: settings.sfpZspDefaultDeadline,
-        university_name: settings.universityName,
-        contact_email: settings.contactEmail,
-        contact_phone: settings.contactPhone,
-      };
+    // FIX: Wrapped in useCallback to prevent infinite loops
+    const showSnackbar = useCallback((message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    }, []);
 
-      if (settings.totalBudget) {
-        updateData.total_anrechnungsstunden_budget = settings.totalBudget;
-      }
-      if (settings.gsPercentage) {
-        updateData.gs_budget_percentage = settings.gsPercentage;
-      }
-      if (settings.msPercentage) {
-        updateData.ms_budget_percentage = settings.msPercentage;
-      }
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, open: false }));
+    };
 
-      await settingsService.partialUpdate(settings.id, updateData);
-      
-      setSaveMessage('Einstellungen erfolgreich gespeichert! ✅');
-      setTimeout(() => setSaveMessage(''), 3000);
-      
-      await loadSettings();
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      setSaveMessage('Fehler beim Speichern: ' + getErrorMessage(error) + ' ❌');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    const handleChange = (field, value) => {
+        setSettings(prev => ({ ...prev, [field]: value }));
+    };
 
-  if (loading) {
+    // 3. Data Loading (Wrapped in useCallback)
+    const loadSettings = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await settingsService.getActive();
+            const data = response.data;
+            setSettings({
+                id: data.id,
+                academicYear: data.current_academic_year || '',
+                pdpDefaultDeadline: data.pdp_i_demand_deadline || '',
+                sfpZspDefaultDeadline: data.pl_assignment_deadline || '',
+                universityName: data.university_name || '',
+                universityAddress: data.university_name || '',
+                contactEmail: data.contact_email || '',
+                contactPhone: data.contact_phone || '',
+                totalBudget: data.total_anrechnungsstunden_budget || '',
+                gsPercentage: data.gs_budget_percentage || '',
+                msPercentage: data.ms_budget_percentage || '',
+            });
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            // Now safe to use because showSnackbar is stable
+            showSnackbar('Error loading settings: ' + getErrorMessage(error), 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [showSnackbar]); // Dependency is safe now
+
+    // 4. Effect
+    useEffect(() => {
+        loadSettings();
+    }, [loadSettings]);
+
+    // 5. Action Handlers
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setIsSaving(true);
+
+        try {
+            if (!settings.id) throw new Error('No active settings found.');
+
+            const updateData = {
+                current_academic_year: settings.academicYear,
+                pdp_i_demand_deadline: settings.pdpDefaultDeadline,
+                pl_assignment_deadline: settings.sfpZspDefaultDeadline,
+                university_name: settings.universityName,
+                contact_email: settings.contactEmail,
+                contact_phone: settings.contactPhone,
+                total_anrechnungsstunden_budget: settings.totalBudget,
+                gs_budget_percentage: settings.gsPercentage,
+                ms_budget_percentage: settings.msPercentage,
+            };
+
+            await settingsService.partialUpdate(settings.id, updateData);
+            showSnackbar('Settings saved successfully!', 'success');
+            await loadSettings();
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            showSnackbar('Error saving: ' + getErrorMessage(error), 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (loading) return <Loader message="Loading settings..." />;
+
     return (
-      <div className="settings-general">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Lade Einstellungen...</p>
-        </div>
-      </div>
+        <Box>
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937' }}>
+                        General Settings
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 0.5 }}>
+                        Manage university details and defaults
+                    </Typography>
+                </Box>
+
+                <Button
+                    onClick={handleSave}
+                    variant="primary"
+                    size="medium"
+                    startIcon={<SaveIcon />}
+                    disabled={isSaving}
+                >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+            </Box>
+
+            <form id="settings-form" onSubmit={handleSave}>
+                <Stack spacing={3}>
+                    <SettingsSection title="Academic Year Settings">
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Current Academic Year"
+                                    value={settings.academicYear}
+                                    onChange={(e) => handleChange('academicYear', e.target.value)}
+                                    placeholder="2024/2025"
+                                    required
+                                    helperText="Format: YYYY/YYYY"
+                                />
+                            </Grid>
+                        </Grid>
+                    </SettingsSection>
+
+                    <SettingsSection title="Praktikum Deadlines">
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="PDP I/II Deadline"
+                                    type="date"
+                                    value={settings.pdpDefaultDeadline}
+                                    onChange={(e) => handleChange('pdpDefaultDeadline', e.target.value)}
+                                    required
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="SFP/ZSP Deadline"
+                                    type="date"
+                                    value={settings.sfpZspDefaultDeadline}
+                                    onChange={(e) => handleChange('sfpZspDefaultDeadline', e.target.value)}
+                                    required
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                        </Grid>
+                    </SettingsSection>
+
+                    <SettingsSection title="University Information">
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="University Name"
+                                    value={settings.universityName}
+                                    onChange={(e) => handleChange('universityName', e.target.value)}
+                                    placeholder="Universität Passau"
+                                    required
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="Address"
+                                    value={settings.universityAddress}
+                                    onChange={(e) => handleChange('universityAddress', e.target.value)}
+                                    placeholder="Innstraße 41, 94032 Passau"
+                                    multiline
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Contact Email"
+                                    type="email"
+                                    value={settings.contactEmail}
+                                    onChange={(e) => handleChange('contactEmail', e.target.value)}
+                                    placeholder="praktikum@uni-passau.de"
+                                    required
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Contact Phone"
+                                    type="tel"
+                                    value={settings.contactPhone}
+                                    onChange={(e) => handleChange('contactPhone', e.target.value)}
+                                    placeholder="+49 851 509-0"
+                                />
+                            </Grid>
+                        </Grid>
+                    </SettingsSection>
+
+                    <SettingsSection title="Budget Allocation">
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="Total Credit Hours Budget"
+                                    type="number"
+                                    value={settings.totalBudget}
+                                    onChange={(e) => handleChange('totalBudget', e.target.value)}
+                                    step="0.01"
+                                    helperText="Total budget hours available for allocation"
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="GS Budget Percentage"
+                                    type="number"
+                                    value={settings.gsPercentage}
+                                    onChange={(e) => handleChange('gsPercentage', e.target.value)}
+                                    step="0.01"
+                                    helperText="Grundschule percentage"
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="MS Budget Percentage"
+                                    type="number"
+                                    value={settings.msPercentage}
+                                    onChange={(e) => handleChange('msPercentage', e.target.value)}
+                                    step="0.01"
+                                    helperText="Mittelschule percentage"
+                                />
+                            </Grid>
+                        </Grid>
+                    </SettingsSection>
+                </Stack>
+            </form>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%', borderRadius: '12px' }}
+                    variant="filled"
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </Box>
     );
-  }
-
-  return (
-    <div className="settings-general">
-      <h2 className="settings-general-title">General Settings</h2>
-      <p className="settings-general-subtitle">
-        Configure core system settings including academic year, deadlines, and university information.
-      </p>
-
-      <form onSubmit={handleSave} className="settings-form">
-        {/* Academic Year Section */}
-        <div className="settings-section">
-          <h3 className="section-title">Academic Year</h3>
-          
-          <div className="form-group">
-            <label htmlFor="academicYear">Current Academic Year *</label>
-            <input
-              type="text"
-              id="academicYear"
-              value={settings.academicYear}
-              onChange={(e) => handleChange('academicYear', e.target.value)}
-              placeholder="e.g., 2024/2025"
-              required
-            />
-            <span className="field-hint">Format: YYYY/YYYY</span>
-          </div>
-        </div>
-
-        {/* Deadlines Section */}
-        <div className="settings-section">
-          <h3 className="section-title">Praktikum Deadlines</h3>
-          
-          <div className="form-group">
-            <label htmlFor="pdpDefaultDeadline">PDP I/II Default Deadline *</label>
-            <input
-              type="date"
-              id="pdpDefaultDeadline"
-              value={settings.pdpDefaultDeadline}
-              onChange={(e) => handleChange('pdpDefaultDeadline', e.target.value)}
-              required
-            />
-            <span className="field-hint">Default deadline for block internships (PDP I & PDP II)</span>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="sfpZspDefaultDeadline">SFP/ZSP Default Deadline *</label>
-            <input
-              type="date"
-              id="sfpZspDefaultDeadline"
-              value={settings.sfpZspDefaultDeadline}
-              onChange={(e) => handleChange('sfpZspDefaultDeadline', e.target.value)}
-              required
-            />
-            <span className="field-hint">Default deadline for Wednesday internships (SFP & ZSP)</span>
-          </div>
-        </div>
-
-        {/* University Information Section */}
-        <div className="settings-section">
-          <h3 className="section-title">University Information</h3>
-          
-          <div className="form-group">
-            <label htmlFor="universityName">University Name *</label>
-            <input
-              type="text"
-              id="universityName"
-              value={settings.universityName}
-              onChange={(e) => handleChange('universityName', e.target.value)}
-              placeholder="e.g., Universität Passau"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="universityAddress">Address</label>
-            <textarea
-              id="universityAddress"
-              value={settings.universityAddress}
-              onChange={(e) => handleChange('universityAddress', e.target.value)}
-              placeholder="Full university address"
-              rows="2"
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="contactEmail">Contact Email *</label>
-              <input
-                type="email"
-                id="contactEmail"
-                value={settings.contactEmail}
-                onChange={(e) => handleChange('contactEmail', e.target.value)}
-                placeholder="email@uni-passau.de"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="contactPhone">Contact Phone</label>
-              <input
-                type="tel"
-                id="contactPhone"
-                value={settings.contactPhone}
-                onChange={(e) => handleChange('contactPhone', e.target.value)}
-                placeholder="+49 851 509-0"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Budget Section */}
-        <div className="settings-section">
-          <h3 className="section-title">Budget Allocation</h3>
-          
-          <div className="form-group">
-            <label htmlFor="totalBudget">Total Anrechnungsstunden Budget</label>
-            <input
-              type="number"
-              id="totalBudget"
-              value={settings.totalBudget}
-              onChange={(e) => handleChange('totalBudget', e.target.value)}
-              placeholder="e.g., 210"
-              step="0.01"
-            />
-            <span className="field-hint">Total budget hours available for allocation</span>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="gsPercentage">GS Budget Percentage</label>
-              <input
-                type="number"
-                id="gsPercentage"
-                value={settings.gsPercentage}
-                onChange={(e) => handleChange('gsPercentage', e.target.value)}
-                placeholder="e.g., 80.48"
-                step="0.01"
-              />
-              <span className="field-hint">Grundschule percentage</span>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="msPercentage">MS Budget Percentage</label>
-              <input
-                type="number"
-                id="msPercentage"
-                value={settings.msPercentage}
-                onChange={(e) => handleChange('msPercentage', e.target.value)}
-                placeholder="e.g., 19.52"
-                step="0.01"
-              />
-              <span className="field-hint">Mittelschule percentage</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="settings-actions">
-          <button 
-            type="submit" 
-            className="btn-save"
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-          
-          {saveMessage && (
-            <span className={`save-message ${saveMessage.includes('✅') ? 'success' : 'error'}`}>
-              {saveMessage}
-            </span>
-          )}
-        </div>
-      </form>
-    </div>
-  );
 }
 
 export default SettingsGeneral;

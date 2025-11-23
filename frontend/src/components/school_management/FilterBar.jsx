@@ -1,7 +1,8 @@
 import React from 'react';
 import { Paper, Stack } from '@mui/material';
-import SearchBar from './SearchBar';
-import Select from '../utils/Select';
+import { Search as SearchIcon } from '@mui/icons-material';
+import TextField from '../ui/TextField';
+import Select from '../ui/Select';
 
 const FilterBar = ({
                        searchQuery,
@@ -26,10 +27,13 @@ const FilterBar = ({
             border: '1px solid rgba(248, 151, 28, 0.15)'
         }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <SearchBar
+                {/* Replaced SearchBar component with direct TextField usage */}
+                <TextField
                     value={searchQuery}
                     onChange={onSearchChange}
                     placeholder="Search by School Name, District, City..."
+                    fullWidth
+                    startIcon={<SearchIcon sx={{ color: '#6b7280' }} />}
                 />
 
                 <Select
@@ -55,16 +59,6 @@ const FilterBar = ({
                     value={selectedZone}
                     onChange={onZoneChange}
                     options={zones}
-                    fullWidth={false}
-                    minWidth={150}
-                />
-
-                <Select
-                    label="Filter"
-                    value="all"
-                    onChange={() => {}}
-                    options={[]}
-                    disabled
                     fullWidth={false}
                     minWidth={150}
                 />
