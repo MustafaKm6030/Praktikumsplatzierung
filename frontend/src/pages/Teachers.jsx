@@ -8,7 +8,7 @@ function Teachers() {
   const [pls, setPls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [schulamtFilter, setSchulamtFilter] = useState('');
   const [programFilter, setProgramFilter] = useState('');
@@ -16,18 +16,18 @@ function Teachers() {
   const fetchPLs = useCallback(async (filters = {}) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const params = {};
-      
+
       if (filters.search && filters.search.trim()) {
         params.search = filters.search.trim();
       }
-      
+
       if (filters.program) {
         params.program = filters.program;
       }
-      
+
       const response = await plService.getAll(params);
       setPls(response.data);
     } catch (err) {
@@ -69,11 +69,11 @@ function Teachers() {
 
   const filteredPls = useMemo(() => {
     let filtered = [...pls];
-    
+
     if (schulamtFilter) {
       filtered = filtered.filter(pl => pl.schulamt === schulamtFilter);
     }
-    
+
     return filtered;
   }, [pls, schulamtFilter]);
 
@@ -84,7 +84,7 @@ function Teachers() {
     if (!pl.available_praktikum_types || pl.available_praktikum_types.length === 0) {
       return [];
     }
-    
+
     return pl.available_praktikum_types.map(pt => {
       if (typeof pt === 'object' && pt.name) {
         return pt.name;
@@ -129,10 +129,10 @@ function Teachers() {
             className="search-input"
           />
         </div>
-        
+
         <div className="filter-controls">
-          <select 
-            value={programFilter} 
+          <select
+            value={programFilter}
             onChange={handleProgramFilterChange}
             className="filter-select"
           >
@@ -141,8 +141,8 @@ function Teachers() {
             <option value="MS">Mittelschule (MS)</option>
           </select>
 
-          <select 
-            value={schulamtFilter} 
+          <select
+            value={schulamtFilter}
             onChange={(e) => setSchulamtFilter(e.target.value)}
             className="filter-select"
           >
@@ -171,9 +171,9 @@ function Teachers() {
               <th>Schulart</th>
               <th>Hauptfach</th>
               <th>Bevorzugte Praktika</th>
-              <th>Anrechnungsstd.</th>
+              <th>Anre-Std.</th>
+              <th>Kapazität</th>
               <th>Schulamt</th>
-              <th>Max. Studierende</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -198,19 +198,17 @@ function Teachers() {
                   <td>{pl.main_subject_name || 'N/A'}</td>
                   <td>
                     <div className="praktikum-tags">
-                      {getPraktikumTypesDisplay(pl).map((type, idx) => (
-                        <span key={idx} className="tag">{type}</span>
-                      ))}
+                      {pl.preferred_praktika_raw ? pl.preferred_praktika_raw.split(',').map((type, idx) => (
+                        <span key={idx} className="tag">{type.trim()}</span>
+                      )) : 'N/A'}
                     </div>
                   </td>
-                  <td className="center">{pl.max_simultaneous_praktikum || 2}</td>
+                  <td className="center">{pl.anrechnungsstunden || '1.0'}</td>
+                  <td className="center">{pl.capacity}</td>
+                  <td><span className="schulamt-badge">{pl.schulamt || 'N/A'}</span></td>
                   <td>
-                    <span className="schulamt-badge">{pl.schulamt || '-'}</span>
-                  </td>
-                  <td className="center">{pl.max_students_per_praktikum || 3}</td>
-                  <td>
-                    <span className={`status-badge ${pl.is_available ? 'status-available' : 'status-unavailable'}`}>
-                      {pl.is_available ? 'Verfügbar' : 'Nicht verfügbar'}
+                    <span className={`status-badge ${pl.is_active ? 'status-available' : 'status-unavailable'}`}>
+                      {pl.is_active ? 'Verfügbar' : 'Nicht verfügbar'}
                     </span>
                   </td>
                 </tr>

@@ -5,11 +5,14 @@ import { useState, useEffect, useCallback } from 'react';
  * @property {number} id
  * @property {string} name
  * @property {string} district
- * @property {string} type
+ * @property {string} school_type
  * @property {string} city
- * @property {string} zone
- * @property {number} capacity
- * @property {string} status
+ * @property {number} zone
+ * @property {string} opnv_code
+ * @property {number} distance_km 
+ * @property {boolean} is_active
+ * @property {number | null} latitude 
+ * @property {number | null} longitude 
  */
 
 /**
@@ -40,8 +43,8 @@ const useSchoolData = () => {
      */
     const extractFilterOptions = useCallback((data) => {
         const uniqueDistricts = [...new Set(data.map(s => s.district).filter(Boolean))];
-        const uniqueTypes = [...new Set(data.map(s => s.type).filter(Boolean))];
-        const uniqueZones = [...new Set(data.map(s => s.zone).filter(Boolean))];
+        const uniqueTypes = [...new Set(data.map(s => s.school_type).filter(Boolean))];
+        const uniqueZones = [...new Set(data.map(s => s.zone).filter(Boolean))].sort((a, b) => a - b);
 
         setDistricts(uniqueDistricts);
         setTypes(uniqueTypes);
@@ -111,11 +114,11 @@ const useSchoolData = () => {
         }
 
         if (selectedType !== 'all') {
-            filtered = filtered.filter(school => school.type === selectedType);
+            filtered = filtered.filter(school => school.school_type === selectedType);
         }
 
         if (selectedZone !== 'all') {
-            filtered = filtered.filter(school => school.zone === selectedZone);
+            filtered = filtered.filter(school => school.zone === parseInt(selectedZone, 10));
         }
 
         setFilteredSchools(filtered);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography} from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import ActionButtons from '../components/school_management/ActionButtons';
 import FilterBar from '../components/school_management/FilterBar';
 import ViewToggle from '../components/school_management/ViewToggle';
@@ -67,7 +67,7 @@ const SchoolManagement = () => {
     };
 
     return (
-        <Box sx={{ p: 3,  minHeight: '100vh', paddingTop:'5vh' }}>
+        <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
             {/* Action Buttons */}
             <ActionButtons
                 onAddSchool={handleAddNewSchool}
@@ -123,7 +123,7 @@ const SchoolManagement = () => {
             )}
 
             {/* Map View */}
-            {!loading && viewMode === 'map' && <MapView />}
+            {!loading && viewMode === 'map' && <MapView schools={filteredSchools} />}
         </Box>
     );
 };

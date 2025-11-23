@@ -22,10 +22,11 @@ const SchoolTable = ({ schools, onView, onEdit, onDelete }) => {
                     <TableRow sx={{ backgroundColor: '#fef9f3' }}>
                         <TableCell><strong>School Name</strong></TableCell>
                         <TableCell><strong>District</strong></TableCell>
-                        <TableCell><strong>Type</strong></TableCell>
+                        <TableCell><strong>School Type</strong></TableCell>
                         <TableCell><strong>City</strong></TableCell>
                         <TableCell><strong>Zone</strong></TableCell>
-                        <TableCell><strong>Capacity</strong></TableCell>
+                        <TableCell><strong>ÖPNV Code</strong></TableCell>
+                        <TableCell><strong>Distance (km)</strong></TableCell>
                         <TableCell><strong>Status</strong></TableCell>
                         <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>

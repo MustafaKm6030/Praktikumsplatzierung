@@ -8,14 +8,12 @@ import {
 
 /**
  * Get status color for Chip component
- * @param {string | undefined} status
+ * @param {boolean | undefined} isActive
  * @returns {'success' | 'error' | 'warning' | 'default'}
  */
-const getStatusColor = (status) => {
-    const statusLower = status?.toLowerCase();
-    if (statusLower === 'active') return 'success';
-    if (statusLower === 'inactive') return 'error';
-    if (statusLower === 'pending') return 'warning';
+const getStatusColor = (isActive) => {
+    if (isActive === false) return 'error';
+    if (isActive === true) return 'success';
     return 'default';
 };
 
@@ -28,18 +26,20 @@ const getStatusColor = (status) => {
  * @param {function} [props.onDelete] - Handler for delete action
  */
 const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
+    const isActive = school.is_active;
     return (
         <TableRow sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
             <TableCell sx={{ fontWeight: 500 }}>{school.name || 'N/A'}</TableCell>
             <TableCell>{school.district || 'N/A'}</TableCell>
-            <TableCell>{school.type || 'N/A'}</TableCell>
+            <TableCell>{school.school_type || 'N/A'}</TableCell>
             <TableCell>{school.city || 'N/A'}</TableCell>
             <TableCell>{school.zone || 'N/A'}</TableCell>
-            <TableCell>{school.capacity || 'N/A'}</TableCell>
+            <TableCell>{school.opnv_code || 'N/A'}</TableCell>
+            <TableCell>{school.distance_km || 'N/A'}</TableCell>
             <TableCell>
                 <Chip
-                    label={school.status || 'Active'}
-                    color={getStatusColor(school.status)}
+                    label={isActive ? 'Active' : 'Inactive'}
+                    color={getStatusColor(isActive)}
                     size="small"
                 />
             </TableCell>
