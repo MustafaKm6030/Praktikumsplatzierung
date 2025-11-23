@@ -1,234 +1,78 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import plService from '../api/plService';
-import { getErrorMessage } from '../api/config';
-import { debounce } from '../utils/debounce';
-import './Teachers.css';
+import React, { useCallback } from 'react';
+import { Box } from '@mui/material';
+import TeachersActionButtons from '../components/teachers/TeachersActionButtons';
+import TeachersFilterBar from '../components/teachers/TeachersFilterBar';
+import TeachersTable from '../components/teachers/TeachersTable';
+import useTeacherData from '../components/teachers/useTeacherData';
+import Loader from '../components/ui/Loader';
 
-function Teachers() {
-  const [pls, setPls] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [schulamtFilter, setSchulamtFilter] = useState('');
-  const [programFilter, setProgramFilter] = useState('');
+export default function Teachers() {
+  const {
+    teachers,
+    filteredTeachers,
+    loading,
+    // filters
+    searchQuery, setSearchQuery,
+    selectedProgram, setSelectedProgram,
+    selectedSchulamt, setSelectedSchulamt,
+    programOptions, schulamtOptions,
+    // stats
+    stats,
+  } = useTeacherData();
 
-  const fetchPLs = useCallback(async (filters = {}) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const params = {};
-      
-      if (filters.search && filters.search.trim()) {
-        params.search = filters.search.trim();
-      }
-      
-      if (filters.program) {
-        params.program = filters.program;
-      }
-      
-      const response = await plService.getAll(params);
-      setPls(response.data);
-    } catch (err) {
-      const errorMsg = getErrorMessage(err);
-      setError(errorMsg);
-      console.error('Error fetching PLs:', err);
-    } finally {
-      setLoading(false);
-    }
+  // Actions (wire to your plService later)
+  const handleAddTeacher = useCallback(() => {
+    alert('Add New PL — to be implemented');
   }, []);
 
-  useEffect(() => {
-    fetchPLs();
-  }, [fetchPLs]);
+  const handleImport = useCallback(() => {
+    alert('Import PLs (CSV/Excel) — to be implemented');
+  }, []);
 
-  const debouncedSearch = useMemo(
-    () => debounce((term) => {
-      fetchPLs({ search: term, program: programFilter });
-    }, 500),
-    [fetchPLs, programFilter]
-  );
-
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    debouncedSearch(value);
-  };
-
-  const handleProgramFilterChange = (e) => {
-    const value = e.target.value;
-    setProgramFilter(value);
-    fetchPLs({ search: searchTerm, program: value });
-  };
-
-  const schulamtOptions = useMemo(() => {
-    const uniqueSchulamt = [...new Set(pls.map(pl => pl.schulamt).filter(Boolean))];
-    return uniqueSchulamt.sort();
-  }, [pls]);
-
-  const filteredPls = useMemo(() => {
-    let filtered = [...pls];
-    
-    if (schulamtFilter) {
-      filtered = filtered.filter(pl => pl.schulamt === schulamtFilter);
-    }
-    
-    return filtered;
-  }, [pls, schulamtFilter]);
-
-  const totalPLs = filteredPls.length;
-  const availablePLs = filteredPls.filter(pl => pl.is_available).length;
-
-  const getPraktikumTypesDisplay = (pl) => {
-    if (!pl.available_praktikum_types || pl.available_praktikum_types.length === 0) {
-      return [];
-    }
-    
-    return pl.available_praktikum_types.map(pt => {
-      if (typeof pt === 'object' && pt.name) {
-        return pt.name;
-      } else if (typeof pt === 'object' && pt.code) {
-        return pt.code;
-      }
-      return pt.toString();
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="teachers-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Lade Praktikumslehrkräfte...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleExport = useCallback(() => {
+    alert('Export PL list — to be implemented');
+  }, []);
 
   return (
-    <div className="teachers-page">
-      <header className="teachers-header">
-        <div>
-          <h1>👨‍🏫 Praktikumslehrkräfte Verwaltung</h1>
-          <p className="subtitle">
-            Verwalten Sie PL Profile, Fachqualifikationen und Verfügbarkeiten
-          </p>
-        </div>
-        <button className="btn-primary" onClick={() => alert('Add PL feature coming soon')}>
-          + Neue PL hinzufügen
-        </button>
-      </header>
+    <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
+      {/* Buttons (left, same as Schools) */}
+      <TeachersActionButtons
+        onAddTeacher={handleAddTeacher}
+        onImport={handleImport}
+        onExport={handleExport}
+      />
 
-      <div className="filters-section">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Suche nach Name, E-Mail oder Schule..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="search-input"
-          />
-        </div>
-        
-        <div className="filter-controls">
-          <select 
-            value={programFilter} 
-            onChange={handleProgramFilterChange}
-            className="filter-select"
-          >
-            <option value="">Alle Schularten</option>
-            <option value="GS">Grundschule (GS)</option>
-            <option value="MS">Mittelschule (MS)</option>
-          </select>
+      {/* Filters (one row, same pattern as Schools) */}
+      <TeachersFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(e) => setSearchQuery(e.target.value)}
+        selectedProgram={selectedProgram}
+        onProgramChange={(e) => setSelectedProgram(e.target.value)}
+        programOptions={programOptions}
+        selectedSchulamt={selectedSchulamt}
+        onSchulamtChange={(e) => setSelectedSchulamt(e.target.value)}
+        schulamtOptions={schulamtOptions}
+      />
 
-          <select 
-            value={schulamtFilter} 
-            onChange={(e) => setSchulamtFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="">Alle Schulämter</option>
-            {schulamtOptions.map(schulamt => (
-              <option key={schulamt} value={schulamt}>{schulamt}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Results summary (like Schools) */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 2,
+        flexWrap: 'wrap',
+        gap: 2
+      }}>
+        <span style={{ color: '#6b7280', fontSize: 14 }}>
+          Showing {filteredTeachers.length} of {teachers.length} PLs • Available: {stats.available}
+        </span>
+      </Box>
 
-      {error && (
-        <div className="error-banner">
-          <span className="error-icon">⚠️</span>
-          <span>{error}</span>
-        </div>
+      {loading && <Loader message="Loading PLs..." />}
+
+      {!loading && (
+        <TeachersTable teachers={filteredTeachers} />
       )}
-
-      <div className="table-container">
-        <table className="pl-table">
-          <thead>
-            <tr>
-              <th>PL ID</th>
-              <th>Name</th>
-              <th>Schule</th>
-              <th>Schulart</th>
-              <th>Hauptfach</th>
-              <th>Bevorzugte Praktika</th>
-              <th>Anrechnungsstd.</th>
-              <th>Schulamt</th>
-              <th>Max. Studierende</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredPls.length === 0 ? (
-              <tr>
-                <td colSpan="10" className="empty-message">
-                  {error ? 'Fehler beim Laden der Daten' : 'Keine Praktikumslehrkräfte gefunden'}
-                </td>
-              </tr>
-            ) : (
-              filteredPls.map((pl) => (
-                <tr key={pl.id}>
-                  <td className="pl-id">PL-{String(pl.id).padStart(3, '0')}</td>
-                  <td className="pl-name">{pl.first_name} {pl.last_name}</td>
-                  <td>{pl.school_name || 'N/A'}</td>
-                  <td>
-                    <span className={`badge badge-program-${pl.program}`}>
-                      {pl.program_display || pl.program}
-                    </span>
-                  </td>
-                  <td>{pl.main_subject_name || 'N/A'}</td>
-                  <td>
-                    <div className="praktikum-tags">
-                      {getPraktikumTypesDisplay(pl).map((type, idx) => (
-                        <span key={idx} className="tag">{type}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="center">{pl.max_simultaneous_praktikum || 2}</td>
-                  <td>
-                    <span className="schulamt-badge">{pl.schulamt || '-'}</span>
-                  </td>
-                  <td className="center">{pl.max_students_per_praktikum || 3}</td>
-                  <td>
-                    <span className={`status-badge ${pl.is_available ? 'status-available' : 'status-unavailable'}`}>
-                      {pl.is_available ? 'Verfügbar' : 'Nicht verfügbar'}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="table-footer">
-        <div className="footer-stats">
-          <span>Gesamt: <strong>{totalPLs}</strong> Praktikumslehrkräfte</span>
-          <span>Verfügbar: <strong>{availablePLs}</strong> PLs</span>
-        </div>
-      </div>
-    </div>
+    </Box>
   );
 }
-
-export default Teachers;

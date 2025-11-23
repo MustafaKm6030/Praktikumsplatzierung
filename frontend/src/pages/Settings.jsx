@@ -7,19 +7,18 @@ function Settings() {
 
   return (
     <div>
-      <h1>⚙️ System Settings</h1>
       <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-        Configure system-wide parameters, deadlines, and information.
+
       </p>
 
       <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'general' && <SettingsGeneral />}
-      
+
       {/* Other tabs will be added in future sprints */}
-      {activeTab === 'users' && <div>Users & Permissions - Coming Soon</div>}
-      {activeTab === 'praktikum' && <div>Praktikum Types - Coming Soon</div>}
-      {activeTab === 'geographical' && <div>Geographical Data - Coming Soon</div>}
+      {activeTab === 'users' && <div>Users & Permissions</div>}
+      {activeTab === 'praktikum' && <div>Praktikum Types</div>}
+      {activeTab === 'geographical' && <div>Geographical Data</div>}
     </div>
   );
 }

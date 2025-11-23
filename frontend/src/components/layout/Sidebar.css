@@ -1,10 +1,12 @@
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
-  color: white;
+  color: #1a1a1a;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  margin-top: 90px;
+  margin-left: 20px;
+  padding-top: 30px;
+  font-family: "Apple Braille", serif;
 }
 
 .sidebar-header {
@@ -14,10 +16,10 @@
 }
 
 .sidebar-title {
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 700;
   margin: 0 0 4px 0;
-  color: #ffffff;
+  color: black;
 }
 
 .sidebar-subtitle {
@@ -27,20 +29,22 @@
   font-weight: 400;
 }
 
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 0;
-  overflow-y: auto;
-}
 
 .sidebar-link {
   display: flex;
+  gap: 10px;
   align-items: center;
-  padding: 12px 20px;
-  color: rgba(255, 255, 255, 0.9);
+  padding: 15px 16px;
+  color: #1a1a1a;
   text-decoration: none;
-  transition: all 0.2s ease;
-  border-left: 3px solid transparent;
+  transition: 0.2s;
+}
+
+.sidebar-link.active {
+  color: #fff;
+  background: linear-gradient(135deg, #F8971C 0%, #fbbd61 100%);
+  box-shadow: 0 0 12px rgba(248, 151, 28, 0.35);
+  border-radius: 12px;
 }
 
 .sidebar-link:hover {
@@ -48,29 +52,32 @@
   color: #ffffff;
 }
 
-.sidebar-link.active {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-left-color: #60a5fa;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.sidebar-icon {
-  font-size: 20px;
-  margin-right: 12px;
-  width: 24px;
-  display: inline-block;
-  text-align: center;
-}
 
 .sidebar-label {
-  font-size: 15px;
+  font-size: 20px;
 }
 
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.1);
+}
+
+
+.sidebar-logout {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.sidebar-logout:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-radius: 12px;
 }
 
 .sidebar-footer-text {
@@ -85,20 +92,6 @@
     width: 100%;
     height: auto;
   }
-  
-  .sidebar-nav {
-    display: flex;
-    overflow-x: auto;
-  }
-  
-  .sidebar-link {
-    flex-direction: column;
-    padding: 12px 16px;
-    text-align: center;
-  }
-  
-  .sidebar-icon {
-    margin-right: 0;
-    margin-bottom: 4px;
-  }
+
+
 }

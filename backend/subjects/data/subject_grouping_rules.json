@@ -1,0 +1,274 @@
+{
+  "GS": {
+    "ZSP": {
+      "Geschichte": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Geographie": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Sozialkunde": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Biologie": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Chemie": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Physik": {
+        "code": "HSU",
+        "display_name": "Heimat- und Sachunterricht (HSU)"
+      },
+      "Deutsch als Zweitsprache": {
+        "code": "DaZ",
+        "display_name": "Deutsch als Zweitsprache (DaZ)"
+      },
+      "Kath. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Evang. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Deutsch": {
+        "code": "D",
+        "display_name": "Deutsch (D)"
+      },
+      "Englisch": {
+        "code": "E",
+        "display_name": "Englisch (E)"
+      },
+      "Kunsterziehung": {
+        "code": "KE",
+        "display_name": "Kunsterziehung (KE)"
+      },
+      "Musik": {
+        "code": "MU",
+        "display_name": "Musik (MU)"
+      },
+      "Sport": {
+        "code": "SP",
+        "display_name": "Sport (SP)"
+      },
+      "Mathematik": {
+        "code": "MA",
+        "display_name": "Mathematik (MA)"
+      },
+      "Schriftspracherwerb": {
+        "code": "SSE",
+        "display_name": "Schriftspracherwerb (SSE)"
+      }
+    },
+    "SFP": {
+      "Sozialkunde": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Politik": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Deutsch als Zweitsprache": {
+        "code": "DaZ",
+        "display_name": "Deutsch als Zweitsprache (DaZ)"
+      },
+      "Kath. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Evang. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Deutsch": {
+        "code": "D",
+        "display_name": "Deutsch (D)"
+      },
+      "Englisch": {
+        "code": "E",
+        "display_name": "Englisch (E)"
+      },
+      "Geschichte": {
+        "code": "GE",
+        "display_name": "Geschichte (GE)"
+      },
+      "Geographie": {
+        "code": "GEO",
+        "display_name": "Geographie (GEO)"
+      },
+      "Kunsterziehung": {
+        "code": "KE",
+        "display_name": "Kunsterziehung (KE)"
+      },
+      "Mathematik": {
+        "code": "MA",
+        "display_name": "Mathematik (MA)"
+      }
+    }
+  },
+  "MS": {
+    "ZSP": {
+      "Arbeitslehre": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Wirtschaft": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Berufskunde": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Sozialkunde": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Politik": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Kath. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Evang. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Informatik": {
+        "code": "IT",
+        "display_name": "Informatik (IT)"
+      },
+      "Biologie": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Chemie": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Physik": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Deutsch als Zweitsprache": {
+        "code": "DaZ",
+        "display_name": "Deutsch als Zweitsprache (DaZ)"
+      },
+      "Deutsch": {
+        "code": "D",
+        "display_name": "Deutsch (D)"
+      },
+      "Englisch": {
+        "code": "E",
+        "display_name": "Englisch (E)"
+      },
+      "Geschichte": {
+        "code": "GE",
+        "display_name": "Geschichte (GE)"
+      },
+      "Geographie": {
+        "code": "GEO",
+        "display_name": "Geographie (GEO)"
+      },
+      "Kunsterziehung": {
+        "code": "KE",
+        "display_name": "Kunsterziehung (KE)"
+      },
+      "Musik": {
+        "code": "MU",
+        "display_name": "Musik (MU)"
+      },
+      "Sport": {
+        "code": "SP",
+        "display_name": "Sport (SP)"
+      },
+      "Mathematik": {
+        "code": "MA",
+        "display_name": "Mathematik (MA)"
+      }
+    },
+    "SFP": {
+      "Arbeitslehre": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Wirtschaft": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Berufskunde": {
+        "code": "AL/WiB",
+        "display_name": "Arbeitslehre/Wirtschaft und Beruf (AL/WiB)"
+      },
+      "Sozialkunde": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Politik": {
+        "code": "SK/PuG",
+        "display_name": "Sozialkunde/Politik und Gesellschaft (SK/PuG)"
+      },
+      "Kath. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Evang. Religion": {
+        "code": "KRel",
+        "display_name": "Kath. Religion (KRel)"
+      },
+      "Informatik": {
+        "code": "IT",
+        "display_name": "Informatik (IT)"
+      },
+      "Biologie": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Chemie": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Physik": {
+        "code": "PCB",
+        "display_name": "Physik/Chemie/Biologie (PCB)"
+      },
+      "Deutsch als Zweitsprache": {
+        "code": "DaZ",
+        "display_name": "Deutsch als Zweitsprache (DaZ)"
+      },
+      "Deutsch": {
+        "code": "D",
+        "display_name": "Deutsch (D)"
+      },
+      "Englisch": {
+        "code": "E",
+        "display_name": "Englisch (E)"
+      },
+      "Geschichte": {
+        "code": "GE",
+        "display_name": "Geschichte (GE)"
+      },
+      "Geographie": {
+        "code": "GEO",
+        "display_name": "Geographie (GEO)"
+      },
+      "Kunsterziehung": {
+        "code": "KE",
+        "display_name": "Kunsterziehung (KE)"
+      },
+      "Mathematik": {
+        "code": "MA",
+        "display_name": "Mathematik (MA)"
+      }
+    }
+  }
+}

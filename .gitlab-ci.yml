@@ -2,11 +2,11 @@ stages:
   - build
   - unit_test
   - integration_test
+  - report
 
 variables:
   BACKEND_DIR: backend
   FRONTEND_DIR: frontend
-
 
 # BUILD STAGE
 build_backend:
@@ -50,8 +50,19 @@ unit_test_backend:
     DATABASE_URL: postgresql://test_user:test_password@postgres:5432/test_db
   script:
     - cd $BACKEND_DIR
-    - pip install --break-system-packages -r requirements.txt
-    - python manage.py test
+    - pip install --break-system-packages -r requirements.txt coverage
+    - coverage run manage.py test
+    - coverage report
+    - coverage xml -o coverage.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: $BACKEND_DIR/coverage.xml
+    paths:
+      - $BACKEND_DIR/coverage.xml
+    expire_in: 1 week
+
 
 unit_test_frontend:
   stage: unit_test
@@ -61,7 +72,15 @@ unit_test_frontend:
   script:
     - cd $FRONTEND_DIR
     - npm install
-    - npm test -- --watchAll=false
+    - npm test -- --coverage --watchAll=false --coverageReporters="cobertura"
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: $FRONTEND_DIR/coverage/cobertura-coverage.xml
+    paths:
+      - $FRONTEND_DIR/coverage/
+    expire_in: 1 week
 
 
 # INTEGRATION TEST STAGE
@@ -93,3 +112,29 @@ integration_test_frontend:
     - npm install
     - npm test -- --watchAll=false
   allow_failure: true
+
+# REPORT STAGE
+upload_coverage:
+  stage: report
+  image: curlimages/curl:latest
+  # Run this even if tests fail (so we can see what WAS covered before the failure)
+  when: always
+  dependencies:
+    - unit_test_backend
+    - unit_test_frontend
+  script:
+    # Upload Backend Coverage
+    - |
+      echo "Uploading Backend Coverage..."
+      curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Backend+Coverage" \
+      --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
+      --header "Content-Type: multipart/form-data" \
+      --form "report=@backend/coverage.xml"
+
+    # Upload Frontend Coverage
+    - |
+      echo "Uploading Frontend Coverage..."
+      curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Frontend+Coverage" \
+      --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
+      --header "Content-Type: multipart/form-data" \
+      --form "report=@frontend/coverage/cobertura-coverage.xml"
