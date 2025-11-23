@@ -16,6 +16,60 @@ import { Button as MuiButton } from '@mui/material';
  * @param {Object} [props.sx] - Additional MUI sx styles
  * @param {string} [props.className] - Additional CSS classes
  */
+
+// Define styles OUTSIDE the component to prevent re-creation on every render
+const SIZE_CONFIG = {
+    small: { padding: '6px 16px', fontSize: '13px' },
+    medium: { padding: '10px 24px', fontSize: '15px' },
+    large: { padding: '14px 32px', fontSize: '16px' },
+};
+
+// Variant configurations
+const VARIANT_STYLES = {
+    primary: {
+        background: 'linear-gradient(135deg, #F8971C 0%, #fbbd61 100%)',
+        color: '#2d2f38',
+        '&:hover': {
+            background: 'linear-gradient(135deg, #e88716 0%, #f5a842 100%)',
+            transform: 'translateY(-1px)',
+            color: 'white',
+        },
+    },
+    secondary: {
+        background: 'white',
+        color: '#FAB95A',
+        border: '2px solid #FAB95A',
+        '&:hover': {
+            background: 'rgba(248, 151, 28, 0.1)',
+            borderColor: '#FAB95A',
+        },
+    },
+    error: {
+        background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+        color: 'white',
+        '&:hover': {
+            background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
+            transform: 'translateY(-1px)',
+        },
+    },
+    success: {
+        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+        color: 'white',
+        '&:hover': {
+            background: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+            transform: 'translateY(-1px)',
+        },
+    },
+    default: {
+        background: '#f3f4f6',
+        color: '#374151',
+        '&:hover': {
+            background: '#e5e7eb',
+            transform: 'translateY(-1px)',
+        },
+    },
+};
+
 const Button = ({
                     children,
                     onClick,
@@ -30,68 +84,8 @@ const Button = ({
                     className = '',
                     ...rest
                 }) => {
-    // Size configurations
-    const sizeConfig = {
-        small: {
-            padding: '6px 16px',
-            fontSize: '13px',
-        },
-        medium: {
-            padding: '10px 24px',
-            fontSize: '15px',
-        },
-        large: {
-            padding: '14px 32px',
-            fontSize: '16px',
-        },
-    };
 
-    // Variant configurations
-    const variantStyles = {
-        primary: {
-            background: 'linear-gradient(135deg, #F8971C 0%, #fbbd61 100%)',
-            color: '#2d2f38',
-            '&:hover': {
-                background: 'linear-gradient(135deg, #e88716 0%, #f5a842 100%)',
-                transform: 'translateY(-1px)',
-                color: 'white',
-            },
-        },
-        secondary: {
-            background: 'white',
-            color: '#FAB95A',
-            border: '2px solid #FAB95A',
-            '&:hover': {
-                background: 'rgba(248, 151, 28, 0.1)',
-                borderColor: '#FAB95A',
-            },
-        },
-        error: {
-            background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-            color: 'white',
-            '&:hover': {
-                background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
-                transform: 'translateY(-1px)',
-            },
-        },
-        success: {
-            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-            color: 'white',
-            '&:hover': {
-                background: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
-                transform: 'translateY(-1px)',
-            },
-        },
-        default: {
-            background: '#f3f4f6',
-            color: '#374151',
-            '&:hover': {
-                background: '#e5e7eb',
-                transform: 'translateY(-1px)',
-            },
-        },
-    };
-
+    // Combine base styles with dynamic props
     const buttonStyle = {
         borderRadius: '12px',
         textTransform: 'none',
@@ -100,10 +94,14 @@ const Button = ({
         border: 'none',
         transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
         transform: 'scale(1)',
+        boxShadow: disabled ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.12)',
+
+        ...SIZE_CONFIG[size],
+        ...VARIANT_STYLES[variant],
 
         '&:hover': {
             transform: 'scale(1.03) translateY(-1px)',
-            ...variantStyles[variant]['&:hover'],
+            ...VARIANT_STYLES[variant]['&:hover'],
         },
 
         '&:active': {
@@ -116,9 +114,6 @@ const Button = ({
             outlineOffset: '3px',
         },
 
-        boxShadow: disabled ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.12)',
-        ...sizeConfig[size],
-        ...variantStyles[variant],
         '&:disabled': {
             background: '#9ca3af',
             color: '#d1d5db',
