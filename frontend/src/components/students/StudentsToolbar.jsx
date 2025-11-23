@@ -1,6 +1,6 @@
 import React from 'react';
-import TextField from '../utils/TextField';
-import Select from '../utils/Select';
+import TextField from '../ui/TextField';
+import Select from '../ui/Select';
 
 export default function StudentsToolbar({
   searchTerm,

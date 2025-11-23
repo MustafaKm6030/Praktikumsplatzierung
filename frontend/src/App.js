@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import axios from 'axios';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
-import Students from './pages/Students/StudentsPage';
-import Teachers from './pages/Teachers/TeachersPage';
+import Students from './pages/Students';
+import Teachers from './pages/Teachers';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
-import axios from 'axios';
-import './App.css';
-
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
@@ -23,11 +21,11 @@ function App() {
     }
   });
 
-  // Fetch CSRF token on app load
-  useEffect(() => {
-    axios.get('/api/csrf/', { withCredentials: true })
-      .catch(error => console.error('Failed to get CSRF token:', error));
-  }, []);
+    // Fetch CSRF token on app load
+    useEffect(() => {
+        axios.get('/api/csrf/', { withCredentials: true })
+            .catch(error => console.error('Failed to get CSRF token:', error));
+    }, []);
 
   useEffect(() => {
     let timer;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Loader from '../utils/Loader';
+import Loader from '../ui/Loader';
 
 /**
  * Map View Component

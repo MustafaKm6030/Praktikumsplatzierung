@@ -1,12 +1,12 @@
 import React, { useCallback } from 'react';
 import { Box } from '@mui/material';
-import TeachersActionButtons from '../../components/teachers/TeachersActionButtons';
-import TeachersFilterBar from '../../components/teachers/TeachersFilterBar';
-import TeachersTable from '../../components/teachers/TeachersTable';
-import useTeacherData from '../../components/teachers/useTeacherData';
-import Loader from '../../components/utils/Loader';
+import TeachersActionButtons from '../components/teachers/TeachersActionButtons';
+import TeachersFilterBar from '../components/teachers/TeachersFilterBar';
+import TeachersTable from '../components/teachers/TeachersTable';
+import useTeacherData from '../components/teachers/useTeacherData';
+import Loader from '../components/ui/Loader';
 
-export default function TeachersPage() {
+export default function Teachers() {
   const {
     teachers,
     filteredTeachers,

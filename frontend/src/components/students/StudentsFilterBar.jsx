@@ -1,7 +1,7 @@
 import React from 'react';
 import { Paper, Stack } from '@mui/material';
-import SearchBar from '../school_management/SearchBar'; // reuse the same SearchBar
-import Select from '../utils/Select';
+import TextField from '../ui/TextField';
+import Select from '../ui/Select';
 
 const StudentsFilterBar = ({
   searchQuery,
@@ -23,7 +23,7 @@ const StudentsFilterBar = ({
       border: '1px solid rgba(248, 151, 28, 0.15)'
     }}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-        <SearchBar
+        <TextField
           value={searchQuery}
           onChange={onSearchChange}
           placeholder="Search by Student Name, ID, or Email..."

@@ -5,7 +5,7 @@ import {
   FileUpload as UploadIcon,
   FileDownload as DownloadIcon,
 } from '@mui/icons-material';
-import Button from '../utils/Button';
+import Button from '../ui/Button';
 
 const TeachersActionButtons = ({ onAddTeacher, onImport, onExport }) => {
   return (

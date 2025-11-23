@@ -6,7 +6,7 @@ import ViewToggle from '../components/school_management/ViewToggle';
 import SchoolTable from '../components/school_management/SchoolTable';
 import useSchoolData from '../components/school_management/useSchoolData';
 
-import Loader from '../components/utils/Loader';
+import Loader from '../components/ui/Loader';
 import MapView from "../components/school_management/MapView";
 
 /**

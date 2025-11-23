@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
 import { Box } from '@mui/material';
-import StudentsActionButtons from '../../components/students/StudentsActionButtons';
-import StudentsFilterBar from '../../components/students/StudentsFilterBar';
-import StudentsTable from '../../components/students/StudentsTable';
-import useStudentData from '../../components/students/useStudentData';
-import Loader from '../../components/utils/Loader';
+import StudentsActionButtons from '../components/students/StudentsActionButtons';
+import StudentsFilterBar from '../components/students/StudentsFilterBar';
+import StudentsTable from '../components/students/StudentsTable';
+import useStudentData from '../components/students/useStudentData';
+import Loader from '../components/ui/Loader';
 
 export default function StudentsPage() {
   const {
