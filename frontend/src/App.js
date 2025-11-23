@@ -7,13 +7,26 @@ import Teachers from './pages/Teachers';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
+import axios from 'axios';
 import './App.css';
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
-    const hasShown = sessionStorage.getItem('animationShown');
-    return hasShown ? 'done' : 'animating';
+    try {
+      const hasShown = sessionStorage.getItem('animationShown');
+      return hasShown ? 'done' : 'animating';
+    } catch (error) {
+      // If sessionStorage is blocked, still show animation (just won't remember it)
+      console.warn('SessionStorage access denied, animation will show on every refresh');
+      return 'animating';
+    }
   });
+
+  // Fetch CSRF token on app load
+  useEffect(() => {
+    axios.get('/api/csrf/', { withCredentials: true })
+      .catch(error => console.error('Failed to get CSRF token:', error));
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -23,7 +36,11 @@ function App() {
     } else if (animationState === 'transitioning') {
       timer = setTimeout(() => {
         setAnimationState('done');
-        sessionStorage.setItem('animationShown', 'true');
+        try {
+          sessionStorage.setItem('animationShown', 'true');
+        } catch (error) {
+          console.warn('SessionStorage access denied');
+        }
       }, 800);
     }
 
