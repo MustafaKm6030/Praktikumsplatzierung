@@ -4,82 +4,65 @@ from subjects.models import TimeStampedModel
 
 class School(TimeStampedModel):
     """
-    Represents a participating school where internships take place.
-    Business Logic: Schools have zones, capacity limits, and OPNV accessibility.
+    Represents a participating school. Refactored to match the master CSV.
+    Capacity is calculated dynamically from assigned mentors, not stored here.
     """
+
     SCHOOL_TYPE_CHOICES = [
-        ('GS', 'Grundschule (Primary School)'),
-        ('MS', 'Mittelschule (Secondary School)'),
+        ("GS", "Grundschule (Primary School)"),
+        ("MS", "Mittelschule (Secondary School)"),
+        ("GMS", "Grund- und Mittelschule"),
     ]
-    
-    OPNV_ZONE_CHOICES = [
-        ('ZONE_1', 'Zone 1 (Close to University)'),
-        ('ZONE_2', 'Zone 2 (Medium Distance)'),
-        ('ZONE_3', 'Zone 3 (Far from University)'),
-    ]
-    
+
     name = models.CharField(max_length=200, unique=True)
-    school_type = models.CharField(max_length=2, choices=SCHOOL_TYPE_CHOICES)
-    
-    # Address and Location
-    address = models.TextField()
+    school_type = models.CharField(max_length=3, choices=SCHOOL_TYPE_CHOICES)
+
     district = models.CharField(
-        max_length=100,
-        help_text="Landkreis/District (e.g., Passau-Land, Regen)"
+        max_length=100, help_text="Landkreis/District (e.g., Passau-Land, Regen)"
     )
+
     city = models.CharField(max_length=100)
+
+    zone = models.IntegerField(
+        choices=[(1, "Zone 1"), (2, "Zone 2"), (3, "Zone 3")],
+        help_text="Official travel zone from university (1=closest, 3=farthest)",
+    )
+
+    opnv_code = models.CharField(
+        max_length=2,
+        blank=True,
+        choices=[("4a", "Up to 30 min"), ("4b", "Up to 60 min")],
+        help_text="Public transport code ('4a' or '4b') from the CSV",
+    )
+
+    distance_km = models.IntegerField(null=True, blank=True)
     latitude = models.DecimalField(
-        max_digits=9, 
-        decimal_places=6, 
-        null=True, 
-        blank=True
-    )
-    longitude = models.DecimalField(
-        max_digits=9, 
-        decimal_places=6, 
-        null=True, 
-        blank=True
-    )
-    
-    # OPNV Zone
-    opnv_zone = models.CharField(
-        max_length=10,
-        choices=OPNV_ZONE_CHOICES,
-        help_text="Public transport accessibility zone"
-    )
-    travel_time_minutes = models.PositiveIntegerField(
+        max_digits=9,
+        decimal_places=6,
         null=True,
         blank=True,
-        help_text="Travel time from university in minutes"
+        help_text="Latitude for map display",
     )
-    
-    # Capacity
-    max_block_praktikum_slots = models.PositiveIntegerField(
-        default=0,
-        help_text="Maximum slots for PDP I/II"
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        help_text="Longitude for map display",
     )
-    max_wednesday_praktikum_slots = models.PositiveIntegerField(
-        default=0,
-        help_text="Maximum slots for SFP/ZSP"
-    )
-    
-    # Contact
-    contact_person = models.CharField(max_length=200, blank=True)
-    phone = models.CharField(max_length=50, blank=True)
-    email = models.EmailField(blank=True)
-    
+
     # Status
     is_active = models.BooleanField(default=True)
     notes = models.TextField(blank=True)
-    
+
     class Meta:
         verbose_name = "School"
         verbose_name_plural = "Schools"
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['school_type', 'opnv_zone']),
-            models.Index(fields=['district']),
+            models.Index(fields=["school_type", "zone"]),
+            models.Index(fields=["district"]),
         ]
-    
+
     def __str__(self):
-        return f"{self.name} ({self.get_school_type_display()})"
+        return f"{self.name}"
