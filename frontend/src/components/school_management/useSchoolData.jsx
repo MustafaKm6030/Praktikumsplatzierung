@@ -1,5 +1,3 @@
-// in useSchoolData.js
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
@@ -25,8 +23,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 const useSchoolData = () => {
     /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
     const [schools, setSchools] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     // --- State for user's filter selections ---
     const [searchQuery, setSearchQuery] = useState('');
@@ -34,23 +31,42 @@ const useSchoolData = () => {
     const [selectedType, setSelectedType] = useState('all');
     const [selectedZone, setSelectedZone] = useState('all');
 
-    // --- Data Fetching Logic ---
+    // Fetch schools from API
     const fetchSchools = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const response = await fetch('/api/schools/'); // Correct endpoint
             if (!response.ok) {
-                console.error('Failed to fetch schools:', response.statusText);
-                throw new Error('Network response was not ok');
+                // Log error for debugging but don't show to user
+                console.error('Failed to fetch schools:', response.status, response.statusText);
+
+                // For development: show more details
+                if (process.env.NODE_ENV === 'development') {
+                    console.error('Response details:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        url: response.url
+                    });
+                }
+                throw new Error('Failed to fetch');
             }
-            /** @type {School[]} */
+
             const data = await response.json();
             setSchools(data);
+
         } catch (err) {
             console.error('Error fetching schools:', err);
-            setError('Could not load school data. Please try refreshing the page.');
-            setSchools([]); // Ensure schools is an empty array on error
+
+            // For development: show full error
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Full error details:', {
+                    message: err instanceof Error ? err.message : 'Unknown error',
+                    stack: err instanceof Error ? err.stack : undefined
+                });
+            }
+            // Fallback to avoid crash
+            setSchools([]);
         } finally {
             setLoading(false);
         }
