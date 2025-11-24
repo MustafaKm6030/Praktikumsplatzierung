@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
  *   id, student_id, first_name, last_name,
  *   program ('GS'|'MS'),
  *   primary_subject_name,
- *   placement_status, // NEW
+ *   placement_status (NEW),
  *   email, home_region, home_address, semester_address
  * }
  */

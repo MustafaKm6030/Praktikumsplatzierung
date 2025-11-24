@@ -98,90 +98,90 @@ function computeStats(teachers) {
 
 /* -------------------- Small state + loader hooks -------------------- */
 
-function useTeacherStateCore() {
-  const [teachers, setTeachers] = useState([]);
-  const [schulamtOptions, setSchulamtOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+// function useTeacherStateCore() {
+//   const [teachers, setTeachers] = useState([]);
+//   const [schulamtOptions, setSchulamtOptions] = useState([]);
+//   const [loading, setLoading] = useState(false);
 
-  const programOptions = useMemo(
-    function programOptionsMemo() {
-      return ['GS', 'MS'];
-    },
-    []
-  );
+//   const programOptions = useMemo(
+//     function programOptionsMemo() {
+//       return ['GS', 'MS'];
+//     },
+//     []
+//   );
 
-  return {
-    teachers,
-    setTeachers,
-    schulamtOptions,
-    setSchulamtOptions,
-    loading,
-    setLoading,
-    programOptions,
-  };
-}
+//   return {
+//     teachers,
+//     setTeachers,
+//     schulamtOptions,
+//     setSchulamtOptions,
+//     loading,
+//     setLoading,
+//     programOptions,
+//   };
+// }
 
-function useTeacherLoader(setTeachers, setSchulamtOptions, setLoading) {
-  const load = useCallback(
-    async function loadTeachers() {
-      setLoading(true);
-      try {
-        const data = await fetchTeachersFromApi();
-        const safe = data || [];
-        setTeachers(safe);
-        setSchulamtOptions(extractSchulamtOptions(safe));
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error(err);
-        setTeachers([]);
-        setSchulamtOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setTeachers, setSchulamtOptions, setLoading]
-  );
+// function useTeacherLoader(setTeachers, setSchulamtOptions, setLoading) {
+//   const load = useCallback(
+//     async function loadTeachers() {
+//       setLoading(true);
+//       try {
+//         const data = await fetchTeachersFromApi();
+//         const safe = data || [];
+//         setTeachers(safe);
+//         setSchulamtOptions(extractSchulamtOptions(safe));
+//       } catch (err) {
+//         // eslint-disable-next-line no-console
+//         console.error(err);
+//         setTeachers([]);
+//         setSchulamtOptions([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     },
+//     [setTeachers, setSchulamtOptions, setLoading]
+//   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
-}
+//   useEffect(() => {
+//     load();
+//   }, [load]);
+// }
 
-/* -------------------- Filter state hook -------------------- */
+// /* -------------------- Filter state hook -------------------- */
 
-function useTeacherFilters(teachers) {
-  const [filteredTeachers, setFilteredTeachers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState('all');
-  const [selectedSchulamt, setSelectedSchulamt] = useState('all');
+// function useTeacherFilters(teachers) {
+//   const [filteredTeachers, setFilteredTeachers] = useState([]);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [selectedProgram, setSelectedProgram] = useState('all');
+//   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
 
-  useEffect(() => {
-    const next = filterTeachers(teachers, {
-      searchQuery,
-      selectedProgram,
-      selectedSchulamt,
-    });
-    setFilteredTeachers(next);
-  }, [teachers, searchQuery, selectedProgram, selectedSchulamt]);
+//   useEffect(() => {
+//     const next = filterTeachers(teachers, {
+//       searchQuery,
+//       selectedProgram,
+//       selectedSchulamt,
+//     });
+//     setFilteredTeachers(next);
+//   }, [teachers, searchQuery, selectedProgram, selectedSchulamt]);
 
-  const stats = useMemo(
-    function statsMemo() {
-      return computeStats(teachers);
-    },
-    [teachers]
-  );
+//   const stats = useMemo(
+//     function statsMemo() {
+//       return computeStats(teachers);
+//     },
+//     [teachers]
+//   );
 
-  return {
-    filteredTeachers,
-    searchQuery,
-    setSearchQuery,
-    selectedProgram,
-    setSelectedProgram,
-    selectedSchulamt,
-    setSelectedSchulamt,
-    stats,
-  };
-}
+//   return {
+//     filteredTeachers,
+//     searchQuery,
+//     setSearchQuery,
+//     selectedProgram,
+//     setSelectedProgram,
+//     selectedSchulamt,
+//     setSelectedSchulamt,
+//     stats,
+//   };
+// }
 
 /* -------------------- Main hook (now very small) -------------------- */
 
