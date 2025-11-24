@@ -8,8 +8,6 @@ from subjects.services import get_subject_code, get_subject_display_name
 def aggregate_demand():
     """
     Calculates the total forecasted demand for the upcoming academic year.
-    It counts every internship a student is currently eligible for and has not yet completed,
-    respecting that PDP II requires PDP I to be completed first.
     """
     demand_counts = defaultdict(int)
     code_to_display_map = {"N/A": "N/A"}
@@ -19,42 +17,54 @@ def aggregate_demand():
     ).select_related("primary_subject")
 
     for student in unplaced_students:
-        program_type = student.program
-        original_subject = (
-            student.primary_subject.name if student.primary_subject else "N/A"
+        process_student_demand(student, demand_counts, code_to_display_map)
+
+    return format_demand(demand_counts, code_to_display_map)
+
+
+def process_student_demand(student, demand_counts, code_to_display_map):
+    """Processes a single student and updates demand counts and display mapping."""
+    program_type = student.program
+    original_subject = (
+        student.primary_subject.name if student.primary_subject else "N/A"
+    )
+
+    # --- Rule 1: PDP I ---
+    if student.pdp1_completed_date is None:
+        key = "PDP_I", program_type, "N/A"
+        demand_counts[key] += 1
+
+    # --- Rule 2: PDP II ---
+    if student.pdp1_completed_date is not None and student.pdp2_completed_date is None:
+        key = "PDP_II", program_type, "N/A"
+        demand_counts[key] += 1
+
+    # --- Rule 3: SFP ---
+    if student.sfp_completed_date is None:
+        add_practicum_demand(
+            "SFP", program_type, original_subject, demand_counts, code_to_display_map
         )
 
-        # --- Rule 1: Check for PDP I ---
-        if student.pdp1_completed_date is None:
-            key = ("PDP_I", program_type, "N/A")
-            demand_counts[key] += 1
+    # --- Rule 4: ZSP ---
+    if student.zsp_completed_date is None:
+        add_practicum_demand(
+            "ZSP", program_type, original_subject, demand_counts, code_to_display_map
+        )
 
-        # --- Rule 2: Check for PDP II (The only conditional check) ---
-        # A student is ONLY eligible for PDP II if PDP I is already done.
-        if (
-            student.pdp1_completed_date is not None
-            and student.pdp2_completed_date is None
-        ):
-            key = ("PDP_II", program_type, "N/A")
-            demand_counts[key] += 1
 
-        # --- Rule 3: Check for SFP (No prerequisite) ---
-        if student.sfp_completed_date is None:
-            code = get_subject_code(program_type, "SFP", original_subject)
-            display = get_subject_display_name(program_type, "SFP", original_subject)
-            code_to_display_map[code] = display
-            key = ("SFP", program_type, code)
-            demand_counts[key] += 1
+def add_practicum_demand(
+    practicum_type, program_type, subject, demand_counts, code_to_display_map
+):
+    """Adds a practicum demand entry and updates display mapping."""
+    code = get_subject_code(program_type, practicum_type, subject)
+    display = get_subject_display_name(program_type, practicum_type, subject)
+    code_to_display_map[code] = display
+    key = practicum_type, program_type, code
+    demand_counts[key] += 1
 
-        # --- Rule 4: Check for ZSP (No prerequisite) ---
-        if student.zsp_completed_date is None:
-            code = get_subject_code(program_type, "ZSP", original_subject)
-            display = get_subject_display_name(program_type, "ZSP", original_subject)
-            code_to_display_map[code] = display
-            key = ("ZSP", program_type, code)
-            demand_counts[key] += 1
 
-    # --- Formatting the output (no changes here) ---
+def format_demand(demand_counts, code_to_display_map):
+    """Formats the aggregated demand into a list of dicts."""
     formatted_demand = []
     for (ptype, pprog, pcode), count in demand_counts.items():
         formatted_demand.append(
@@ -66,5 +76,4 @@ def aggregate_demand():
                 "required_slots": count,
             }
         )
-
     return formatted_demand

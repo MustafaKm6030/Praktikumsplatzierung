@@ -9,7 +9,6 @@ from .serializers import (
     StudentListSerializer,
     StudentDetailSerializer,
     StudentCreateUpdateSerializer,
-    StudentImportSerializer,
 )
 from .services import (
     get_students_by_program,

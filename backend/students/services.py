@@ -93,6 +93,10 @@ def import_students_from_csv(file_obj):
     return {"created": created_count, "updated": updated_count, "errors": errors}
 
 
+import csv
+import io
+
+
 def export_students_to_csv():
     """
     Exports students to CSV.
@@ -101,70 +105,71 @@ def export_students_to_csv():
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # Updated Header Row
-    writer.writerow(
-        [
-            "id",
-            "student_id",
-            "first_name",
-            "last_name",
-            "email",
-            "phone",
-            "program",
-            "major",
-            "enrollment_date",
-            "primary_subject_id",
-            "home_address",
-            "semester_address",
-            "home_region",
-            "preferred_zone",  # Location
-            "pdp1_completed_date",
-            "pdp2_completed_date",
-            "sfp_completed_date",
-            "zsp_completed_date",  # Checklist
-            "placement_status",
-            "notes",
-            "created_at",
-            "updated_at",
-        ]
-    )
+    writer.writerow(_get_csv_headers())
 
     students = Student.objects.all().order_by("last_name", "first_name")
     for student in students:
-        writer.writerow(
-            [
-                student.id,
-                student.student_id,
-                student.first_name,
-                student.last_name,
-                student.email,
-                student.phone,
-                student.program,
-                student.major,
-                student.enrollment_date.isoformat() if student.enrollment_date else "",
-                student.primary_subject_id or "",
-                student.home_address,
-                student.semester_address,  # NEW
-                student.home_region,
-                student.preferred_zone,
-                # Completion Dates
-                student.pdp1_completed_date.isoformat()
-                if student.pdp1_completed_date
-                else "",
-                student.pdp2_completed_date.isoformat()
-                if student.pdp2_completed_date
-                else "",
-                student.sfp_completed_date.isoformat()
-                if student.sfp_completed_date
-                else "",
-                student.zsp_completed_date.isoformat()
-                if student.zsp_completed_date
-                else "",
-                student.placement_status,
-                student.notes,
-                student.created_at.isoformat() if student.created_at else "",
-                student.updated_at.isoformat() if student.updated_at else "",
-            ]
-        )
+        writer.writerow(_get_student_row(student))
 
     return output.getvalue()
+
+
+def _get_csv_headers():
+    """Returns CSV header row."""
+    return [
+        "id",
+        "student_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "program",
+        "major",
+        "enrollment_date",
+        "primary_subject_id",
+        "home_address",
+        "semester_address",
+        "home_region",
+        "preferred_zone",  # Location
+        "pdp1_completed_date",
+        "pdp2_completed_date",
+        "sfp_completed_date",
+        "zsp_completed_date",  # Checklist
+        "placement_status",
+        "notes",
+        "created_at",
+        "updated_at",
+    ]
+
+
+def _get_student_row(student):
+    """Formats a Student instance as a CSV row."""
+    return [
+        student.id,
+        student.student_id,
+        student.first_name,
+        student.last_name,
+        student.email,
+        student.phone,
+        student.program,
+        student.major,
+        _format_date(student.enrollment_date),
+        student.primary_subject_id or "",
+        student.home_address,
+        student.semester_address,
+        student.home_region,
+        student.preferred_zone,
+        _format_date(student.pdp1_completed_date),
+        _format_date(student.pdp2_completed_date),
+        _format_date(student.sfp_completed_date),
+        _format_date(student.zsp_completed_date),
+        student.placement_status,
+        student.notes,
+        _format_date(student.created_at),
+        _format_date(student.updated_at),
+    ]
+
+
+def _format_date(date_obj):
+    """Formats a date as ISO string or empty string if None."""
+    return date_obj.isoformat() if date_obj else ""

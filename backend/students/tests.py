@@ -2,8 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from datetime import date
-from subjects.models import Subject, PraktikumType
-from schools.models import School
+from subjects.models import Subject
 
 # We now only import the Student model
 from .models import Student
