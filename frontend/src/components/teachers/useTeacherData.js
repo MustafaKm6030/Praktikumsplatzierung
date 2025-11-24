@@ -1,4 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useState, useEffect, useMemo,
+
+  //  useCallback 
+
+} from 'react';
 
 /**
  * @typedef {Object} PL
@@ -147,7 +152,7 @@ function computeStats(teachers) {
 //   }, [load]);
 // }
 
-// /* -------------------- Filter state hook -------------------- */
+/* -------------------- Filter state hook -------------------- */
 
 // function useTeacherFilters(teachers) {
 //   const [filteredTeachers, setFilteredTeachers] = useState([]);

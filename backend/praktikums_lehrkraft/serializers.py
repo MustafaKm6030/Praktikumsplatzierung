@@ -120,7 +120,6 @@ class PLCreateUpdateSerializer(serializers.ModelSerializer):
             "current_year_notes": {"required": False},
             "is_active": {"required": False},
             "notes": {"required": False},
-            "available_subjects": {"required": False},
         }
 
     def validate_email(self, value):

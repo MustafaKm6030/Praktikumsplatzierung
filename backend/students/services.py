@@ -93,10 +93,6 @@ def import_students_from_csv(file_obj):
     return {"created": created_count, "updated": updated_count, "errors": errors}
 
 
-import csv
-import io
-
-
 def export_students_to_csv():
     """
     Exports students to CSV.
