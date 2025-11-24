@@ -24,6 +24,7 @@ const useSchoolData = () => {
     /** @type {[School[], React.Dispatch<React.SetStateAction<School[]>>]} */
     const [schools, setSchools] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     // --- State for user's filter selections ---
     const [searchQuery, setSearchQuery] = useState('');
@@ -70,7 +71,7 @@ const useSchoolData = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [setError]);
 
     // Initial data fetch on component mount
     useEffect(() => {
