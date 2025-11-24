@@ -1,56 +1,43 @@
 from django.contrib import admin
-from .models import Student, StudentPraktikumPreference
-
-
-class StudentPraktikumPreferenceInline(admin.TabularInline):
-    """Inline for Student Praktikum Preferences."""
-    model = StudentPraktikumPreference
-    extra = 1
-    filter_horizontal = ['preferred_subjects', 'preferred_schools']
+from .models import Student
 
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
     """Admin interface for Students."""
+
     list_display = [
-        'student_id',
-        'last_name',
-        'first_name',
-        'program',
-        'primary_subject'
+        "student_id",
+        "last_name",
+        "first_name",
+        "program",
+        "primary_subject",
+        "placement_status",
     ]
-    list_filter = ['program', 'primary_subject']
-    search_fields = ['student_id', 'first_name', 'last_name', 'email']
-    filter_horizontal = ['additional_subjects']
+    list_filter = ["program", "placement_status", "primary_subject"]
+    search_fields = ["student_id", "first_name", "last_name", "email"]
+
     fieldsets = (
-        ('Basic Information', {
-            'fields': (
-                'student_id', 'first_name', 'last_name',
-                'email', 'phone'
-            )
-        }),
-        ('Program & Subjects', {
-            'fields': (
-                'program', 'major', 'enrollment_date',
-                'primary_subject', 'additional_subjects'
-            )
-        }),
-        ('Geographical Information', {
-            'fields': (
-                'home_address', 'home_region', 'preferred_zone'
-            )
-        }),
-        ('Notes', {
-            'fields': ('notes',),
-            'classes': ('collapse',)
-        }),
+        (
+            "Basic Information",
+            {"fields": ("student_id", "first_name", "last_name", "email", "phone")},
+        ),
+        (
+            "Program & Subjects",
+            {"fields": ("program", "major", "enrollment_date", "primary_subject")},
+        ),
+        (
+            "Internship Checklist",
+            {
+                "fields": (
+                    "pdp1_completed_date",
+                    "pdp2_completed_date",
+                    "sfp_completed_date",
+                    "zsp_completed_date",
+                    "placement_status",
+                )
+            },
+        ),
+        ("Location", {"fields": ("home_address", "semester_address", "home_region")}),
+        ("Notes", {"fields": ("notes",), "classes": ("collapse",)}),
     )
-
-
-@admin.register(StudentPraktikumPreference)
-class StudentPraktikumPreferenceAdmin(admin.ModelAdmin):
-    """Admin interface for Student Praktikum Preferences."""
-    list_display = ['student', 'praktikum_type', 'status']
-    list_filter = ['praktikum_type', 'status']
-    search_fields = ['student__student_id', 'student__last_name']
-    filter_horizontal = ['preferred_subjects', 'preferred_schools']

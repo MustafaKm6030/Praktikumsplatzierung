@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
- * Student type (reference)
+ * Student type (reference matching new API)
  * {
  *   id, student_id, first_name, last_name,
- *   program ('GS'|'MS'), primary_subject_name, additional_subjects_names[],
- *   email, home_region, preferred_zone
+ *   program ('GS'|'MS'),
+ *   primary_subject_name,
+ *   placement_status (NEW),
+ *   email, home_region, home_address, semester_address
  * }
  */
 

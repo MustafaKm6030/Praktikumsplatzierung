@@ -1,16 +1,26 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useState, useEffect, useMemo,
+
+  //  useCallback 
+
+} from 'react';
 
 /**
- * Teacher (PL) type – reference
- * {
- *   id,
- *   name,
- *   program ('GS' | 'MS'),
- *   schulamt,
- *   is_available,
- *   ...other fields
- * }
+ * @typedef {Object} PL
+ * @property {number} id
+ * @property {string} first_name
+ * @property {string} last_name
+ * @property {string} school_name
+ * @property {string} program - 'GS' | 'MS'
+ * @property {string} program_display
+ * @property {string | null} main_subject_name
+ * @property {string} preferred_praktika_raw
+ * @property {number} anrechnungsstunden
+ * @property {number} capacity
+ * @property {string} schulamt
+ * @property {boolean} is_active
  */
+
 
 /* -------------------- API + helper functions -------------------- */
 
@@ -87,125 +97,134 @@ function filterTeachers(teachers, filters) {
 }
 
 function computeStats(teachers) {
-  const available = teachers.filter(pl => pl.is_available).length;
+  const available = teachers.filter(pl => pl.is_active).length;
   return { available };
 }
 
 /* -------------------- Small state + loader hooks -------------------- */
 
-function useTeacherStateCore() {
-  const [teachers, setTeachers] = useState([]);
-  const [schulamtOptions, setSchulamtOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+// function useTeacherStateCore() {
+//   const [teachers, setTeachers] = useState([]);
+//   const [schulamtOptions, setSchulamtOptions] = useState([]);
+//   const [loading, setLoading] = useState(false);
 
-  const programOptions = useMemo(
-    function programOptionsMemo() {
-      return ['GS', 'MS'];
-    },
-    []
-  );
+//   const programOptions = useMemo(
+//     function programOptionsMemo() {
+//       return ['GS', 'MS'];
+//     },
+//     []
+//   );
 
-  return {
-    teachers,
-    setTeachers,
-    schulamtOptions,
-    setSchulamtOptions,
-    loading,
-    setLoading,
-    programOptions,
-  };
-}
+//   return {
+//     teachers,
+//     setTeachers,
+//     schulamtOptions,
+//     setSchulamtOptions,
+//     loading,
+//     setLoading,
+//     programOptions,
+//   };
+// }
 
-function useTeacherLoader(setTeachers, setSchulamtOptions, setLoading) {
-  const load = useCallback(
-    async function loadTeachers() {
-      setLoading(true);
-      try {
-        const data = await fetchTeachersFromApi();
-        const safe = data || [];
-        setTeachers(safe);
-        setSchulamtOptions(extractSchulamtOptions(safe));
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error(err);
-        setTeachers([]);
-        setSchulamtOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setTeachers, setSchulamtOptions, setLoading]
-  );
+// function useTeacherLoader(setTeachers, setSchulamtOptions, setLoading) {
+//   const load = useCallback(
+//     async function loadTeachers() {
+//       setLoading(true);
+//       try {
+//         const data = await fetchTeachersFromApi();
+//         const safe = data || [];
+//         setTeachers(safe);
+//         setSchulamtOptions(extractSchulamtOptions(safe));
+//       } catch (err) {
+//         // eslint-disable-next-line no-console
+//         console.error(err);
+//         setTeachers([]);
+//         setSchulamtOptions([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     },
+//     [setTeachers, setSchulamtOptions, setLoading]
+//   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
-}
+//   useEffect(() => {
+//     load();
+//   }, [load]);
+// }
 
 /* -------------------- Filter state hook -------------------- */
 
-function useTeacherFilters(teachers) {
-  const [filteredTeachers, setFilteredTeachers] = useState([]);
+// function useTeacherFilters(teachers) {
+//   const [filteredTeachers, setFilteredTeachers] = useState([]);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [selectedProgram, setSelectedProgram] = useState('all');
+//   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
+
+//   useEffect(() => {
+//     const next = filterTeachers(teachers, {
+//       searchQuery,
+//       selectedProgram,
+//       selectedSchulamt,
+//     });
+//     setFilteredTeachers(next);
+//   }, [teachers, searchQuery, selectedProgram, selectedSchulamt]);
+
+//   const stats = useMemo(
+//     function statsMemo() {
+//       return computeStats(teachers);
+//     },
+//     [teachers]
+//   );
+
+//   return {
+//     filteredTeachers,
+//     searchQuery,
+//     setSearchQuery,
+//     selectedProgram,
+//     setSelectedProgram,
+//     selectedSchulamt,
+//     setSelectedSchulamt,
+//     stats,
+//   };
+// }
+
+/* -------------------- Main hook (now very small) -------------------- */
+
+export default function useTeacherData() {
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('all');
   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
 
   useEffect(() => {
-    const next = filterTeachers(teachers, {
-      searchQuery,
-      selectedProgram,
-      selectedSchulamt,
-    });
-    setFilteredTeachers(next);
-  }, [teachers, searchQuery, selectedProgram, selectedSchulamt]);
+    setLoading(true);
+    fetchTeachersFromApi()
+      .then(data => setTeachers(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const stats = useMemo(
-    function statsMemo() {
-      return computeStats(teachers);
-    },
-    [teachers]
-  );
+  const schulamtOptions = useMemo(() => extractSchulamtOptions(teachers), [teachers]);
+  const programOptions = useMemo(() => ['GS', 'MS'], []);
 
-  return {
-    filteredTeachers,
+  const filteredTeachers = useMemo(() => filterTeachers(teachers, {
     searchQuery,
-    setSearchQuery,
     selectedProgram,
-    setSelectedProgram,
-    selectedSchulamt,
-    setSelectedSchulamt,
-    stats,
-  };
-}
+    selectedSchulamt
+  }), [teachers, searchQuery, selectedProgram, selectedSchulamt]);
 
-/* -------------------- Main hook (now very small) -------------------- */
-export default function useTeacherData() {
-  const {
-    teachers,
-    setTeachers,
-    schulamtOptions,
-    setSchulamtOptions,
-    loading,
-    setLoading,
-    programOptions,
-  } = useTeacherStateCore();
-
-  useTeacherLoader(setTeachers, setSchulamtOptions, setLoading);
-
-  const filterState = useTeacherFilters(teachers);
+  const stats = useMemo(() => computeStats(filteredTeachers), [filteredTeachers]);
 
   return {
     teachers,
-    filteredTeachers: filterState.filteredTeachers,
+    filteredTeachers,
     loading,
-    searchQuery: filterState.searchQuery,
-    setSearchQuery: filterState.setSearchQuery,
-    selectedProgram: filterState.selectedProgram,
-    setSelectedProgram: filterState.setSelectedProgram,
-    selectedSchulamt: filterState.selectedSchulamt,
-    setSelectedSchulamt: filterState.setSelectedSchulamt,
-    programOptions,
-    schulamtOptions,
-    stats: filterState.stats,
+    searchQuery, setSearchQuery,
+    selectedProgram, setSelectedProgram,
+    selectedSchulamt, setSelectedSchulamt,
+    programOptions, schulamtOptions,
+    stats,
   };
 }

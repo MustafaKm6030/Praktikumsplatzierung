@@ -24,11 +24,10 @@ const TeachersTable = ({ teachers }) => {
             <TableCell><strong>Name</strong></TableCell>
             <TableCell><strong>School</strong></TableCell>
             <TableCell><strong>Program</strong></TableCell>
-            <TableCell><strong>Main Subject</strong></TableCell>
             <TableCell><strong>Preferred Praktika</strong></TableCell>
-            <TableCell><strong>Credit Hrs</strong></TableCell>
+            <TableCell><strong>Credit Hrs (Anre-Std.)</strong></TableCell>
+            <TableCell><strong>Capacity</strong></TableCell>
             <TableCell><strong>Schulamt</strong></TableCell>
-            <TableCell><strong>Max Students</strong></TableCell>
             <TableCell><strong>Status</strong></TableCell>
           </TableRow>
         </TableHead>
@@ -41,66 +40,34 @@ const TeachersTable = ({ teachers }) => {
               </TableCell>
             </TableRow>
           ) : (
-            teachers.map((pl) => {
-              const programLabel =
-                pl.program === 'GS' ? 'Grundschule' :
-                pl.program === 'MS' ? 'Mittelschule' :
-                (pl.program_display || pl.program || '—');
-
-              const praktika = (pl.available_praktikum_types || []).map((pt) => {
-                if (typeof pt === 'object' && (pt.name || pt.code)) return pt.name || pt.code;
-                return String(pt);
-              });
-
-              return (
-                <TableRow key={pl.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
-                  <TableCell sx={{ fontWeight: 500 }}>
-                    {`PL-${String(pl.id ?? '').padStart(3, '0')}`}
-                  </TableCell>
-
-                  <TableCell>
-                    {[pl.first_name, pl.last_name].filter(Boolean).join(' ') || '—'}
-                  </TableCell>
-
-                  <TableCell>{pl.school_name || '—'}</TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={programLabel}
-                      size="small"
-                      color={pl.program === 'GS' ? 'info' : pl.program === 'MS' ? 'warning' : 'default'}
-                      variant="outlined"
-                    />
-                  </TableCell>
-
-                  <TableCell>{pl.main_subject_name || '—'}</TableCell>
-
-                  <TableCell>
-                    {praktika.length ? praktika.join(', ') : '—'}
-                  </TableCell>
-
-                  <TableCell align="center">
-                    {pl.max_simultaneous_praktikum ?? 2}
-                  </TableCell>
-
-                  <TableCell>
-                    {pl.schulamt || '—'}
-                  </TableCell>
-
-                  <TableCell align="center">
-                    {pl.max_students_per_praktikum ?? 3}
-                  </TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={pl.is_available ? 'Verfügbar' : 'Nicht verfügbar'}
-                      color={pl.is_available ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })
+            teachers.map((pl) => (
+              <TableRow key={pl.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                <TableCell>{`PL-${String(pl.id).padStart(3, '0')}`}</TableCell>
+                <TableCell>{`${pl.first_name} ${pl.last_name}`}</TableCell>
+                <TableCell>{pl.school_name || '—'}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={pl.program_display || pl.program}
+                    size="small"
+                    color={pl.program === 'GS' ? 'info' : 'warning'}
+                  />
+                </TableCell>
+                {/* --- EDITED: Using the new raw field for simplicity --- */}
+                <TableCell>{pl.preferred_praktika_raw || '—'}</TableCell>
+                {/* --- EDITED: Using the correct field names --- */}
+                <TableCell align="center">{pl.anrechnungsstunden}</TableCell>
+                <TableCell align="center">{pl.capacity}</TableCell>
+                <TableCell>{pl.schulamt || '—'}</TableCell>
+                <TableCell>
+                  {/* --- EDITED: Using is_active boolean --- */}
+                  <Chip
+                    label={pl.is_active ? 'Verfügbar' : 'Nicht verfügbar'}
+                    color={pl.is_active ? 'success' : 'error'}
+                    size="small"
+                  />
+                </TableCell>
+              </TableRow>
+            ))
           )}
         </TableBody>
       </Table>

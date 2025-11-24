@@ -24,10 +24,9 @@ const StudentsTable = ({ students }) => {
             <TableCell><strong>Name</strong></TableCell>
             <TableCell><strong>Program</strong></TableCell>
             <TableCell><strong>Main Subject</strong></TableCell>
-            <TableCell><strong>Additional Subjects</strong></TableCell>
             <TableCell><strong>Email</strong></TableCell>
             <TableCell><strong>Region</strong></TableCell>
-            <TableCell><strong>Zone</strong></TableCell>
+            <TableCell><strong>Status</strong></TableCell>
           </TableRow>
         </TableHead>
 
@@ -47,17 +46,21 @@ const StudentsTable = ({ students }) => {
                   <Chip
                     label={s.program === 'GS' ? 'Grundschule' : s.program === 'MS' ? 'Mittelschule' : (s.program || '—')}
                     size="small"
-                    color={s.program === 'GS' ? 'info' : s.program === 'MS' ? 'warning' : 'default'}
+                    color={s.program === 'GS' ? 'info' : 'warning'}
                     variant="outlined"
                   />
                 </TableCell>
                 <TableCell>{s.primary_subject_name || '—'}</TableCell>
-                <TableCell>
-                  {s.additional_subjects_names?.length ? s.additional_subjects_names.join(', ') : '—'}
-                </TableCell>
                 <TableCell>{s.email || '—'}</TableCell>
                 <TableCell>{s.home_region || '—'}</TableCell>
-                <TableCell>{s.preferred_zone || '—'}</TableCell>
+
+                <TableCell>
+                  <Chip
+                    label={s.placement_status || 'UNPLACED'}
+                    size="small"
+                    color={s.placement_status === 'PLACED' ? 'success' : 'default'}
+                  />
+                </TableCell>
               </TableRow>
             ))
           )}

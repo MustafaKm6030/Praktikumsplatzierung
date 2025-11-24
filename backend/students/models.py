@@ -6,8 +6,7 @@ from schools.models import School
 class Student(TimeStampedModel):
     """
     Represents a student requiring Praktikum placement.
-    Business Logic: Students have program type, subject preferences,
-    and geographical constraints for placement.
+    Refactored: Now acts as the single source of truth for internship completion.
     """
 
     PROGRAM_CHOICES = [
@@ -17,9 +16,7 @@ class Student(TimeStampedModel):
 
     PLACEMENT_STATUS_CHOICES = [
         ("UNPLACED", "Unplaced"),
-        ("IN_REVIEW", "In Review"),
         ("PLACED", "Placed"),
-        ("COMPLETED", "Completed"),
     ]
 
     # Basic Information
@@ -45,24 +42,37 @@ class Student(TimeStampedModel):
         help_text="Student's primary teaching subject",
     )
 
-    # Additional Subjects
-    additional_subjects = models.ManyToManyField(
-        Subject,
-        related_name="students",
-        blank=True,
-        help_text="Additional subjects the student is qualified to teach",
-    )
-
     # Geographical Information
-    home_address = models.TextField(blank=True)
-    home_region = models.CharField(
-        max_length=100, blank=True, help_text="Region for Heimatnah matching"
+    home_address = models.TextField(
+        blank=True, help_text="For 'heimatnah' PDP matching"
     )
-    preferred_zone = models.CharField(
-        max_length=10, blank=True, help_text="Preferred distance zone"
+    semester_address = models.TextField(
+        blank=True, help_text="For SFP/ZSP travel time calculation"
     )
 
-    # Status
+    # Derived/Legacy fields kept for compatibility if needed, or can be removed
+    home_region = models.CharField(max_length=100, blank=True)
+    preferred_zone = models.CharField(max_length=10, blank=True)
+
+    # --- Internship Checklist (The New Logic) ---
+    pdp1_completed_date = models.DateField(
+        null=True, blank=True, help_text="Date PDP I was completed"
+    )
+    pdp2_completed_date = models.DateField(
+        null=True, blank=True, help_text="Date PDP II was completed"
+    )
+    sfp_completed_date = models.DateField(
+        null=True, blank=True, help_text="Date SFP was completed"
+    )
+    zsp_completed_date = models.DateField(
+        null=True, blank=True, help_text="Date ZSP was completed"
+    )
+
+    # Status for the current planning cycle
+    placement_status = models.CharField(
+        max_length=20, choices=PLACEMENT_STATUS_CHOICES, default="UNPLACED"
+    )
+
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -72,49 +82,8 @@ class Student(TimeStampedModel):
         indexes = [
             models.Index(fields=["student_id"]),
             models.Index(fields=["program"]),
+            models.Index(fields=["placement_status"]),
         ]
 
     def __str__(self):
         return f"{self.student_id} - {self.last_name}, {self.first_name}"
-
-
-class StudentPraktikumPreference(TimeStampedModel):
-    """
-    Tracks which Praktikum types a student needs/prefers.
-    Business Logic: Students declare which Praktika they want to complete.
-    """
-
-    student = models.ForeignKey(
-        Student, on_delete=models.CASCADE, related_name="praktikum_preferences"
-    )
-    praktikum_type = models.ForeignKey(
-        PraktikumType, on_delete=models.CASCADE, related_name="student_preferences"
-    )
-
-    # Preferred subjects for this Praktikum
-    preferred_subjects = models.ManyToManyField(
-        Subject, related_name="preferred_by_students", blank=True
-    )
-
-    # Preferred schools/regions
-    preferred_schools = models.ManyToManyField(
-        School, related_name="preferred_by_students", blank=True
-    )
-
-    # Status
-    status = models.CharField(
-        max_length=20, choices=Student.PLACEMENT_STATUS_CHOICES, default="UNPLACED"
-    )
-
-    # Timing preference
-    availability_note = models.TextField(
-        blank=True, help_text="e.g., 'I.d.R. im Herbst' for PDP I"
-    )
-
-    class Meta:
-        verbose_name = "Student Praktikum Preference"
-        verbose_name_plural = "Student Praktikum Preferences"
-        unique_together = ["student", "praktikum_type"]
-
-    def __str__(self):
-        return f"{self.student} - {self.praktikum_type}"
