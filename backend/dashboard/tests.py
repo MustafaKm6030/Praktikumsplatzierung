@@ -37,20 +37,20 @@ class DashboardServicesTestCase(TestCase):
         """
         # Create test school
         self.school = School.objects.create(
-            school_id="TEST001",
             name="Test School",
-            address="Test Address",
+            school_type="GS",
+            district="Test District",
             city="Test City",
-            postal_code="12345",
+            zone=1,
         )
         
         # Create second test school
         self.school2 = School.objects.create(
-            school_id="TEST002",
             name="Test School 2",
-            address="Test Address 2",
+            school_type="MS",
+            district="Test District 2",
             city="Test City 2",
-            postal_code="54321",
+            zone=2,
         )
         
         # Create test subject
@@ -220,11 +220,11 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
     def setUp(self):
         """Creates minimal test data."""
         self.school = School.objects.create(
-            school_id="TEST001",
             name="Test School",
-            address="Test Address",
+            school_type="GS",
+            district="Test District",
             city="Test City",
-            postal_code="12345",
+            zone=1,
         )
 
     def test_get_entity_counts_with_no_data(self):
@@ -608,11 +608,11 @@ class DashboardAPITestCase(APITestCase):
         
         # Create minimal test data
         self.school = School.objects.create(
-            school_id="TEST001",
             name="Test School",
-            address="Test Address",
+            school_type="GS",
+            district="Test District",
             city="Test City",
-            postal_code="12345",
+            zone=1,
         )
 
     def test_dashboard_summary_endpoint_success(self):
