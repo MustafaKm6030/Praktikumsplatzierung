@@ -54,7 +54,11 @@ unit_test_backend:
     - coverage run manage.py test
     - coverage report
     - coverage xml -o coverage.xml
+  after_script:
+    - cd $BACKEND_DIR
+    - coverage xml -o coverage.xml 2>/dev/null || echo "Coverage file generation skipped (tests may have failed early)"
   artifacts:
+    when: always
     reports:
       coverage_report:
         coverage_format: cobertura
@@ -126,15 +130,25 @@ upload_coverage:
     # Upload Backend Coverage
     - |
       echo "Uploading Backend Coverage..."
-      curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Backend+Coverage" \
-      --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
-      --header "Content-Type: multipart/form-data" \
-      --form "report=@backend/coverage.xml"
+      if [ -f backend/coverage.xml ]; then
+        curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Backend+Coverage" \
+        --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
+        --header "Content-Type: multipart/form-data" \
+        --form "report=@backend/coverage.xml"
+        echo "Backend coverage uploaded successfully"
+      else
+        echo "WARNING: backend/coverage.xml not found, skipping backend coverage upload"
+      fi
 
     # Upload Frontend Coverage
     - |
       echo "Uploading Frontend Coverage..."
-      curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Frontend+Coverage" \
-      --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
-      --header "Content-Type: multipart/form-data" \
-      --form "report=@frontend/coverage/cobertura-coverage.xml"
+      if [ -f frontend/coverage/cobertura-coverage.xml ]; then
+        curl -X POST "$TEAMSCALE_URL/api/projects/$TEAMSCALE_PROJECT/external-analysis/session/auto-create/report?format=COBERTURA&partition=Unit%20Tests&message=Frontend+Coverage" \
+        --user "$TEAMSCALE_USER:$TEAMSCALE_ACCESS_TOKEN" \
+        --header "Content-Type: multipart/form-data" \
+        --form "report=@frontend/coverage/cobertura-coverage.xml"
+        echo "Frontend coverage uploaded successfully"
+      else
+        echo "WARNING: frontend/coverage/cobertura-coverage.xml not found, skipping frontend coverage upload"
+      fi
