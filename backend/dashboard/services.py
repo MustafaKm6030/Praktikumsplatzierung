@@ -62,9 +62,16 @@ def build_assignment_status_list(practicum_totals):
         demand = practicum_totals.get(ptype, 0)
         mock = mock_data.get(ptype, {"assigned": None, "unassigned": 0})
         
-        # If assigned is None, it means fully assigned
-        assigned = demand + mock["assigned"] if mock["assigned"] is not None else demand
-        unassigned = mock["unassigned"]
+        # Calculate assigned and unassigned slots
+        # If mock assigned is None, it means fully assigned
+        # Ensure assigned_slots is never negative
+        if mock["assigned"] is not None:
+            assigned = max(0, demand + mock["assigned"])
+            # Only apply mock unassigned if there's actual demand
+            unassigned = mock["unassigned"] if demand > 0 else 0
+        else:
+            assigned = demand
+            unassigned = 0
         
         assignment_status.append({
             "practicum_type": ptype.replace("_", " "),
