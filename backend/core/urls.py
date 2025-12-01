@@ -27,6 +27,7 @@ urlpatterns = [
     path("api/settings/", include("system_settings.urls")),
     path("api/", include("students.urls")),
     path("api/assignments/", include("assignments.urls")),
+    path("api/dashboard/", include("dashboard.urls")),
 ]
 
 # Serve static files in development
