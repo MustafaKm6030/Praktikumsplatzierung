@@ -162,13 +162,21 @@ deploy_backend:
     - main
     - master
   before_script:
-    - apk add --no-cache openssh-client rsync
+    - apk add --no-cache openssh-client rsync git
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -H malik08.stud.fim.uni-passau.de >> ~/.ssh/known_hosts
   script:
+    # Pull latest changes on server before deployment
+    - ssh malik@malik08.stud.fim.uni-passau.de << 'PULL_EOF'
+        cd /var/www/praktikumsamt
+        git fetch origin
+        git pull origin main
+        echo "Latest code pulled from main branch"
+      PULL_EOF
+    
     - rsync -avz --delete --exclude='venv' --exclude='*.pyc' --exclude='__pycache__' --exclude='db.sqlite3' --exclude='.env' backend/ malik@malik08.stud.fim.uni-passau.de:/var/www/praktikumsamt/backend/
     
     - ssh malik@malik08.stud.fim.uni-passau.de << 'EOF'
@@ -195,13 +203,14 @@ deploy_frontend:
     - main
     - master
   before_script:
-    - apk add --no-cache openssh-client rsync
+    - apk add --no-cache openssh-client rsync git
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -H malik08.stud.fim.uni-passau.de >> ~/.ssh/known_hosts
   script:
+    # Pull latest changes already done in backend deployment
     - rsync -avz --delete frontend/build/ malik@malik08.stud.fim.uni-passau.de:/var/www/praktikumsamt/frontend/build/
     - ssh malik@malik08.stud.fim.uni-passau.de 'sudo systemctl reload nginx && echo "Frontend deployment completed!"'
   environment:
