@@ -8,6 +8,7 @@ import Teachers from './pages/Teachers';
 import SchoolManagement from "./pages/SchoolManagement";
 import Settings from './pages/Settings';
 import AnimatedLogo from './components/layout/AnimatedLogo';
+import Allocation from './pages/Allocation';
 
 function App() {
   const [animationState, setAnimationState] = useState(() => {
@@ -62,6 +63,7 @@ function App() {
               <Route path="/students" element={<Students />} />
               <Route path="/teachers" element={<Teachers />} />
               <Route path="/schools" element={<SchoolManagement />} />
+              <Route path="/allocation" element={<Allocation />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Layout>
