@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Box, Stepper, Step, StepLabel, Typography, Container, Paper } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import Button from '../components/ui/Button';
+
 import AllocationRunStep from '../components/allocation/AllocationRunStep';
+import AllocationResultsStep from '../components/allocation/AllocationResultsStep';
 
 // Workflow steps
 const STEPS = [
@@ -68,15 +70,7 @@ export default function Allocation() {
 
                     {/* STEP 3: REVIEW RESULTS (Placeholder) */}
                     {activeStep === 2 && (
-                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
-                            <Typography variant="h5" sx={{ mb: 2 }}>Step 3: Review Results</Typography>
-                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                                Results table will be implemented here.
-                            </Typography>
-                            <Button onClick={handleStepComplete} endIcon={<ArrowForward />} variant="secondary">
-                                Next Step (Demo)
-                            </Button>
-                        </Paper>
+                        <AllocationResultsStep onComplete={handleStepComplete} />
                     )}
 
                     {/* STEP 4: FINALIZE (Placeholder) */}
