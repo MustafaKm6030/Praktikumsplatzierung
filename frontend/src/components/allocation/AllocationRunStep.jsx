@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, LinearProgress, Grid, Alert } from '@mui/material';
-import { PlayArrow, CheckCircle, Warning, LocationOn } from '@mui/icons-material';
+import { PlayArrow, CheckCircle, Warning } from '@mui/icons-material';
 import Button from '../ui/Button';
 import KPICard from '../dashboard/KPICard';
 import allocationService from '../../api/allocationService';
@@ -35,8 +35,8 @@ const AllocationRunStep = ({ onComplete }) => {
             const totalAssignments = solverResult.total_assignments || 0;
             const totalUnassigned = solverResult.total_unassigned || 0;
             const totalMentors = totalAssignments + totalUnassigned;
-            const matchRate = totalMentors > 0 
-                ? Math.round((totalAssignments / totalMentors) * 100) 
+            const matchRate = totalMentors > 0
+                ? Math.round((totalAssignments / totalMentors) * 100)
                 : 0;
 
             setResults({
@@ -47,7 +47,7 @@ const AllocationRunStep = ({ onComplete }) => {
             });
             setStatus('complete');
             setProgress(100);
-            
+
         } catch (err) {
             console.error('Allocation error:', err);
             setLogs(prev => [...prev, `Error: ${err.message || 'Failed to run allocation'}`]);
@@ -63,7 +63,7 @@ const AllocationRunStep = ({ onComplete }) => {
                     Run Auto-Allocation
                 </Typography>
                 <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                    This will execute the matching algorithm based on the defined constraints. 
+                    This will execute the matching algorithm based on the defined constraints.
                     Existing draft allocations will be overwritten.
                 </Typography>
 
@@ -71,9 +71,9 @@ const AllocationRunStep = ({ onComplete }) => {
                     <Alert severity="error" sx={{ mb: 3 }}>Failed to start allocation.</Alert>
                 )}
 
-                <Button 
-                    onClick={handleStart} 
-                    size="large" 
+                <Button
+                    onClick={handleStart}
+                    size="large"
                     startIcon={<PlayArrow />}
                     sx={{ px: 4, py: 1.5 }}
                 >
@@ -90,23 +90,23 @@ const AllocationRunStep = ({ onComplete }) => {
                 <Typography variant="h6" align="center" sx={{ mb: 3 }}>
                     Running Allocation...
                 </Typography>
-                
+
                 <Box sx={{ width: '100%', mb: 4 }}>
-                    <LinearProgress 
-                        variant="determinate" 
-                        value={progress} 
-                        sx={{ height: 10, borderRadius: 5, backgroundColor: '#f1f5f9', '& .MuiLinearProgress-bar': { backgroundColor: '#3b82f6' } }} 
+                    <LinearProgress
+                        variant="determinate"
+                        value={progress}
+                        sx={{ height: 10, borderRadius: 5, backgroundColor: '#f1f5f9', '& .MuiLinearProgress-bar': { backgroundColor: '#3b82f6' } }}
                     />
                     <Typography align="right" variant="caption" sx={{ mt: 1, display: 'block', color: '#6b7280' }}>
                         {progress}% Complete
                     </Typography>
                 </Box>
 
-                <Box sx={{ 
-                    bgcolor: '#f8fafc', 
-                    p: 2, 
-                    borderRadius: '8px', 
-                    height: 150, 
+                <Box sx={{
+                    bgcolor: '#f8fafc',
+                    p: 2,
+                    borderRadius: '8px',
+                    height: 150,
                     overflowY: 'auto',
                     border: '1px solid #e2e8f0',
                     fontFamily: 'monospace',
@@ -134,35 +134,35 @@ const AllocationRunStep = ({ onComplete }) => {
 
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12} md={4}>
-                    <KPICard 
-                        label="Success Rate" 
-                        value={results.matchRate} 
-                        icon={<CheckCircle />} 
-                        color="#10b981" 
+                    <KPICard
+                        label="Success Rate"
+                        value={results.matchRate}
+                        icon={<CheckCircle />}
+                        color="#10b981"
                     />
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <KPICard 
-                        label="Total Assignments" 
-                        value={results.totalAssignments || 0} 
-                        icon={<CheckCircle />} 
-                        color="#3b82f6" 
+                    <KPICard
+                        label="Total Assignments"
+                        value={results.totalAssignments || 0}
+                        icon={<CheckCircle />}
+                        color="#3b82f6"
                     />
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <KPICard 
-                        label="Unassigned Mentors" 
-                        value={results.unmatchedCount || 0} 
-                        icon={<Warning />} 
-                        color="#dc2626" 
+                    <KPICard
+                        label="Unassigned Mentors"
+                        value={results.unmatchedCount || 0}
+                        icon={<Warning />}
+                        color="#dc2626"
                     />
                 </Grid>
             </Grid>
 
             <Box sx={{ textAlign: 'center' }}>
-                <Button 
+                <Button
                     onClick={onComplete} // Moves to Step 3 (Review)
-                    size="large" 
+                    size="large"
                     variant="primary"
                 >
                     Review Draft Allocation

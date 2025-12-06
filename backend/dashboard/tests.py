@@ -1075,7 +1075,22 @@ class SerializerTestCase(TestCase):
         """
         Tests DashboardSummarySerializer with complete valid data.
         """
-        data = {
+        # 1. Get Data from helper
+        data = self._get_complete_dashboard_data()
+
+        # 2. Validate
+        serializer = DashboardSummarySerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        # 3. Verify nested data types
+        validated = serializer.validated_data
+        self.assertIsInstance(validated["assignment_status"], list)
+        self.assertIsInstance(validated["budget_summary"], dict)
+        self.assertIsInstance(validated["entity_counts"], dict)
+
+    def _get_complete_dashboard_data(self):
+        """Helper to return a full payload for testing."""
+        return {
             "assignment_status": [
                 {
                     "practicum_type": "PDP I",
@@ -1103,14 +1118,6 @@ class SerializerTestCase(TestCase):
                 "active_pls_ms": 80,
             },
         }
-
-        serializer = DashboardSummarySerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-
-        # Verify nested data
-        self.assertIsInstance(serializer.validated_data["assignment_status"], list)
-        self.assertIsInstance(serializer.validated_data["budget_summary"], dict)
-        self.assertIsInstance(serializer.validated_data["entity_counts"], dict)
 
     def test_dashboard_summary_serializer_multiple_assignment_statuses(self):
         """
