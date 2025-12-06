@@ -78,7 +78,7 @@ def _prepare_supply_variables(model, all_mentors):
 
         # Create Variables
         for practicum_type, subject_code in eligibilities:
-            var_key = (mentor.id, practicum_type, subject_code)
+            var_key = mentor.id, practicum_type, subject_code
             assignment_vars[var_key] = model.NewBoolVar(
                 f"assign_{mentor.id}_{practicum_type}_{subject_code}"
             )
@@ -274,7 +274,7 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     for key, var in assignment_vars.items():
         mentor_id, practicum_type, subject_code = key
         mentor_program = mentor_data[mentor_id]["object"].program
-        demand_key = (practicum_type, mentor_program, subject_code)
+        demand_key = practicum_type, mentor_program, subject_code
         student_count = demand_map.get(demand_key, 0)
 
         if student_count > 0:

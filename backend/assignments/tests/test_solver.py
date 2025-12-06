@@ -127,7 +127,26 @@ class SolverHardConstraintsTests(TestCase):
 
     @classmethod
     def _setup_pls(cls, schools, subjects, ptypes):
-        pls_data = [
+        """Orchestrates the creation of PLs using data from the helper."""
+        for data in cls._get_pl_definitions(schools, subjects):
+            # Copy data to avoid mutating the original list if tests are re-run
+            row = data.copy()
+            p_codes = row.pop("p_codes")
+            s_codes = row.pop("s_codes")
+
+            pl, _ = PraktikumsLehrkraft.objects.get_or_create(
+                email=row["email"], defaults=row
+            )
+
+            if p_codes:
+                pl.available_praktikum_types.set([ptypes[c] for c in p_codes])
+            if s_codes:
+                pl.available_subjects.set([subjects[c] for c in s_codes])
+
+    @classmethod
+    def _get_pl_definitions(cls, schools, subjects):
+        """Returns the raw data list for PLs to reduce method length."""
+        return [
             # Inactive
             {
                 "email": "anna.schmidt@schule.de",
@@ -206,18 +225,6 @@ class SolverHardConstraintsTests(TestCase):
                 "s_codes": ["HSU", "D", "MA"],
             },
         ]
-
-        for data in pls_data:
-            p_codes = data.pop("p_codes")
-            s_codes = data.pop("s_codes")
-            pl, _ = PraktikumsLehrkraft.objects.get_or_create(
-                email=data["email"], defaults=data
-            )
-
-            if p_codes:
-                pl.available_praktikum_types.set([ptypes[c] for c in p_codes])
-            if s_codes:
-                pl.available_subjects.set([subjects[c] for c in s_codes])
 
     @classmethod
     def _setup_students(cls, subjects):

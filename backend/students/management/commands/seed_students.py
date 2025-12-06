@@ -198,47 +198,36 @@ class Command(BaseCommand):
 
     def _create_single_student(self, index, db_subjects):
         """Creates a single Student instance."""
+        # 1. Basic Info
         s_id = f"ST-2025-{index:03d}"
         f_name = random.choice(self.FIRST_NAMES)
         l_name = random.choice(self.LAST_NAMES)
         email = f"{f_name.lower()}.{l_name.lower()}.{index}@stud.uni-passau.de"
         region = random.choice(self.REGIONS)
-
-        # 70% GS, 30% MS
         program = "GS" if index <= 35 else "MS"
 
-        # Address Logic
-        if region == "Passau":
-            addr = f"{random.choice(self.ADDRESSES)} {random.randint(1, 100)}, 94032 Passau"
-        else:
-            addr = f"{random.choice(self.ADDRESSES)} {random.randint(1, 100)}, 94XXX {region}"
+        # 2. Logic Helpers
+        address = self._generate_address(region)
+        subject_data = self._select_subjects(program, db_subjects)
 
-        # Subject Selection
-        prim_pool, didactic_pool = self._get_pools(program)
-
-        prim_name = random.choice(prim_pool)
-        available_didactics = [name for name in didactic_pool if name != prim_name]
-
-        if len(available_didactics) < 3:
+        if not subject_data:
             self.stdout.write(self.style.WARNING(f"Not enough subjects for {s_id}"))
             return None
 
-        selected_didactics = random.sample(available_didactics, 3)
-
-        # Dates / Demand Logic
         pdp1, pdp2, sfp, zsp = self._calculate_dates(index)
 
+        # 3. Create Object
         return Student(
             student_id=s_id,
             first_name=f_name,
             last_name=l_name,
             email=email,
             program=program,
-            primary_subject=db_subjects[prim_name],
-            didactic_subject_1=db_subjects[selected_didactics[0]],
-            didactic_subject_2=db_subjects[selected_didactics[1]],
-            didactic_subject_3=db_subjects[selected_didactics[2]],
-            home_address=addr,
+            primary_subject=subject_data["primary"],
+            didactic_subject_1=subject_data["d1"],
+            didactic_subject_2=subject_data["d2"],
+            didactic_subject_3=subject_data["d3"],
+            home_address=address,
             semester_address="Innstraße 41, 94032 Passau",
             home_region=region,
             pdp1_completed_date=pdp1,
@@ -247,6 +236,37 @@ class Command(BaseCommand):
             zsp_completed_date=zsp,
             placement_status="UNPLACED",
         )
+
+    def _generate_address(self, region):
+        """Generates a random address based on region."""
+        street = random.choice(self.ADDRESSES)
+        number = random.randint(1, 100)
+
+        if region == "Passau":
+            return f"{street} {number}, 94032 Passau"
+        return f"{street} {number}, 94XXX {region}"
+
+    def _select_subjects(self, program, db_subjects):
+        """Selects valid primary and didactic subjects."""
+        prim_pool, didactic_pool = self._get_pools(program)
+
+        # Pick Primary
+        prim_name = random.choice(prim_pool)
+
+        # Pick Didactics (excluding primary)
+        available_didactics = [name for name in didactic_pool if name != prim_name]
+
+        if len(available_didactics) < 3:
+            return None
+
+        selected = random.sample(available_didactics, 3)
+
+        return {
+            "primary": db_subjects[prim_name],
+            "d1": db_subjects[selected[0]],
+            "d2": db_subjects[selected[1]],
+            "d3": db_subjects[selected[2]],
+        }
 
     def _calculate_dates(self, index):
         """Determines the completed dates based on random logic."""
