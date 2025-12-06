@@ -43,7 +43,7 @@ class DashboardServicesTestCase(TestCase):
             city="Test City",
             zone=1,
         )
-        
+
         # Create second test school
         self.school2 = School.objects.create(
             name="Test School 2",
@@ -52,16 +52,16 @@ class DashboardServicesTestCase(TestCase):
             city="Test City 2",
             zone=2,
         )
-        
+
         # Create test subject
         self.subject = Subject.objects.create(
             name="Mathematics",
             code="MATH",
         )
-        
+
         # Create test students
         self.create_test_students()
-        
+
         # Create test PLs
         self.create_test_pls()
 
@@ -77,7 +77,7 @@ class DashboardServicesTestCase(TestCase):
             placement_status="UNPLACED",
             pdp1_completed_date=None,
         )
-        
+
         # Student needing PDP II
         Student.objects.create(
             student_id="S002",
@@ -89,7 +89,7 @@ class DashboardServicesTestCase(TestCase):
             pdp1_completed_date="2024-01-01",
             pdp2_completed_date=None,
         )
-        
+
         # Placed student
         Student.objects.create(
             student_id="S003",
@@ -112,7 +112,7 @@ class DashboardServicesTestCase(TestCase):
             anrechnungsstunden=1.0,
             is_active=True,
         )
-        
+
         # MS PL
         PraktikumsLehrkraft.objects.create(
             first_name="Teacher",
@@ -123,7 +123,7 @@ class DashboardServicesTestCase(TestCase):
             anrechnungsstunden=2.0,
             is_active=True,
         )
-        
+
         # Inactive PL (should not be counted)
         PraktikumsLehrkraft.objects.create(
             first_name="Teacher",
@@ -141,7 +141,7 @@ class DashboardServicesTestCase(TestCase):
         Verifies correct counting of students and active PLs by program.
         """
         counts = get_entity_counts()
-        
+
         self.assertEqual(counts["total_students"], 3)
         self.assertEqual(counts["unplaced_students"], 2)
         self.assertEqual(counts["active_pls_total"], 2)
@@ -154,7 +154,7 @@ class DashboardServicesTestCase(TestCase):
         Verifies correct aggregation of anrechnungsstunden by program.
         """
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["total_budget"], 210)
         self.assertEqual(budget["distributed_gs"], 1.0)
         self.assertEqual(budget["distributed_ms"], 2.0)
@@ -166,17 +166,17 @@ class DashboardServicesTestCase(TestCase):
         Verifies structure and data types of assignment status list.
         """
         assignment_status = get_assignment_status()
-        
+
         # Should return list of 4 practicum types
         self.assertEqual(len(assignment_status), 4)
-        
+
         # Verify structure of first item
         first_item = assignment_status[0]
         self.assertIn("practicum_type", first_item)
         self.assertIn("demand_slots", first_item)
         self.assertIn("assigned_slots", first_item)
         self.assertIn("unassigned_slots", first_item)
-        
+
         # Verify data types
         self.assertIsInstance(first_item["demand_slots"], int)
         self.assertIsInstance(first_item["assigned_slots"], int)
@@ -188,22 +188,22 @@ class DashboardServicesTestCase(TestCase):
         Verifies all three main sections are present and structured correctly.
         """
         summary = get_dashboard_summary_data()
-        
+
         # Verify all main keys are present
         self.assertIn("assignment_status", summary)
         self.assertIn("budget_summary", summary)
         self.assertIn("entity_counts", summary)
-        
+
         # Verify assignment_status is a list
         self.assertIsInstance(summary["assignment_status"], list)
-        
+
         # Verify budget_summary is a dict with required keys
         budget = summary["budget_summary"]
         self.assertIn("total_budget", budget)
         self.assertIn("distributed_gs", budget)
         self.assertIn("distributed_ms", budget)
         self.assertIn("remaining_budget", budget)
-        
+
         # Verify entity_counts is a dict with required keys
         counts = summary["entity_counts"]
         self.assertIn("total_students", counts)
@@ -226,6 +226,8 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             city="Test City",
             zone=1,
         )
+        self.subject_de = Subject.objects.create(code="DE", name="Deutsch")
+        self.subject_ma = Subject.objects.create(code="MA", name="Mathematik")
 
     def test_get_entity_counts_with_no_data(self):
         """
@@ -233,7 +235,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
         Should return zero counts without errors.
         """
         counts = get_entity_counts()
-        
+
         self.assertEqual(counts["total_students"], 0)
         self.assertEqual(counts["unplaced_students"], 0)
         self.assertEqual(counts["active_pls_total"], 0)
@@ -246,7 +248,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
         Should return zero distributed budget.
         """
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["total_budget"], 210)
         self.assertEqual(budget["distributed_gs"], 0)
         self.assertEqual(budget["distributed_ms"], 0)
@@ -266,7 +268,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=3.5,
             is_active=True,
         )
-        
+
         PraktikumsLehrkraft.objects.create(
             first_name="Teacher",
             last_name="GS2",
@@ -276,9 +278,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=2.0,
             is_active=True,
         )
-        
+
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["distributed_gs"], 5.5)
         self.assertEqual(budget["distributed_ms"], 0)
         self.assertEqual(budget["remaining_budget"], 204.5)
@@ -297,9 +299,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=4.0,
             is_active=True,
         )
-        
+
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["distributed_gs"], 0)
         self.assertEqual(budget["distributed_ms"], 4.0)
         self.assertEqual(budget["remaining_budget"], 206)
@@ -318,7 +320,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=2.0,
             is_active=True,
         )
-        
+
         # Create inactive PLs
         PraktikumsLehrkraft.objects.create(
             first_name="Inactive",
@@ -329,7 +331,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=5.0,
             is_active=False,
         )
-        
+
         PraktikumsLehrkraft.objects.create(
             first_name="Inactive",
             last_name="Teacher2",
@@ -339,9 +341,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=3.0,
             is_active=False,
         )
-        
+
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["distributed_gs"], 2.0)
         self.assertEqual(budget["distributed_ms"], 0)
         self.assertEqual(budget["remaining_budget"], 208)
@@ -359,7 +361,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             program="GS",
             placement_status="PLACED",
         )
-        
+
         Student.objects.create(
             student_id="S002",
             first_name="Placed",
@@ -368,9 +370,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             program="MS",
             placement_status="PLACED",
         )
-        
+
         counts = get_entity_counts()
-        
+
         self.assertEqual(counts["total_students"], 2)
         self.assertEqual(counts["unplaced_students"], 0)
 
@@ -387,7 +389,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             program="GS",
             placement_status="UNPLACED",
         )
-        
+
         Student.objects.create(
             student_id="S002",
             first_name="Unplaced",
@@ -396,9 +398,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             program="MS",
             placement_status="UNPLACED",
         )
-        
+
         counts = get_entity_counts()
-        
+
         self.assertEqual(counts["total_students"], 2)
         self.assertEqual(counts["unplaced_students"], 2)
 
@@ -417,7 +419,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
                 anrechnungsstunden=1.0,
                 is_active=True,
             )
-        
+
         for i in range(5):
             PraktikumsLehrkraft.objects.create(
                 first_name=f"MS_Teacher",
@@ -428,9 +430,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
                 anrechnungsstunden=1.0,
                 is_active=True,
             )
-        
+
         counts = get_entity_counts()
-        
+
         self.assertEqual(counts["active_pls_total"], 8)
         self.assertEqual(counts["active_pls_gs"], 3)
         self.assertEqual(counts["active_pls_ms"], 5)
@@ -441,29 +443,29 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
         Verifies correct structure even with no demand.
         """
         assignment_status = get_assignment_status()
-        
+
         # Should always return 4 practicum types
         self.assertEqual(len(assignment_status), 4)
-        
+
         # Verify all expected practicum types are present
         practicum_types = [item["practicum_type"] for item in assignment_status]
         self.assertIn("PDP I", practicum_types)
         self.assertIn("PDP II", practicum_types)
         self.assertIn("SFP", practicum_types)
         self.assertIn("ZSP", practicum_types)
-        
+
         # Verify all have correct structure
         for item in assignment_status:
             self.assertIn("practicum_type", item)
             self.assertIn("demand_slots", item)
             self.assertIn("assigned_slots", item)
             self.assertIn("unassigned_slots", item)
-            
+
             # Verify data types
             self.assertIsInstance(item["demand_slots"], int)
             self.assertIsInstance(item["assigned_slots"], int)
             self.assertIsInstance(item["unassigned_slots"], int)
-            
+
             # Verify non-negative values
             self.assertGreaterEqual(item["demand_slots"], 0)
             self.assertGreaterEqual(item["assigned_slots"], 0)
@@ -486,18 +488,30 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             sfp_completed_date=None,
             zsp_completed_date=None,
         )
-        
+
         assignment_status = get_assignment_status()
-        
+
         # This student should contribute to all 4 practicum types
         # PDP I: +1, PDP II: 0, SFP: +1, ZSP: +1
-        pdp1_item = next(item for item in assignment_status if item["practicum_type"] == "PDP I")
-        sfp_item = next(item for item in assignment_status if item["practicum_type"] == "SFP")
-        zsp_item = next(item for item in assignment_status if item["practicum_type"] == "ZSP")
-        
-        self.assertGreaterEqual(pdp1_item["demand_slots"], 1)
-        self.assertGreaterEqual(sfp_item["demand_slots"], 1)
-        self.assertGreaterEqual(zsp_item["demand_slots"], 1)
+        pdp1_item = next(
+            item for item in assignment_status if item["practicum_type"] == "PDP I"
+        )
+        sfp_item = next(
+            item for item in assignment_status if item["practicum_type"] == "SFP"
+        )
+        zsp_item = next(
+            item for item in assignment_status if item["practicum_type"] == "ZSP"
+        )
+        pdp2_item = next(
+            item for item in assignment_status if item["practicum_type"] == "PDP II"
+        )
+
+        self.assertEqual(
+            pdp1_item["demand_slots"], 1
+        )  # This is the ONLY demand generated
+        self.assertEqual(sfp_item["demand_slots"], 0)  # Should be 0
+        self.assertEqual(zsp_item["demand_slots"], 0)  # Should be 0
+        self.assertEqual(pdp2_item["demand_slots"], 0)  # Should be 0
 
     def test_assignment_status_with_partially_completed_student(self):
         """
@@ -511,19 +525,35 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             email="partial@test.com",
             program="GS",
             placement_status="UNPLACED",
+            primary_subject=self.subject_de,
+            didactic_subject_3=self.subject_ma,
             pdp1_completed_date="2024-01-15",
             pdp2_completed_date=None,
             sfp_completed_date=None,
             zsp_completed_date=None,
         )
-        
+
         assignment_status = get_assignment_status()
-        
+
         # This student should need PDP II, SFP, and ZSP
-        pdp2_item = next(item for item in assignment_status if item["practicum_type"] == "PDP II")
-        
+        pdp1_item = next(
+            item for item in assignment_status if item["practicum_type"] == "PDP I"
+        )
+        pdp2_item = next(
+            item for item in assignment_status if item["practicum_type"] == "PDP II"
+        )
+        sfp_item = next(
+            item for item in assignment_status if item["practicum_type"] == "SFP"
+        )
+        zsp_item = next(
+            item for item in assignment_status if item["practicum_type"] == "ZSP"
+        )
+
         # Should have demand for PDP II
-        self.assertGreaterEqual(pdp2_item["demand_slots"], 1)
+        self.assertEqual(pdp1_item["demand_slots"], 0)  # No demand for PDP I
+        self.assertEqual(pdp2_item["demand_slots"], 1)  # Generates demand for PDP II
+        self.assertEqual(sfp_item["demand_slots"], 1)  # Generates demand for SFP
+        self.assertEqual(zsp_item["demand_slots"], 1)  # Generates demand for ZSP
 
     def test_budget_summary_with_decimal_anrechnungsstunden(self):
         """
@@ -539,7 +569,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=1.5,
             is_active=True,
         )
-        
+
         PraktikumsLehrkraft.objects.create(
             first_name="Teacher",
             last_name="Decimal2",
@@ -549,9 +579,9 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=2.5,
             is_active=True,
         )
-        
+
         budget = get_budget_summary()
-        
+
         self.assertEqual(budget["distributed_gs"], 1.5)
         self.assertEqual(budget["distributed_ms"], 2.5)
         self.assertEqual(budget["remaining_budget"], 206.0)
@@ -569,7 +599,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             program="GS",
             placement_status="UNPLACED",
         )
-        
+
         PraktikumsLehrkraft.objects.create(
             first_name="Test",
             last_name="Teacher",
@@ -579,18 +609,18 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
             anrechnungsstunden=1.0,
             is_active=True,
         )
-        
+
         summary = get_dashboard_summary_data()
-        
+
         # Verify structure
         self.assertIsInstance(summary, dict)
         self.assertEqual(len(summary.keys()), 3)
-        
+
         # Verify all sections have data
         self.assertIsInstance(summary["assignment_status"], list)
         self.assertIsInstance(summary["budget_summary"], dict)
         self.assertIsInstance(summary["entity_counts"], dict)
-        
+
         # Verify data consistency
         self.assertEqual(summary["entity_counts"]["total_students"], 1)
         self.assertEqual(summary["entity_counts"]["active_pls_total"], 1)
@@ -604,8 +634,8 @@ class DashboardAPITestCase(APITestCase):
 
     def setUp(self):
         """Creates minimal test data."""
-        self.url = reverse('dashboard-summary')
-        
+        self.url = reverse("dashboard-summary")
+
         # Create minimal test data
         self.school = School.objects.create(
             name="Test School",
@@ -621,9 +651,9 @@ class DashboardAPITestCase(APITestCase):
         Verifies 200 status and correct response structure.
         """
         response = self.client.get(self.url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         # Verify response structure
         data = response.json()
         self.assertIn("assignment_status", data)
@@ -637,7 +667,7 @@ class DashboardAPITestCase(APITestCase):
         """
         response = self.client.get(self.url)
         data = response.json()
-        
+
         # Verify assignment_status format
         assignment_status = data["assignment_status"]
         self.assertIsInstance(assignment_status, list)
@@ -647,14 +677,14 @@ class DashboardAPITestCase(APITestCase):
             self.assertIn("demand_slots", item)
             self.assertIn("assigned_slots", item)
             self.assertIn("unassigned_slots", item)
-        
+
         # Verify budget_summary format
         budget = data["budget_summary"]
         self.assertIn("total_budget", budget)
         self.assertIn("distributed_gs", budget)
         self.assertIn("distributed_ms", budget)
         self.assertIn("remaining_budget", budget)
-        
+
         # Verify entity_counts format
         counts = data["entity_counts"]
         self.assertIn("total_students", counts)
@@ -668,9 +698,9 @@ class DashboardAPITestCase(APITestCase):
         Tests that the endpoint returns JSON content type.
         """
         response = self.client.get(self.url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response['content-type'], 'application/json')
+        self.assertEqual(response["content-type"], "application/json")
 
     def test_dashboard_summary_with_real_data(self):
         """
@@ -686,7 +716,7 @@ class DashboardAPITestCase(APITestCase):
             placement_status="UNPLACED",
             pdp1_completed_date=None,
         )
-        
+
         Student.objects.create(
             student_id="S002",
             first_name="Placed",
@@ -695,7 +725,7 @@ class DashboardAPITestCase(APITestCase):
             program="MS",
             placement_status="PLACED",
         )
-        
+
         # Create PLs
         PraktikumsLehrkraft.objects.create(
             first_name="Active",
@@ -706,17 +736,17 @@ class DashboardAPITestCase(APITestCase):
             anrechnungsstunden=2.0,
             is_active=True,
         )
-        
+
         response = self.client.get(self.url)
         data = response.json()
-        
+
         # Verify correct counts
         self.assertEqual(data["entity_counts"]["total_students"], 2)
         self.assertEqual(data["entity_counts"]["unplaced_students"], 1)
         self.assertEqual(data["entity_counts"]["active_pls_total"], 1)
         self.assertEqual(data["entity_counts"]["active_pls_gs"], 1)
         self.assertEqual(data["entity_counts"]["active_pls_ms"], 0)
-        
+
         # Verify budget
         self.assertEqual(data["budget_summary"]["distributed_gs"], 2.0)
 
@@ -726,12 +756,14 @@ class DashboardAPITestCase(APITestCase):
         """
         response = self.client.get(self.url)
         data = response.json()
-        
+
         assignment_status = data["assignment_status"]
         self.assertEqual(len(assignment_status), 4)
-        
+
         practicum_types = [item["practicum_type"] for item in assignment_status]
-        self.assertEqual(sorted(practicum_types), sorted(["PDP I", "PDP II", "SFP", "ZSP"]))
+        self.assertEqual(
+            sorted(practicum_types), sorted(["PDP I", "PDP II", "SFP", "ZSP"])
+        )
 
     def test_dashboard_summary_budget_calculation_accuracy(self):
         """
@@ -747,7 +779,7 @@ class DashboardAPITestCase(APITestCase):
             anrechnungsstunden=3.0,
             is_active=True,
         )
-        
+
         PraktikumsLehrkraft.objects.create(
             first_name="MS",
             last_name="Teacher1",
@@ -757,12 +789,12 @@ class DashboardAPITestCase(APITestCase):
             anrechnungsstunden=4.5,
             is_active=True,
         )
-        
+
         response = self.client.get(self.url)
         data = response.json()
-        
+
         budget = data["budget_summary"]
-        
+
         self.assertEqual(budget["total_budget"], 210)
         self.assertEqual(budget["distributed_gs"], 3.0)
         self.assertEqual(budget["distributed_ms"], 4.5)
@@ -774,16 +806,16 @@ class DashboardAPITestCase(APITestCase):
         Should not error and return valid structure with zeros.
         """
         response = self.client.get(self.url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         data = response.json()
-        
+
         # Should have valid structure even with no data
         self.assertIn("assignment_status", data)
         self.assertIn("budget_summary", data)
         self.assertIn("entity_counts", data)
-        
+
         # Entity counts should be zero
         counts = data["entity_counts"]
         self.assertEqual(counts["total_students"], 0)
@@ -798,17 +830,17 @@ class DashboardAPITestCase(APITestCase):
         response1 = self.client.get(self.url)
         response2 = self.client.get(self.url)
         response3 = self.client.get(self.url)
-        
+
         # All should succeed
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         self.assertEqual(response2.status_code, status.HTTP_200_OK)
         self.assertEqual(response3.status_code, status.HTTP_200_OK)
-        
+
         # All should return the same data
         data1 = response1.json()
         data2 = response2.json()
         data3 = response3.json()
-        
+
         self.assertEqual(data1, data2)
         self.assertEqual(data2, data3)
 
@@ -819,18 +851,20 @@ class DashboardAPITestCase(APITestCase):
         # GET should work
         get_response = self.client.get(self.url)
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
-        
+
         # POST should not be allowed
         post_response = self.client.post(self.url, {})
         self.assertEqual(post_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        
+
         # PUT should not be allowed
         put_response = self.client.put(self.url, {})
         self.assertEqual(put_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        
+
         # DELETE should not be allowed
         delete_response = self.client.delete(self.url)
-        self.assertEqual(delete_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(
+            delete_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
+        )
 
     def test_dashboard_summary_data_types(self):
         """
@@ -846,17 +880,17 @@ class DashboardAPITestCase(APITestCase):
             anrechnungsstunden=1.5,
             is_active=True,
         )
-        
+
         response = self.client.get(self.url)
         data = response.json()
-        
+
         # Check budget_summary data types
         budget = data["budget_summary"]
         self.assertIsInstance(budget["total_budget"], (int, float))
         self.assertIsInstance(budget["distributed_gs"], (int, float))
         self.assertIsInstance(budget["distributed_ms"], (int, float))
         self.assertIsInstance(budget["remaining_budget"], (int, float))
-        
+
         # Check entity_counts data types
         counts = data["entity_counts"]
         self.assertIsInstance(counts["total_students"], int)
@@ -864,7 +898,7 @@ class DashboardAPITestCase(APITestCase):
         self.assertIsInstance(counts["active_pls_total"], int)
         self.assertIsInstance(counts["active_pls_gs"], int)
         self.assertIsInstance(counts["active_pls_ms"], int)
-        
+
         # Check assignment_status data types
         for item in data["assignment_status"]:
             self.assertIsInstance(item["demand_slots"], int)
@@ -884,10 +918,10 @@ class BuildAssignmentStatusListTestCase(TestCase):
         """
         practicum_totals = {}
         result = build_assignment_status_list(practicum_totals)
-        
+
         # Should return 4 practicum types
         self.assertEqual(len(result), 4)
-        
+
         # All should have zero demand
         for item in result:
             self.assertEqual(item["demand_slots"], 0)
@@ -902,17 +936,17 @@ class BuildAssignmentStatusListTestCase(TestCase):
             "SFP": 20,
             "ZSP": 12,
         }
-        
+
         result = build_assignment_status_list(practicum_totals)
-        
+
         self.assertEqual(len(result), 4)
-        
+
         # Verify demand slots match
         pdp1 = next(item for item in result if item["practicum_type"] == "PDP I")
         pdp2 = next(item for item in result if item["practicum_type"] == "PDP II")
         sfp = next(item for item in result if item["practicum_type"] == "SFP")
         zsp = next(item for item in result if item["practicum_type"] == "ZSP")
-        
+
         self.assertEqual(pdp1["demand_slots"], 10)
         self.assertEqual(pdp2["demand_slots"], 15)
         self.assertEqual(sfp["demand_slots"], 20)
@@ -926,22 +960,22 @@ class BuildAssignmentStatusListTestCase(TestCase):
             "PDP_I": 5,
             "SFP": 8,
         }
-        
+
         result = build_assignment_status_list(practicum_totals)
-        
+
         self.assertEqual(len(result), 4)
-        
+
         # Types with demand
         pdp1 = next(item for item in result if item["practicum_type"] == "PDP I")
         sfp = next(item for item in result if item["practicum_type"] == "SFP")
-        
+
         self.assertEqual(pdp1["demand_slots"], 5)
         self.assertEqual(sfp["demand_slots"], 8)
-        
+
         # Types without demand should be zero
         pdp2 = next(item for item in result if item["practicum_type"] == "PDP II")
         zsp = next(item for item in result if item["practicum_type"] == "ZSP")
-        
+
         self.assertEqual(pdp2["demand_slots"], 0)
         self.assertEqual(zsp["demand_slots"], 0)
 
@@ -955,14 +989,14 @@ class BuildAssignmentStatusListTestCase(TestCase):
             "SFP": 60,
             "ZSP": 55,
         }
-        
+
         result = build_assignment_status_list(practicum_totals)
-        
+
         # SFP should have 2 unassigned based on mock data
         sfp = next(item for item in result if item["practicum_type"] == "SFP")
         self.assertEqual(sfp["unassigned_slots"], 2)
         self.assertEqual(sfp["assigned_slots"], 58)
-        
+
         # Others should be fully assigned
         pdp1 = next(item for item in result if item["practicum_type"] == "PDP I")
         self.assertEqual(pdp1["unassigned_slots"], 0)
@@ -974,7 +1008,7 @@ class BuildAssignmentStatusListTestCase(TestCase):
         """
         practicum_totals = {"PDP_I": 1}
         result = build_assignment_status_list(practicum_totals)
-        
+
         for item in result:
             self.assertIn("practicum_type", item)
             self.assertIn("demand_slots", item)
@@ -999,7 +1033,7 @@ class SerializerTestCase(TestCase):
             "assigned_slots": 48,
             "unassigned_slots": 2,
         }
-        
+
         serializer = AssignmentStatusSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["practicum_type"], "PDP I")
@@ -1015,7 +1049,7 @@ class SerializerTestCase(TestCase):
             "distributed_ms": 50.5,
             "remaining_budget": 59.0,
         }
-        
+
         serializer = BudgetSummarySerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["total_budget"], 210)
@@ -1032,7 +1066,7 @@ class SerializerTestCase(TestCase):
             "active_pls_gs": 120,
             "active_pls_ms": 80,
         }
-        
+
         serializer = EntityCountsSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["total_students"], 1000)
@@ -1065,10 +1099,10 @@ class SerializerTestCase(TestCase):
                 "active_pls_ms": 80,
             },
         }
-        
+
         serializer = DashboardSummarySerializer(data=data)
         self.assertTrue(serializer.is_valid())
-        
+
         # Verify nested data
         self.assertIsInstance(serializer.validated_data["assignment_status"], list)
         self.assertIsInstance(serializer.validated_data["budget_summary"], dict)
@@ -1107,7 +1141,7 @@ class SerializerTestCase(TestCase):
                 "active_pls_ms": 80,
             },
         }
-        
+
         serializer = DashboardSummarySerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(len(serializer.validated_data["assignment_status"]), 2)
@@ -1132,7 +1166,7 @@ class SerializerTestCase(TestCase):
                 "active_pls_ms": 0,
             },
         }
-        
+
         serializer = DashboardSummarySerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
@@ -1146,7 +1180,7 @@ class SerializerTestCase(TestCase):
             "distributed_ms": 45.8,
             "remaining_budget": 40.7,
         }
-        
+
         serializer = BudgetSummarySerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["distributed_gs"], 123.5)

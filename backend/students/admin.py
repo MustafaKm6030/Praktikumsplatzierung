@@ -12,9 +12,15 @@ class StudentAdmin(admin.ModelAdmin):
         "first_name",
         "program",
         "primary_subject",
+        "didactic_subject_3",
         "placement_status",
     ]
-    list_filter = ["program", "placement_status", "primary_subject"]
+    list_filter = [
+        "program",
+        "placement_status",
+        "primary_subject",
+        "didactic_subject_3",
+    ]
     search_fields = ["student_id", "first_name", "last_name", "email"]
 
     fieldsets = (
@@ -24,7 +30,17 @@ class StudentAdmin(admin.ModelAdmin):
         ),
         (
             "Program & Subjects",
-            {"fields": ("program", "major", "enrollment_date", "primary_subject")},
+            {
+                "fields": (
+                    "program",
+                    "major",
+                    "enrollment_date",
+                    "primary_subject",
+                    "didactic_subject_1",
+                    "didactic_subject_2",
+                    "didactic_subject_3",
+                )
+            },
         ),
         (
             "Internship Checklist",
