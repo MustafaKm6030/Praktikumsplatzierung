@@ -3,7 +3,7 @@ import { Box, Typography, Paper, LinearProgress, Grid, Alert } from '@mui/materi
 import { PlayArrow, CheckCircle, Warning, LocationOn } from '@mui/icons-material';
 import Button from '../ui/Button';
 import KPICard from '../dashboard/KPICard';
-import allocationService from '../../api/allocationService';
+//import allocationService from '../../api/allocationService';
 
 const AllocationRunStep = ({ onComplete }) => {
     const [status, setStatus] = useState('idle'); // 'idle' | 'running' | 'complete' | 'error'
@@ -52,6 +52,9 @@ const AllocationRunStep = ({ onComplete }) => {
         setLogs([]);
         setProgress(0);
 
+        // --- MOCK MODE: ENABLED ---
+        // We comment out the real API call so the UI works without the backend
+        /*
         try {
             // Trigger the real backend process
             await allocationService.runAutoAllocation({});
@@ -63,6 +66,10 @@ const AllocationRunStep = ({ onComplete }) => {
             console.error(err);
             setStatus('error');
         }
+        */
+
+        // Trigger the simulation immediately
+        runSimulation();
     };
 
     // --- RENDER: 1. IDLE STATE ---
