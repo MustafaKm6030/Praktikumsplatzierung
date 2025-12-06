@@ -1,7 +1,6 @@
 """
 Shared factory helpers for creating test data in assignment tests.
 """
-from datetime import date
 from students.models import Student
 from subjects.models import Subject, PraktikumType
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
