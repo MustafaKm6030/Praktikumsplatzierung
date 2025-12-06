@@ -7,6 +7,9 @@ class StudentListSerializer(serializers.ModelSerializer):
     primary_subject_name = serializers.CharField(
         source="primary_subject.name", read_only=True
     )
+    zsp_subject_name = serializers.CharField(
+        source="didactic_subject_3.name", read_only=True
+    )
 
     class Meta:
         model = Student
@@ -18,6 +21,7 @@ class StudentListSerializer(serializers.ModelSerializer):
             "email",
             "program",
             "primary_subject_name",
+            "zsp_subject_name",
             "placement_status",
             "home_region",
         ]
@@ -26,6 +30,15 @@ class StudentListSerializer(serializers.ModelSerializer):
 class StudentDetailSerializer(serializers.ModelSerializer):
     primary_subject_name = serializers.CharField(
         source="primary_subject.name", read_only=True
+    )
+    didactic_subject_1_name = serializers.CharField(
+        source="didactic_subject_1.name", read_only=True
+    )
+    didactic_subject_2_name = serializers.CharField(
+        source="didactic_subject_2.name", read_only=True
+    )
+    didactic_subject_3_name = serializers.CharField(
+        source="didactic_subject_3.name", read_only=True
     )
 
     class Meta:
@@ -53,6 +66,9 @@ class StudentImportSerializer(serializers.ModelSerializer):
             "major": {"required": False},
             "enrollment_date": {"required": False},
             "primary_subject": {"required": False},
+            "didactic_subject_1": {"required": False},
+            "didactic_subject_2": {"required": False},
+            "didactic_subject_3": {"required": False},
             # Location Fields
             "home_address": {"required": False},
             "semester_address": {"required": False},  # Added new field

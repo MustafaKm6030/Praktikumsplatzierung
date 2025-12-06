@@ -3,6 +3,7 @@ import io
 from datetime import datetime
 from django.db import transaction
 from .models import Student
+from subjects.models import Subject
 
 
 def get_students_by_program(program):
@@ -35,6 +36,7 @@ def import_students_from_csv(file_obj):
     created_count = 0
     updated_count = 0
     errors = []
+    subjects_cache = {subject.code: subject for subject in Subject.objects.all()}
 
     with transaction.atomic():
         for row_num, row in enumerate(reader, start=2):
@@ -71,7 +73,18 @@ def import_students_from_csv(file_obj):
                     "placement_status": row.get("placement_status", "UNPLACED"),
                     "notes": row.get("notes", ""),
                 }
-
+                student_data["primary_subject"] = subjects_cache.get(
+                    row.get("primary_subject_code")
+                )
+                student_data["didactic_subject_1"] = subjects_cache.get(
+                    row.get("didactic_subject_1_code")
+                )
+                student_data["didactic_subject_2"] = subjects_cache.get(
+                    row.get("didactic_subject_2_code")
+                )
+                student_data["didactic_subject_3"] = subjects_cache.get(
+                    row.get("didactic_subject_3_code")
+                )
                 # Handle Enrollment Date
                 student_data["enrollment_date"] = _parse_date(
                     row.get("enrollment_date")
@@ -122,7 +135,10 @@ def _get_csv_headers():
         "program",
         "major",
         "enrollment_date",
-        "primary_subject_id",
+        "primary_subject_code",
+        "didactic_subject_1_code",
+        "didactic_subject_2_code",
+        "didactic_subject_3_code",
         "home_address",
         "semester_address",
         "home_region",
@@ -150,7 +166,10 @@ def _get_student_row(student):
         student.program,
         student.major,
         _format_date(student.enrollment_date),
-        student.primary_subject_id or "",
+        student.primary_subject.code if student.primary_subject else "",
+        student.didactic_subject_1.code if student.didactic_subject_1 else "",
+        student.didactic_subject_2.code if student.didactic_subject_2 else "",
+        student.didactic_subject_3.code if student.didactic_subject_3 else "",
         student.home_address,
         student.semester_address,
         student.home_region,

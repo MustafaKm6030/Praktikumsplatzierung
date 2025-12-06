@@ -39,3 +39,26 @@ def get_schools_for_wednesday_praktika():
     return School.objects.filter(
         zone__in=[1, 2], opnv_code__in=["4a", "4b"], is_active=True
     )
+
+
+def get_reachable_schools(praktikum_type_code: str):
+    """
+    Returns a queryset of schools that are logistically reachable for a given
+    internship type, based on Zone and ÖPNV rules.
+    """
+
+    # Rule for Block Internships (PDP I, PDP II)
+    # All active schools in any zone are considered reachable.
+    # The 'heimatnah' (close to home) logic is a soft constraint handled later by the solver.
+    if praktikum_type_code in ["PDP_I", "PDP_II"]:
+        return School.objects.filter(is_active=True)
+
+    # Rule for Wednesday Internships (SFP, ZSP)
+    # These have strict constraints based on the project briefing.
+    if praktikum_type_code in ["SFP", "ZSP"]:
+        return School.objects.filter(
+            is_active=True, zone__in=[1, 2], opnv_code__in=["4a", "4b"]
+        )
+
+    # For any other or unknown type, return an empty queryset
+    return School.objects.none()

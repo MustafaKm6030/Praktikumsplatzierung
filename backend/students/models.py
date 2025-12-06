@@ -38,8 +38,36 @@ class Student(TimeStampedModel):
         Subject,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="primary_students",
         help_text="Student's primary teaching subject",
+    )
+
+    didactic_subject_1 = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="didactic_1_students",
+        help_text="Didaktikfach 1",
+    )
+
+    didactic_subject_2 = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="didactic_2_students",
+        help_text="Didaktikfach 2",
+    )
+
+    didactic_subject_3 = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="didactic_3_students",
+        help_text="Didaktikfach 3. (Target for ZSP in this MVP)",
     )
 
     # Geographical Information
