@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Box, Stepper, Step, StepLabel, Typography, Container, Paper } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import Button from '../components/ui/Button';
+import AllocationRunStep from '../components/allocation/AllocationRunStep';
 
+// Workflow steps
 const STEPS = [
     'Demand Overview',
     'Run Auto-Allocation',
@@ -11,18 +13,18 @@ const STEPS = [
 ];
 
 export default function Allocation() {
+    // We start at Step 1 (Index 1) for testing this feature
+    // Later you can change this back to 0
     const [activeStep, setActiveStep] = useState(0);
 
-    // Temporary handler to test the stepper UI
-    const handleNext = () => {
-        // Loop back to start if at the end, just for demo purposes
+    const handleStepComplete = () => {
         setActiveStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : 0));
     };
 
     return (
         <Box sx={{ p: 3, pt: '40px', minHeight: '100vh' }}>
             <Container maxWidth="lg">
-                {/* 1. Header Section */}
+                {/* Header */}
                 <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: '#1f2937' }}>
                     Praktika Planning & Allocation
                 </Typography>
@@ -30,7 +32,7 @@ export default function Allocation() {
                     Match student demand with available PLs and school slots.
                 </Typography>
 
-                {/* 2. Workflow Stepper */}
+                {/* Workflow Stepper */}
                 <Box sx={{ mb: 6 }}>
                     <Stepper activeStep={activeStep} alternativeLabel>
                         {STEPS.map((label) => (
@@ -44,39 +46,52 @@ export default function Allocation() {
                     </Stepper>
                 </Box>
 
-                {/* 3. Step Content Placeholders */}
-                <Paper sx={{ 
-                    p: 6, 
-                    borderRadius: '16px', 
-                    minHeight: '300px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    backgroundColor: '#fff',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                }}>
-                    <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-                        {STEPS[activeStep]}
-                    </Typography>
+                {/* Step Content */}
+                <Box>
+                    {/* STEP 1: DEMAND OVERVIEW (Placeholder) */}
+                    {activeStep === 0 && (
+                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
+                            <Typography variant="h5" sx={{ mb: 2 }}>Step 1: Demand Overview</Typography>
+                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
+                                Visualization widgets coming in the next feature update.
+                            </Typography>
+                            <Button onClick={handleStepComplete} endIcon={<ArrowForward />} variant="secondary">
+                                Next Step (Demo)
+                            </Button>
+                        </Paper>
+                    )}
                     
-                    <Typography sx={{ mb: 4, color: '#6b7280', maxWidth: '500px' }}>
-                        {activeStep === 0 && "Visualize cumulated demand for each Praktikum type and subject."}
-                        {activeStep === 1 && "Configure and execute the allocation algorithm."}
-                        {activeStep === 2 && "Review assignments, resolve conflicts, and make manual adjustments."}
-                        {activeStep === 3 && "Generate reports, letters, and archive the planning period."}
-                    </Typography>
+                    {/* STEP 2: RUN AUTO-ALLOCATION */}
+                    {activeStep === 1 && (
+                        <AllocationRunStep onComplete={handleStepComplete} />
+                    )}
 
-                    {/* Temporary Demo Button - Will be replaced by specific step components later */}
-                    <Button 
-                        onClick={handleNext} 
-                        endIcon={<ArrowForward />}
-                        variant="secondary"
-                    >
-                        {activeStep === STEPS.length - 1 ? "Restart Demo" : "Next Step (Demo)"}
-                    </Button>
-                </Paper>
+                    {/* STEP 3: REVIEW RESULTS (Placeholder) */}
+                    {activeStep === 2 && (
+                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
+                            <Typography variant="h5" sx={{ mb: 2 }}>Step 3: Review Results</Typography>
+                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
+                                Results table will be implemented here.
+                            </Typography>
+                            <Button onClick={handleStepComplete} endIcon={<ArrowForward />} variant="secondary">
+                                Next Step (Demo)
+                            </Button>
+                        </Paper>
+                    )}
+
+                    {/* STEP 4: FINALIZE (Placeholder) */}
+                    {activeStep === 3 && (
+                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
+                            <Typography variant="h5" sx={{ mb: 2 }}>Step 4: Finalize</Typography>
+                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
+                                Reporting and archiving tools.
+                            </Typography>
+                            <Button onClick={() => setActiveStep(0)} variant="secondary">
+                                Restart Wizard
+                            </Button>
+                        </Paper>
+                    )}
+                </Box>
             </Container>
         </Box>
     );
