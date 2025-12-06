@@ -217,3 +217,125 @@ def get_mentor_capacity(mentor: PraktikumsLehrkraft) -> int:
 
     # Default to the capacity from Anrechnungsstunden
     return mentor.capacity
+
+
+# ==================== DEMAND PREVIEW API ====================
+
+def _calculate_available_pls_for_demand_item(demand_item):
+    """
+    Calculate the number of eligible PLs for a given demand item.
+    Business Logic: PDP I/II only need program match, SFP/ZSP need subject match.
+    
+    Args:
+        demand_item: dict with practicum_type, program_type, subject_code
+    
+    Returns:
+        int: count of eligible PLs
+    """
+    eligible_pls_query = PraktikumsLehrkraft.objects.filter(
+        is_active=True,
+        program=demand_item['program_type']
+    )
+    
+    # Add subject filter ONLY for SFP and ZSP
+    if demand_item['practicum_type'] in ['SFP', 'ZSP']:
+        eligible_pls_query = eligible_pls_query.filter(
+            available_subjects__code=demand_item['subject_code']
+        )
+    
+    return eligible_pls_query.distinct().count()
+
+
+def _build_detailed_breakdown(raw_demand):
+    """
+    Build detailed breakdown by adding available_pls to each demand item.
+    Business Logic: For each demand group, calculate supply from PLs.
+    
+    Args:
+        raw_demand: list of demand dicts from aggregate_demand()
+    
+    Returns:
+        list: demand items with available_pls added
+    """
+    detailed_breakdown = []
+    
+    for item in raw_demand:
+        available_pls = _calculate_available_pls_for_demand_item(item)
+        breakdown_item = {
+            'practicum_type': item['practicum_type'],
+            'program_type': item['program_type'],
+            'subject_code': item['subject_code'],
+            'subject_display_name': item['subject_display_name'],
+            'required_slots': item['required_slots'],
+            'available_pls': available_pls,
+        }
+        detailed_breakdown.append(breakdown_item)
+    
+    return detailed_breakdown
+
+
+def _calculate_total_pl_capacity():
+    """
+    Calculate total capacity of all active PLs.
+    Business Logic: Sum of (anrechnungsstunden * 2) for each active PL.
+    
+    Returns:
+        int: total capacity slots
+    """
+    active_pls = PraktikumsLehrkraft.objects.filter(is_active=True)
+    return sum(pl.capacity for pl in active_pls)
+
+
+def _calculate_summary_cards(detailed_breakdown, total_pl_capacity):
+    """
+    Calculate summary card metrics from detailed breakdown.
+    Business Logic: Aggregate demand counts by practicum type categories.
+    
+    Args:
+        detailed_breakdown: list of demand items with required_slots
+        total_pl_capacity: pre-calculated total PL capacity
+    
+    Returns:
+        dict: summary_cards with all metrics
+    """
+    total_demand_slots = 0
+    total_pdp_demand = 0
+    total_wednesday_demand = 0
+    
+    for item in detailed_breakdown:
+        slots = item['required_slots']
+        total_demand_slots += slots
+        
+        if item['practicum_type'] in ['PDP_I', 'PDP_II']:
+            total_pdp_demand += slots
+        elif item['practicum_type'] in ['SFP', 'ZSP']:
+            total_wednesday_demand += slots
+    
+    return {
+        'total_demand_slots': total_demand_slots,
+        'total_pl_capacity_slots': total_pl_capacity,
+        'total_pdp_demand': total_pdp_demand,
+        'total_wednesday_demand': total_wednesday_demand,
+    }
+
+
+def get_demand_preview_data():
+    """
+    Main service function to get complete demand preview data.
+    Business Logic: Aggregates student demand and PL supply for allocation page.
+    
+    Returns:
+        dict: {summary_cards: {...}, detailed_breakdown: [...]}
+    """
+    # Part 1: Get raw demand and build detailed breakdown
+    raw_demand = aggregate_demand()
+    detailed_breakdown = _build_detailed_breakdown(raw_demand)
+    
+    # Part 2: Calculate summary cards
+    total_pl_capacity = _calculate_total_pl_capacity()
+    summary_cards = _calculate_summary_cards(detailed_breakdown, total_pl_capacity)
+    
+    return {
+        'summary_cards': summary_cards,
+        'detailed_breakdown': detailed_breakdown,
+    }
