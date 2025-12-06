@@ -477,7 +477,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
         """
         # Student needing all practicums (none completed)
         Student.objects.create(
-            student_id="S001",
+            student_id="S_ALL_NEEDS",
             first_name="Needs",
             last_name="All",
             email="needsall@test.com",
@@ -491,27 +491,23 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
 
         assignment_status = get_assignment_status()
 
-        # This student should contribute to all 4 practicum types
-        # PDP I: +1, PDP II: 0, SFP: +1, ZSP: +1
-        pdp1_item = next(
-            item for item in assignment_status if item["practicum_type"] == "PDP I"
-        )
-        sfp_item = next(
-            item for item in assignment_status if item["practicum_type"] == "SFP"
-        )
-        zsp_item = next(
-            item for item in assignment_status if item["practicum_type"] == "ZSP"
-        )
-        pdp2_item = next(
-            item for item in assignment_status if item["practicum_type"] == "PDP II"
-        )
+        # Helper to extract demand by type
+        def get_demand_slots(ptype):
+            return next(
+                (
+                    item["demand_slots"]
+                    for item in assignment_status
+                    if item["practicum_type"] == ptype
+                ),
+                0,
+            )
 
-        self.assertEqual(
-            pdp1_item["demand_slots"], 1
-        )  # This is the ONLY demand generated
-        self.assertEqual(sfp_item["demand_slots"], 0)  # Should be 0
-        self.assertEqual(zsp_item["demand_slots"], 0)  # Should be 0
-        self.assertEqual(pdp2_item["demand_slots"], 0)  # Should be 0
+        # Logic: A student with nothing completed only generates demand
+        # for the first step (PDP I).
+        self.assertEqual(get_demand_slots("PDP I"), 1)
+        self.assertEqual(get_demand_slots("PDP II"), 0)
+        self.assertEqual(get_demand_slots("SFP"), 0)
+        self.assertEqual(get_demand_slots("ZSP"), 0)
 
     def test_assignment_status_with_partially_completed_student(self):
         """
@@ -519,7 +515,7 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
         """
         # Student who completed PDP I but needs others
         Student.objects.create(
-            student_id="S001",
+            student_id="S_PARTIAL",
             first_name="Partial",
             last_name="Complete",
             email="partial@test.com",
@@ -535,25 +531,22 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
 
         assignment_status = get_assignment_status()
 
-        # This student should need PDP II, SFP, and ZSP
-        pdp1_item = next(
-            item for item in assignment_status if item["practicum_type"] == "PDP I"
-        )
-        pdp2_item = next(
-            item for item in assignment_status if item["practicum_type"] == "PDP II"
-        )
-        sfp_item = next(
-            item for item in assignment_status if item["practicum_type"] == "SFP"
-        )
-        zsp_item = next(
-            item for item in assignment_status if item["practicum_type"] == "ZSP"
-        )
+        # Helper to extract demand by type (reduces code repetition)
+        def get_demand(ptype):
+            return next(
+                (
+                    item["demand_slots"]
+                    for item in assignment_status
+                    if item["practicum_type"] == ptype
+                ),
+                0,
+            )
 
-        # Should have demand for PDP II
-        self.assertEqual(pdp1_item["demand_slots"], 0)  # No demand for PDP I
-        self.assertEqual(pdp2_item["demand_slots"], 1)  # Generates demand for PDP II
-        self.assertEqual(sfp_item["demand_slots"], 1)  # Generates demand for SFP
-        self.assertEqual(zsp_item["demand_slots"], 1)  # Generates demand for ZSP
+        # Should have demand for PDP II, SFP, ZSP but NOT PDP I (because it is completed)
+        self.assertEqual(get_demand("PDP I"), 0)
+        self.assertEqual(get_demand("PDP II"), 1)
+        self.assertEqual(get_demand("SFP"), 1)
+        self.assertEqual(get_demand("ZSP"), 1)
 
     def test_budget_summary_with_decimal_anrechnungsstunden(self):
         """

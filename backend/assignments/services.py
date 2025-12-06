@@ -3,7 +3,7 @@
 from collections import defaultdict
 from students.models import Student
 from subjects.services import get_subject_code, get_subject_display_name
-from subjects.models import PraktikumType, Subject
+from subjects.models import PraktikumType
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
 import re
 from schools.services import get_reachable_schools
@@ -92,53 +92,77 @@ def _parse_constraints_from_notes(mentor: PraktikumsLehrkraft) -> dict:
     """
     Parses the 'besonderheiten' field for hard constraints and returns a structured dict.
     """
-    # --- EDITED: Only reads from the 'besonderheiten' field ---
-    notes_text = mentor.current_year_notes.lower() if mentor.current_year_notes else ""
-
-    constraints = {
-        "is_unavailable": False,
-        "force_capacity": None,
-        "allowed_types": None,
-        "forbidden_combinations": set(),
-    }
+    notes_text = (mentor.current_year_notes or "").lower()
 
     if not notes_text:
-        return constraints
+        return {
+            "is_unavailable": False,
+            "force_capacity": None,
+            "allowed_types": None,
+            "forbidden_combinations": set(),
+        }
 
-    # --- Global Unavailability ---
+    # 1. Global Unavailability (Critical Check)
+    if _is_mentor_unavailable(notes_text):
+        return {
+            "is_unavailable": True,
+            "force_capacity": None,
+            "allowed_types": None,
+            "forbidden_combinations": set(),
+        }
+
+    # 2. specific constraints
+    return {
+        "is_unavailable": False,
+        "force_capacity": _parse_capacity_override(notes_text),
+        "allowed_types": _parse_allowed_types(notes_text),
+        "forbidden_combinations": _parse_forbidden_combinations(notes_text),
+    }
+
+
+def _is_mentor_unavailable(text: str) -> bool:
+    """Checks for keywords indicating the mentor cannot take students."""
     unavailable_keywords = ["ruhend", "sabbatjahr", "mobil", "elternzeit", "krank"]
-    if any(keyword in notes_text for keyword in unavailable_keywords):
-        constraints["is_unavailable"] = True
-        return constraints
+    return any(keyword in text for keyword in unavailable_keywords)
 
-    # --- Capacity Overrides ---
-    if "nur 1 prak" in notes_text:
-        constraints["force_capacity"] = 1
 
-    # --- Type Restrictions ---
+def _parse_capacity_override(text: str):
+    """Checks if the notes specify a strict capacity limit."""
+    if "nur 1 prak" in text:
+        return 1
+    return None
+
+
+def _parse_allowed_types(text: str):
+    """Determines if the mentor is restricted to specific internship types."""
+    if "nur blockpraktika" in text or "nur pdp" in text or "kein mi-prak" in text:
+        return ["PDP_I", "PDP_II"]
+
+    if "nur mi-prak" in text or "wg. tz nur mi-prak" in text:
+        return ["SFP", "ZSP"]
+
+    return None
+
+
+def _parse_forbidden_combinations(text: str) -> set:
+    """Identifies specific Subject+Type combinations that are banned."""
+    forbidden = set()
+
+    if "sfp nicht in geschichte" in text:
+        forbidden.add(("SFP", "GE"))
+
     if (
-        "nur blockpraktika" in notes_text
-        or "nur pdp" in notes_text
-        or "kein mi-prak" in notes_text
+        "englisch nicht möglich" in text
+        or "englisch wird heuer nicht unterrichtet" in text
     ):
-        constraints["allowed_types"] = ["PDP_I", "PDP_II"]
-    elif "nur mi-prak" in notes_text or "wg. tz nur mi-prak" in notes_text:
-        constraints["allowed_types"] = ["SFP", "ZSP"]
+        forbidden.add(("SFP", "E"))
+        forbidden.add(("ZSP", "E"))
 
-    # --- Specific Combination Restrictions ---
-    if "sfp nicht in geschichte" in notes_text:
-        constraints["forbidden_combinations"].add(("SFP", "GE"))
-    if (
-        "englisch nicht möglich" in notes_text
-        or "englisch wird heuer nicht unterrichtet" in notes_text
-    ):
-        constraints["forbidden_combinations"].add(("SFP", "E"))
-        constraints["forbidden_combinations"].add(("ZSP", "E"))
-    if "heuer kein krel" in notes_text:
-        constraints["forbidden_combinations"].add(("SFP", "KRel"))
-        constraints["forbidden_combinations"].add(("ZSP", "KRel"))
+    if "heuer kein krel" in text:
+        forbidden.add(("SFP", "KRel"))
+        forbidden.add(("ZSP", "KRel"))
 
-    return constraints
+    return forbidden
 
 
 def calculate_eligibility_for_pl(mentor: PraktikumsLehrkraft) -> list:

@@ -2,8 +2,6 @@ import random
 from datetime import date
 from django.core.management.base import BaseCommand
 from django.db import transaction
-
-# Adjust these imports based on your actual project structure
 from students.models import Student
 from subjects.models import Subject
 
@@ -11,19 +9,116 @@ from subjects.models import Subject
 class Command(BaseCommand):
     help = "Seeds the database with 50 random students and necessary subjects"
 
+    # --- 1. Static Data Definitions (Moved out of methods) ---
+    SUBJECT_DEFINITIONS = [
+        ("D", "Deutsch"),
+        ("MA", "Mathematik"),
+        ("E", "Englisch"),
+        ("DaZ", "Deutsch als Zweitsprache"),
+        ("KRel", "Kath. Religion"),
+        ("ERel", "Evang. Religion"),
+        ("SK", "Sozialkunde"),
+        ("PO", "Politik"),
+        ("GE", "Geschichte"),
+        ("GEO", "Geographie"),
+        ("KE", "Kunsterziehung"),
+        ("MU", "Musik"),
+        ("SP", "Sport"),
+        ("BIO", "Biologie"),
+        ("CHE", "Chemie"),
+        ("PHY", "Physik"),
+        ("AL", "Arbeitslehre"),
+        ("WI", "Wirtschaft"),
+        ("BK", "Berufskunde"),
+        ("IT", "Informatik"),
+        ("SSE", "Schriftspracherwerb"),
+    ]
+
+    FIRST_NAMES = [
+        "Lukas",
+        "Maria",
+        "Maximilian",
+        "Sophie",
+        "Paul",
+        "Anna",
+        "Leon",
+        "Laura",
+        "Felix",
+        "Lena",
+        "Elias",
+        "Mia",
+        "Jonas",
+        "Emma",
+        "David",
+        "Hannah",
+        "Julian",
+        "Sarah",
+        "Tim",
+        "Lisa",
+    ]
+
+    LAST_NAMES = [
+        "Müller",
+        "Schmidt",
+        "Schneider",
+        "Fischer",
+        "Weber",
+        "Meyer",
+        "Wagner",
+        "Becker",
+        "Schulz",
+        "Hoffmann",
+        "Koch",
+        "Richter",
+        "Klein",
+        "Wolf",
+        "Schröder",
+        "Neumann",
+        "Schwarz",
+        "Zimmermann",
+        "Braun",
+        "Krüger",
+    ]
+
+    REGIONS = ["Passau", "Regen", "Deggendorf", "Straubing", "Passau-Land"]
+    ADDRESSES = [
+        "Innstraße",
+        "Donaupromenade",
+        "Stadtplatz",
+        "Bahnhofstraße",
+        "Schulweg",
+        "Hauptstraße",
+    ]
+
     def add_arguments(self, parser):
-        # Optional: Add a flag to delete existing test students before seeding
         parser.add_argument(
             "--clear",
             action="store_true",
-            help="Delete existing test students (ST-2025-*) before seeding",
+            help="Delete existing test students before seeding",
         )
 
     @transaction.atomic
     def handle(self, *args, **options):
         self.stdout.write("--- Starting Student Seeding Process ---")
 
-        # 0. Cleanup if requested
+        # 1. Cleanup
+        self._clear_existing_data(options)
+
+        # 2. Setup Subjects
+        db_subjects = self._ensure_subjects_exist()
+
+        # 3. Generate Students
+        self.stdout.write("Generating Student Data...")
+        students = self._generate_student_batch(db_subjects)
+
+        # 4. Save
+        Student.objects.bulk_create(students, ignore_conflicts=True)
+        self.stdout.write(
+            self.style.SUCCESS(f"Successfully created {len(students)} students!")
+        )
+
+    def _clear_existing_data(self, options):
+        """Handles the deletion of existing test data."""
         if options["clear"]:
             deleted_count, _ = Student.objects.filter(
                 student_id__startswith="ST-2025-"
@@ -32,50 +127,19 @@ class Command(BaseCommand):
                 self.style.WARNING(f"Removed {deleted_count} existing test students.")
             )
 
-        # 1. Define the Universe of Subjects
-        all_subject_definitions = [
-            # Languages & Core
-            ("D", "Deutsch"),
-            ("MA", "Mathematik"),
-            ("E", "Englisch"),
-            ("DaZ", "Deutsch als Zweitsprache"),
-            # Religion (Pooled)
-            ("KRel", "Kath. Religion"),
-            ("ERel", "Evang. Religion"),
-            # Social Studies
-            ("SK", "Sozialkunde"),
-            ("PO", "Politik"),
-            ("GE", "Geschichte"),
-            ("GEO", "Geographie"),
-            # Arts & Sport
-            ("KE", "Kunsterziehung"),
-            ("MU", "Musik"),
-            ("SP", "Sport"),
-            # Science (Maps to HSU in GS, PCB in MS)
-            ("BIO", "Biologie"),
-            ("CHE", "Chemie"),
-            ("PHY", "Physik"),
-            # MS Specific
-            ("AL", "Arbeitslehre"),
-            ("WI", "Wirtschaft"),
-            ("BK", "Berufskunde"),
-            ("IT", "Informatik"),
-            # GS Specific
-            ("SSE", "Schriftspracherwerb"),
-        ]
-
-        # Create/Get Subjects in DB and store in a lookup dict
+    def _ensure_subjects_exist(self):
+        """Creates subjects in the DB and returns a lookup dictionary."""
         self.stdout.write("Ensuring Subjects exist...")
         db_subjects = {}
-        for code, name in all_subject_definitions:
-            sub, created = Subject.objects.get_or_create(
-                code=code, defaults={"name": name}
-            )
+        for code, name in self.SUBJECT_DEFINITIONS:
+            sub, _ = Subject.objects.get_or_create(code=code, defaults={"name": name})
             db_subjects[name] = sub
+        return db_subjects
 
-        # 2. Define Valid Pools based on Rules
-        # --- Grundschule (GS) Pools ---
-        gs_primary_pool_names = [
+    def _get_pools(self, program):
+        """Returns the primary and didactic subject pools based on program type."""
+        # Note: You could also move these lists to class attributes if they are static
+        gs_primary = [
             "Sozialkunde",
             "Politik",
             "Deutsch als Zweitsprache",
@@ -88,8 +152,7 @@ class Command(BaseCommand):
             "Kunsterziehung",
             "Mathematik",
         ]
-
-        gs_didactic_pool_names = gs_primary_pool_names + [
+        gs_didactic = gs_primary + [
             "Biologie",
             "Chemie",
             "Physik",
@@ -98,8 +161,7 @@ class Command(BaseCommand):
             "Schriftspracherwerb",
         ]
 
-        # --- Mittelschule (MS) Pools ---
-        ms_primary_pool_names = [
+        ms_primary = [
             "Arbeitslehre",
             "Wirtschaft",
             "Berufskunde",
@@ -119,169 +181,86 @@ class Command(BaseCommand):
             "Kunsterziehung",
             "Mathematik",
         ]
+        ms_didactic = ms_primary + ["Musik", "Sport"]
 
-        ms_didactic_pool_names = ms_primary_pool_names + ["Musik", "Sport"]
+        if program == "GS":
+            return gs_primary, gs_didactic
+        return ms_primary, ms_didactic
 
-        # 3. Random Data Lists
-        first_names = [
-            "Lukas",
-            "Maria",
-            "Maximilian",
-            "Sophie",
-            "Paul",
-            "Anna",
-            "Leon",
-            "Laura",
-            "Felix",
-            "Lena",
-            "Elias",
-            "Mia",
-            "Jonas",
-            "Emma",
-            "David",
-            "Hannah",
-            "Julian",
-            "Sarah",
-            "Tim",
-            "Lisa",
-        ]
-        last_names = [
-            "Müller",
-            "Schmidt",
-            "Schneider",
-            "Fischer",
-            "Weber",
-            "Meyer",
-            "Wagner",
-            "Becker",
-            "Schulz",
-            "Hoffmann",
-            "Koch",
-            "Richter",
-            "Klein",
-            "Wolf",
-            "Schröder",
-            "Neumann",
-            "Schwarz",
-            "Zimmermann",
-            "Braun",
-            "Krüger",
-        ]
-        regions = ["Passau", "Regen", "Deggendorf", "Straubing", "Passau-Land"]
-        addresses = [
-            "Innstraße",
-            "Donaupromenade",
-            "Stadtplatz",
-            "Bahnhofstraße",
-            "Schulweg",
-            "Hauptstraße",
-        ]
-
+    def _generate_student_batch(self, db_subjects):
+        """Generates the list of Student objects."""
         students_to_create = []
-
-        self.stdout.write("Generating Student Data...")
-
-        # 4. Generate 50 Students
         for i in range(1, 51):
-            s_id = f"ST-2025-{i:03d}"
-            f_name = random.choice(first_names)
-            l_name = random.choice(last_names)
-            email = f"{f_name.lower()}.{l_name.lower()}.{i}@stud.uni-passau.de"
-            region = random.choice(regions)
+            student = self._create_single_student(i, db_subjects)
+            if student:
+                students_to_create.append(student)
+        return students_to_create
 
-            # 70% GS, 30% MS
-            program = "GS" if i <= 35 else "MS"
+    def _create_single_student(self, index, db_subjects):
+        """Creates a single Student instance."""
+        s_id = f"ST-2025-{index:03d}"
+        f_name = random.choice(self.FIRST_NAMES)
+        l_name = random.choice(self.LAST_NAMES)
+        email = f"{f_name.lower()}.{l_name.lower()}.{index}@stud.uni-passau.de"
+        region = random.choice(self.REGIONS)
 
-            if region == "Passau":
-                addr = (
-                    f"{random.choice(addresses)} {random.randint(1, 100)}, 94032 Passau"
-                )
-            else:
-                addr = f"{random.choice(addresses)} {random.randint(1, 100)}, 94XXX {region}"
+        # 70% GS, 30% MS
+        program = "GS" if index <= 35 else "MS"
 
-            # --- SUBJECT SELECTION LOGIC ---
-            if program == "GS":
-                prim_pool = gs_primary_pool_names
-                didactic_pool = gs_didactic_pool_names
-            else:
-                prim_pool = ms_primary_pool_names
-                didactic_pool = ms_didactic_pool_names
+        # Address Logic
+        if region == "Passau":
+            addr = f"{random.choice(self.ADDRESSES)} {random.randint(1, 100)}, 94032 Passau"
+        else:
+            addr = f"{random.choice(self.ADDRESSES)} {random.randint(1, 100)}, 94XXX {region}"
 
-            # 1. Pick Primary Subject (Target for SFP)
-            prim_name = random.choice(prim_pool)
-            primary_subject = db_subjects[prim_name]
+        # Subject Selection
+        prim_pool, didactic_pool = self._get_pools(program)
 
-            # 2. Pick 3 Distinct Didactic Subjects
-            # Ensure we don't pick the primary again if not desired
-            available_didactics = [name for name in didactic_pool if name != prim_name]
+        prim_name = random.choice(prim_pool)
+        available_didactics = [name for name in didactic_pool if name != prim_name]
 
-            # Safety check: ensure we have enough subjects to sample from
-            if len(available_didactics) < 3:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Not enough didactic subjects for {program} pool. Skipping {s_id}."
-                    )
-                )
-                continue
+        if len(available_didactics) < 3:
+            self.stdout.write(self.style.WARNING(f"Not enough subjects for {s_id}"))
+            return None
 
-            selected_didactics_names = random.sample(available_didactics, 3)
+        selected_didactics = random.sample(available_didactics, 3)
 
-            didactic_1 = db_subjects[selected_didactics_names[0]]
-            didactic_2 = db_subjects[selected_didactics_names[1]]
-            didactic_3 = db_subjects[selected_didactics_names[2]]  # Target for ZSP
+        # Dates / Demand Logic
+        pdp1, pdp2, sfp, zsp = self._calculate_dates(index)
 
-            # --- DEMAND GENERATION ---
-            pdp1_date = None
-            pdp2_date = None
-            sfp_date = None
-            zsp_date = None
-            placement_status = "UNPLACED"
-
-            rand_val = i % 5
-
-            if rand_val == 0:
-                # Type A: Freshman (Needs PDP I)
-                pass
-            elif rand_val == 1:
-                # Type B: Mid-Study (Needs SFP - Primary Subject)
-                pdp1_date = date(2023, 3, 1)
-            elif rand_val == 2:
-                # Type C: Advanced (Needs ZSP - Didactic Subject 3)
-                pdp1_date = date(2023, 3, 1)
-                sfp_date = date(2024, 7, 15)
-            elif rand_val == 3:
-                # Type D: Needs PDP II
-                pdp1_date = date(2023, 3, 1)
-            else:
-                # Type E: Needs SFP AND ZSP
-                pdp1_date = date(2023, 3, 1)
-
-            student = Student(
-                student_id=s_id,
-                first_name=f_name,
-                last_name=l_name,
-                email=email,
-                program=program,
-                primary_subject=primary_subject,
-                didactic_subject_1=didactic_1,
-                didactic_subject_2=didactic_2,
-                didactic_subject_3=didactic_3,
-                home_address=addr,
-                semester_address="Innstraße 41, 94032 Passau",
-                home_region=region,
-                pdp1_completed_date=pdp1_date,
-                pdp2_completed_date=pdp2_date,
-                sfp_completed_date=sfp_date,
-                zsp_completed_date=zsp_date,
-                placement_status=placement_status,
-            )
-            students_to_create.append(student)
-
-        # Bulk create
-        Student.objects.bulk_create(students_to_create, ignore_conflicts=True)
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully created {len(students_to_create)} students!"
-            )
+        return Student(
+            student_id=s_id,
+            first_name=f_name,
+            last_name=l_name,
+            email=email,
+            program=program,
+            primary_subject=db_subjects[prim_name],
+            didactic_subject_1=db_subjects[selected_didactics[0]],
+            didactic_subject_2=db_subjects[selected_didactics[1]],
+            didactic_subject_3=db_subjects[selected_didactics[2]],
+            home_address=addr,
+            semester_address="Innstraße 41, 94032 Passau",
+            home_region=region,
+            pdp1_completed_date=pdp1,
+            pdp2_completed_date=pdp2,
+            sfp_completed_date=sfp,
+            zsp_completed_date=zsp,
+            placement_status="UNPLACED",
         )
+
+    def _calculate_dates(self, index):
+        """Determines the completed dates based on random logic."""
+        pdp1 = pdp2 = sfp = zsp = None
+        rand_val = index % 5
+
+        if rand_val == 1:  # Type B
+            pdp1 = date(2023, 3, 1)
+        elif rand_val == 2:  # Type C
+            pdp1 = date(2023, 3, 1)
+            sfp = date(2024, 7, 15)
+        elif rand_val == 3:  # Type D
+            pdp1 = date(2023, 3, 1)
+        elif rand_val == 4:  # Type E
+            pdp1 = date(2023, 3, 1)
+
+        return pdp1, pdp2, sfp, zsp

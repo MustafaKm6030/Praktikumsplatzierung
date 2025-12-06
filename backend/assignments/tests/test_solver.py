@@ -9,6 +9,62 @@ from students.models import Student
 
 
 class SolverHardConstraintsTests(TestCase):
+    # --- Static Data Definitions ---
+    SUBJECT_CODES = ["D", "MA", "E", "MU", "SP", "HSU"]
+    TYPE_CODES = ["PDP_I", "PDP_II", "SFP", "ZSP"]
+
+    SCHOOLS_DATA = [
+        (
+            "Grundschule Passau-Innstadt",
+            "GS",
+            "Passau",
+            "Passau",
+            1,
+            "4a",
+            5,
+            48.57,
+            13.46,
+            True,
+        ),
+        (
+            "Mittelschule Vilshofen",
+            "MS",
+            "Passau-Land",
+            "Vilshofen",
+            1,
+            "4a",
+            23,
+            48.62,
+            13.38,
+            True,
+        ),
+        ("Grundschule Regen", "GS", "Regen", "Regen", 3, "", 71, 48.97, 13.12, False),
+        (
+            "Grundschule Deggendorf",
+            "GS",
+            "Deggendorf",
+            "Deggendorf",
+            2,
+            "4b",
+            53,
+            48.83,
+            12.96,
+            True,
+        ),
+        (
+            "Mittelschule Straubing",
+            "MS",
+            "Straubing",
+            "Straubing",
+            3,
+            "",
+            85,
+            48.87,
+            12.57,
+            True,
+        ),
+    ]
+
     @classmethod
     def setUpTestData(cls):
         """
@@ -18,88 +74,39 @@ class SolverHardConstraintsTests(TestCase):
         """
         print("\n--- Setting up Test Data ---")
 
-        # --- 1. Setup Subjects (Helper Dictionary) ---
-        subject_codes = ["D", "MA", "E", "MU", "SP", "HSU"]
+        # 1. Setup Dependencies
+        subjects_map = cls._setup_subjects()
+        types_map = cls._setup_types()
+        schools_map = cls._setup_schools()
+
+        # 2. Create PLs
+        cls._setup_pls(schools_map, subjects_map, types_map)
+
+        # 3. Create Students
+        cls._setup_students(subjects_map)
+
+    @classmethod
+    def _setup_subjects(cls):
         subjects = {}
-        for code in subject_codes:
+        for code in cls.SUBJECT_CODES:
             sub, _ = Subject.objects.get_or_create(code=code, defaults={"name": code})
             subjects[code] = sub
+        return subjects
 
-        # --- 2. Setup Types (Helper Dictionary) ---
-        type_codes = ["PDP_I", "PDP_II", "SFP", "ZSP"]
-        praktikum_types = {}
-        for code in type_codes:
+    @classmethod
+    def _setup_types(cls):
+        types = {}
+        for code in cls.TYPE_CODES:
             pt, _ = PraktikumType.objects.get_or_create(
                 code=code, defaults={"name": code}
             )
-            praktikum_types[code] = pt
+            types[code] = pt
+        return types
 
-        # --- 3. Create Schools ---
-        schools_data = [
-            (
-                "Grundschule Passau-Innstadt",
-                "GS",
-                "Passau",
-                "Passau",
-                1,
-                "4a",
-                5,
-                48.57,
-                13.46,
-                True,
-            ),
-            (
-                "Mittelschule Vilshofen",
-                "MS",
-                "Passau-Land",
-                "Vilshofen",
-                1,
-                "4a",
-                23,
-                48.62,
-                13.38,
-                True,
-            ),
-            (
-                "Grundschule Regen",
-                "GS",
-                "Regen",
-                "Regen",
-                3,
-                "",
-                71,
-                48.97,
-                13.12,
-                False,
-            ),
-            (
-                "Grundschule Deggendorf",
-                "GS",
-                "Deggendorf",
-                "Deggendorf",
-                2,
-                "4b",
-                53,
-                48.83,
-                12.96,
-                True,
-            ),
-            (
-                "Mittelschule Straubing",
-                "MS",
-                "Straubing",
-                "Straubing",
-                3,
-                "",
-                85,
-                48.87,
-                12.57,
-                True,
-            ),
-        ]
-
+    @classmethod
+    def _setup_schools(cls):
         schools = {}
-        for row in schools_data:
+        for row in cls.SCHOOLS_DATA:
             name = row[0]
             school, _ = School.objects.get_or_create(
                 name=name,
@@ -116,15 +123,16 @@ class SolverHardConstraintsTests(TestCase):
                 },
             )
             schools[name] = school
+        return schools
 
-        # --- 4. Create Praktikumslehrkräfte (Teachers) ---
-        # Supply: Michael(4) + Sarah(2) + Julia(2) = 8 Slots
+    @classmethod
+    def _setup_pls(cls, schools, subjects, ptypes):
         pls_data = [
             # Inactive
             {
+                "email": "anna.schmidt@schule.de",
                 "first_name": "Anna",
                 "last_name": "Schmidt",
-                "email": "anna.schmidt@schule.de",
                 "school": schools["Grundschule Regen"],
                 "program": "GS",
                 "main_subject": subjects["D"],
@@ -132,14 +140,14 @@ class SolverHardConstraintsTests(TestCase):
                 "anrechnungsstunden": 1.0,
                 "is_active": False,
                 "preferred_praktika_raw": "PDP I, SFP",
-                "praktikum_types": ["PDP_I", "SFP"],
-                "available_subjects": ["D", "MA"],
+                "p_codes": ["PDP_I", "SFP"],
+                "s_codes": ["D", "MA"],
             },
             # Active: Michael (Capacity 4) - MS
             {
+                "email": "michael.mueller@schule.de",
                 "first_name": "Michael",
                 "last_name": "Müller",
-                "email": "michael.mueller@schule.de",
                 "school": schools["Mittelschule Vilshofen"],
                 "program": "MS",
                 "main_subject": subjects["MA"],
@@ -148,14 +156,14 @@ class SolverHardConstraintsTests(TestCase):
                 "is_active": True,
                 "preferred_praktika_raw": "PDP I, PDP II, SFP, ZSP",
                 "current_year_notes": "4 für 2",
-                "praktikum_types": ["PDP_I", "PDP_II", "SFP", "ZSP"],
-                "available_subjects": ["MA", "SP", "E"],
+                "p_codes": ["PDP_I", "PDP_II", "SFP", "ZSP"],
+                "s_codes": ["MA", "SP", "E"],
             },
             # Active: Sarah (Capacity 2) - GS
             {
+                "email": "sarah.weber@schule.de",
                 "first_name": "Sarah",
                 "last_name": "Weber",
-                "email": "sarah.weber@schule.de",
                 "school": schools["Grundschule Deggendorf"],
                 "program": "GS",
                 "main_subject": subjects["MU"],
@@ -164,14 +172,14 @@ class SolverHardConstraintsTests(TestCase):
                 "is_active": True,
                 "preferred_praktika_raw": "SFP, ZSP",
                 "current_year_notes": "nur Mi-Prak.",
-                "praktikum_types": ["SFP", "ZSP"],
-                "available_subjects": ["MU", "D", "MA"],
+                "p_codes": ["SFP", "ZSP"],
+                "s_codes": ["MU", "D", "MA"],
             },
             # Inactive
             {
+                "email": "thomas.bauer@schule.de",
                 "first_name": "Thomas",
                 "last_name": "Bauer",
-                "email": "thomas.bauer@schule.de",
                 "school": schools["Mittelschule Straubing"],
                 "program": "MS",
                 "main_subject": subjects["SP"],
@@ -179,14 +187,14 @@ class SolverHardConstraintsTests(TestCase):
                 "anrechnungsstunden": 0.0,
                 "is_active": False,
                 "preferred_praktika_raw": "PDP I, PDP II",
-                "praktikum_types": [],
-                "available_subjects": [],
+                "p_codes": [],
+                "s_codes": [],
             },
             # Active: Julia (Capacity 2) - GS
             {
+                "email": "julia.fischer@schule.de",
                 "first_name": "Julia",
                 "last_name": "Fischer",
-                "email": "julia.fischer@schule.de",
                 "school": schools["Grundschule Passau-Innstadt"],
                 "program": "GS",
                 "main_subject": subjects["HSU"],
@@ -194,28 +202,25 @@ class SolverHardConstraintsTests(TestCase):
                 "anrechnungsstunden": 1.0,
                 "is_active": True,
                 "preferred_praktika_raw": "PDP I, SFP, ZSP",
-                "praktikum_types": ["PDP_I", "SFP", "ZSP"],
-                "available_subjects": ["HSU", "D", "MA"],
+                "p_codes": ["PDP_I", "SFP", "ZSP"],
+                "s_codes": ["HSU", "D", "MA"],
             },
         ]
 
-        for pl_data in pls_data:
-            pl_data_copy = pl_data.copy()
-            p_codes = pl_data_copy.pop("praktikum_types")
-            s_codes = pl_data_copy.pop("available_subjects")
-
+        for data in pls_data:
+            p_codes = data.pop("p_codes")
+            s_codes = data.pop("s_codes")
             pl, _ = PraktikumsLehrkraft.objects.get_or_create(
-                email=pl_data_copy["email"], defaults=pl_data_copy
+                email=data["email"], defaults=data
             )
 
-            # M2M Relationships
             if p_codes:
-                pl.available_praktikum_types.set([praktikum_types[c] for c in p_codes])
+                pl.available_praktikum_types.set([ptypes[c] for c in p_codes])
             if s_codes:
                 pl.available_subjects.set([subjects[c] for c in s_codes])
 
-        # --- 5. Create Students ---
-        # Total Demand: 8 Slots
+    @classmethod
+    def _setup_students(cls, subjects):
         students_data = [
             # Anna (GS): Needs PDP I, SFP (2 Slots)
             {

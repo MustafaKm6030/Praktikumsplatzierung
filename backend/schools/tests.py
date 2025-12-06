@@ -35,6 +35,12 @@ class SchoolServicesTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up data for the whole TestCase to test filtering logic."""
+        cls._setup_valid_wednesday_schools()
+        cls._setup_valid_block_schools()
+        cls._setup_invalid_schools()
+
+    @classmethod
+    def _setup_valid_wednesday_schools(cls):
         # School A: Perfect for Wednesday internships (Zone 1, 4a)
         cls.school_a = School.objects.create(
             name="School A (Wed, Z1, 4a)",
@@ -44,7 +50,6 @@ class SchoolServicesTests(TestCase):
             is_active=True,
             city="A",
         )
-
         # School B: Good for Wednesday internships (Zone 2, 4b)
         cls.school_b = School.objects.create(
             name="School B (Wed, Z2, 4b)",
@@ -55,6 +60,8 @@ class SchoolServicesTests(TestCase):
             city="B",
         )
 
+    @classmethod
+    def _setup_valid_block_schools(cls):
         # School C: Only valid for Block internships (Zone 3)
         cls.school_c = School.objects.create(
             name="School C (Block, Z3)",
@@ -65,6 +72,8 @@ class SchoolServicesTests(TestCase):
             city="C",
         )
 
+    @classmethod
+    def _setup_invalid_schools(cls):
         # School D: Invalid for Wednesday internships (Zone 1 but no ÖPNV code)
         cls.school_d = School.objects.create(
             name="School D (Block, Z1, no ÖPNV)",
@@ -74,7 +83,6 @@ class SchoolServicesTests(TestCase):
             is_active=True,
             city="D",
         )
-
         # School E: Inactive, should never be included in any results
         cls.school_e = School.objects.create(
             name="School E (Inactive)",

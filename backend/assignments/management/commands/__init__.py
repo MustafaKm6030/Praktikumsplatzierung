@@ -20,9 +20,7 @@ class Command(BaseCommand):
             count = len(results["solution"])
             db_count = Assignment.objects.count()
 
-            self.stdout.write(
-                self.style.SUCCESS(f"\n✅ Solver completed successfully!")
-            )
+            self.stdout.write(self.style.SUCCESS("\n✅ Solver completed successfully!"))
             self.stdout.write(f"   - Solution Size: {count} assignments calculated.")
             self.stdout.write(
                 f"   - Database Count: {db_count} Assignment objects created."

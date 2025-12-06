@@ -1,7 +1,6 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from django.test import TestCase
 from datetime import date
 from students.models import Student
 from subjects.models import Subject
