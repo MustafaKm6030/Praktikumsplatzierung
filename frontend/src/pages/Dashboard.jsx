@@ -21,8 +21,8 @@ function Dashboard() {
         <Box sx={{
             minHeight: '100vh',
             backgroundColor: '#f1f1f1',
-            pt: '40px',  // Match layout-content top margin
-            px: '16px',  // Match layout-content side margins
+            pt: '40px',
+            px: '16px',
             pb: 2
         }}>
             <Grid container spacing={2}>

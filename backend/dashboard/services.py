@@ -4,6 +4,7 @@ from django.db.models import Sum, Count, Q
 from students.models import Student
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from assignments.services import aggregate_demand
+from assignments.models import Assignment
 
 
 def get_dashboard_summary_data():
@@ -26,7 +27,7 @@ def get_assignment_status():
     """
     Calculates assignment status by practicum type.
     Uses aggregate_demand service for demand calculation.
-    Assigned/unassigned slots are mocked for parallel frontend development.
+    Assigned/unassigned slots are calculated from actual Assignment records.
     """
     demand_data = aggregate_demand()
     
@@ -40,38 +41,29 @@ def get_assignment_status():
             practicum_totals[ptype] = 0
         practicum_totals[ptype] += required
     
-    # Build assignment status with mocked assigned values
+    # Build assignment status with real assignment data
     return build_assignment_status_list(practicum_totals)
 
 
 def build_assignment_status_list(practicum_totals):
     """
-    Builds the assignment status list with mocked assignment data.
+    Builds the assignment status list using real assignment data.
     """
     assignment_status = []
     
-    # Mock assignment data (realistic placeholders)
-    mock_data = {
-        "PDP_I": {"assigned": None, "unassigned": 0},
-        "PDP_II": {"assigned": None, "unassigned": 0},
-        "SFP": {"assigned": -2, "unassigned": 2},
-        "ZSP": {"assigned": None, "unassigned": 0},
-    }
+    assignment_counts = Assignment.objects.values('practicum_type__code').annotate(
+        count=Count('id')
+    )
+    
+    assigned_by_type = {}
+    for item in assignment_counts:
+        ptype_code = item['practicum_type__code']
+        assigned_by_type[ptype_code] = item['count']
     
     for ptype in ["PDP_I", "PDP_II", "SFP", "ZSP"]:
         demand = practicum_totals.get(ptype, 0)
-        mock = mock_data.get(ptype, {"assigned": None, "unassigned": 0})
-        
-        # Calculate assigned and unassigned slots
-        # If mock assigned is None, it means fully assigned
-        # Ensure assigned_slots is never negative
-        if mock["assigned"] is not None:
-            assigned = max(0, demand + mock["assigned"])
-            # Only apply mock unassigned if there's actual demand
-            unassigned = mock["unassigned"] if demand > 0 else 0
-        else:
-            assigned = demand
-            unassigned = 0
+        assigned = assigned_by_type.get(ptype, 0)
+        unassigned = max(0, demand - assigned)
         
         assignment_status.append({
             "practicum_type": ptype.replace("_", " "),
@@ -129,6 +121,30 @@ def get_entity_counts():
         placement_status='UNPLACED'
     ).count()
     
+    placed_students = Student.objects.filter(
+        placement_status='PLACED'
+    ).count()
+    
+    unplaced_students_gs = Student.objects.filter(
+        placement_status='UNPLACED',
+        program='GS'
+    ).count()
+    
+    unplaced_students_ms = Student.objects.filter(
+        placement_status='UNPLACED',
+        program='MS'
+    ).count()
+    
+    placed_students_gs = Student.objects.filter(
+        placement_status='PLACED',
+        program='GS'
+    ).count()
+    
+    placed_students_ms = Student.objects.filter(
+        placement_status='PLACED',
+        program='MS'
+    ).count()
+    
     # Active PL counts
     active_pls = PraktikumsLehrkraft.objects.filter(is_active=True)
     active_pls_total = active_pls.count()
@@ -150,6 +166,11 @@ def get_entity_counts():
     return {
         "total_students": total_students,
         "unplaced_students": unplaced_students,
+        "placed_students": placed_students,
+        "unplaced_students_gs": unplaced_students_gs,
+        "unplaced_students_ms": unplaced_students_ms,
+        "placed_students_gs": placed_students_gs,
+        "placed_students_ms": placed_students_ms,
         "active_pls_total": active_pls_total,
         "active_pls_gs": active_pls_gs,
         "active_pls_ms": active_pls_ms,

@@ -3,48 +3,17 @@ import { Box, Typography, Paper, LinearProgress, Grid, Alert } from '@mui/materi
 import { PlayArrow, CheckCircle, Warning, LocationOn } from '@mui/icons-material';
 import Button from '../ui/Button';
 import KPICard from '../dashboard/KPICard';
-//import allocationService from '../../api/allocationService';
+import allocationService from '../../api/allocationService';
 
 const AllocationRunStep = ({ onComplete }) => {
-    const [status, setStatus] = useState('idle'); // 'idle' | 'running' | 'complete' | 'error'
+    const [status, setStatus] = useState('idle');
     const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState([]);
     const [results, setResults] = useState(null);
 
-    // Simulation of the algorithm steps (visual feedback)
-    const runSimulation = () => {
-        const steps = [
-            "Loading 150 Student Records...",
-            "Identifying Capacity Conflicts...",
-            "Optimizing Travel Times (Zone 1)...",
-            "Optimizing Travel Times (Zone 2)...",
-            "Finalizing Matches..."
-        ];
-
-        let currentStep = 0;
-        
-        const interval = setInterval(() => {
-            if (currentStep >= steps.length) {
-                clearInterval(interval);
-                finishAllocation();
-                return;
-            }
-            
-            setLogs(prev => [...prev, steps[currentStep]]);
-            setProgress(prev => prev + 20);
-            currentStep++;
-        }, 800);
-    };
-
-    const finishAllocation = async () => {
-        // Here we would fetch the REAL summary from the backend
-        // For now, we mock the response
-        setResults({
-            matchRate: "95%",
-            unmatchedCount: 5,
-            avgDistance: "4.2km"
-        });
-        setStatus('complete');
+    const updateProgress = (step, message) => {
+        setLogs(prev => [...prev, message]);
+        setProgress(step * 20);
     };
 
     const handleStart = async () => {
@@ -52,24 +21,38 @@ const AllocationRunStep = ({ onComplete }) => {
         setLogs([]);
         setProgress(0);
 
-        // --- MOCK MODE: ENABLED ---
-        // We comment out the real API call so the UI works without the backend
-        /*
         try {
-            // Trigger the real backend process
-            await allocationService.runAutoAllocation({});
-            
-            // Start visual feedback
-            runSimulation();
+            updateProgress(1, "Loading student records...");
+            updateProgress(2, "Analyzing mentor capacity...");
+            updateProgress(3, "Calculating demand...");
+            updateProgress(4, "Running optimization algorithm...");
+
+            const response = await allocationService.runAutoAllocation({});
+            const solverResult = response.data;
+
+            updateProgress(5, "Finalizing matches...");
+
+            const totalAssignments = solverResult.total_assignments || 0;
+            const totalUnassigned = solverResult.total_unassigned || 0;
+            const totalMentors = totalAssignments + totalUnassigned;
+            const matchRate = totalMentors > 0 
+                ? Math.round((totalAssignments / totalMentors) * 100) 
+                : 0;
+
+            setResults({
+                matchRate: `${matchRate}%`,
+                unmatchedCount: totalUnassigned,
+                totalAssignments: totalAssignments,
+                status: solverResult.status
+            });
+            setStatus('complete');
+            setProgress(100);
             
         } catch (err) {
-            console.error(err);
+            console.error('Allocation error:', err);
+            setLogs(prev => [...prev, `Error: ${err.message || 'Failed to run allocation'}`]);
             setStatus('error');
         }
-        */
-
-        // Trigger the simulation immediately
-        runSimulation();
     };
 
     // --- RENDER: 1. IDLE STATE ---
@@ -160,18 +143,18 @@ const AllocationRunStep = ({ onComplete }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard 
-                        label="Unmatched" 
-                        value={`${results.unmatchedCount} Students`} 
-                        icon={<Warning />} 
-                        color="#dc2626" 
+                        label="Total Assignments" 
+                        value={results.totalAssignments || 0} 
+                        icon={<CheckCircle />} 
+                        color="#3b82f6" 
                     />
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard 
-                        label="Average Distance" 
-                        value={results.avgDistance} 
-                        icon={<LocationOn />} 
-                        color="#6b7280" 
+                        label="Unassigned Mentors" 
+                        value={results.unmatchedCount || 0} 
+                        icon={<Warning />} 
+                        color="#dc2626" 
                     />
                 </Grid>
             </Grid>

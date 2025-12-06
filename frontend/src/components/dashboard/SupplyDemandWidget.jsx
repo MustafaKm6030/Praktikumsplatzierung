@@ -19,6 +19,8 @@ const SupplyDemandWidget = ({ data = {} }) => {
         active_pls_ms = 0,
         unplaced_students_gs = 0,
         unplaced_students_ms = 0,
+        placed_students_gs = 0,
+        placed_students_ms = 0,
     } = data;
 
     const plData = [
@@ -32,8 +34,8 @@ const SupplyDemandWidget = ({ data = {} }) => {
     ];
 
     const placedStudentData = [
-        { name: 'GS', value: (total_students - unplaced_students) - unplaced_students_ms },
-        { name: 'MS', value: total_students - unplaced_students - ((total_students - unplaced_students) - unplaced_students_ms) },
+        { name: 'GS', value: placed_students_gs },
+        { name: 'MS', value: placed_students_ms },
     ];
 
     return (

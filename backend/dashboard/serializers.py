@@ -29,6 +29,11 @@ class EntityCountsSerializer(serializers.Serializer):
     """
     total_students = serializers.IntegerField()
     unplaced_students = serializers.IntegerField()
+    placed_students = serializers.IntegerField()
+    unplaced_students_gs = serializers.IntegerField()
+    unplaced_students_ms = serializers.IntegerField()
+    placed_students_gs = serializers.IntegerField()
+    placed_students_ms = serializers.IntegerField()
     active_pls_total = serializers.IntegerField()
     active_pls_gs = serializers.IntegerField()
     active_pls_ms = serializers.IntegerField()
