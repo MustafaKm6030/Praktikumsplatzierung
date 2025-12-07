@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Paper, Grid, Divider } from '@mui/material';
 import { 
     CheckCircleOutline, 
@@ -9,12 +9,55 @@ import {
 } from '@mui/icons-material';
 import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
+import allocationService from '../../api/allocationService';
 
 const AllocationFinalizeStep = () => {
     const navigate = useNavigate();
+    const [isLoadingCsv, setIsLoadingCsv] = useState(false);
+    const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
-    const handleDownloadCsv = () => alert("CSV-Export wird heruntergeladen...");
-    const handleDownloadPdf = () => alert("PDF-Berichte werden generiert...");
+    const handleDownloadCsv = async () => {
+        setIsLoadingCsv(true);
+        try {
+            const response = await allocationService.exportCSV();
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'praktikumszuteilungen.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('CSV export failed:', error);
+            alert('CSV-Export fehlgeschlagen. Bitte versuchen Sie es erneut.');
+        } finally {
+            setIsLoadingCsv(false);
+        }
+    };
+
+    const handleDownloadPdf = async () => {
+        setIsLoadingPdf(true);
+        try {
+            const response = await allocationService.exportPDF();
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'praktikumszuteilungen.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('PDF export failed:', error);
+            alert('PDF-Export fehlgeschlagen. Bitte versuchen Sie es erneut.');
+        } finally {
+            setIsLoadingPdf(false);
+        }
+    };
+
     const handlePublish = () => alert("Ergebnisse werden im Studierendenportal veröffentlicht...");
 
     return (
@@ -46,8 +89,14 @@ const AllocationFinalizeStep = () => {
                         <Typography variant="body2" sx={{ mb: 3, color: '#6b7280' }}>
                             Laden Sie die Zuweisungsdaten für externe Systeme oder Excel-Archivierung herunter.
                         </Typography>
-                        <Button onClick={handleDownloadCsv} variant="secondary" fullWidth startIcon={<FileDownload />}>
-                            Masterliste exportieren (CSV)
+                        <Button 
+                            onClick={handleDownloadCsv} 
+                            variant="secondary" 
+                            fullWidth 
+                            startIcon={<FileDownload />}
+                            disabled={isLoadingCsv}
+                        >
+                            {isLoadingCsv ? 'Wird exportiert...' : 'Masterliste exportieren (CSV)'}
                         </Button>
                     </Paper>
                 </Grid>
@@ -61,8 +110,14 @@ const AllocationFinalizeStep = () => {
                         <Typography variant="body2" sx={{ mb: 3, color: '#6b7280' }}>
                             Erstellen Sie Zuweisungsschreiben für Schulen, Praktikumslehrkräfte und Studierende.
                         </Typography>
-                        <Button onClick={handleDownloadPdf} variant="secondary" fullWidth startIcon={<PictureAsPdf />}>
-                            PDF-Paket generieren
+                        <Button 
+                            onClick={handleDownloadPdf} 
+                            variant="secondary" 
+                            fullWidth 
+                            startIcon={<PictureAsPdf />}
+                            disabled={isLoadingPdf}
+                        >
+                            {isLoadingPdf ? 'Wird generiert...' : 'PDF-Paket generieren'}
                         </Button>
                     </Paper>
                 </Grid>

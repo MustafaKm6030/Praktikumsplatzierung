@@ -1,8 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import HttpResponse
 
-from .services import aggregate_demand, get_demand_preview_data
+from .services import (
+    aggregate_demand,
+    get_demand_preview_data,
+    generate_assignments_csv,
+    generate_assignments_pdf
+)
 from .serializers import (
     DemandSerializer,
     DemandPreviewSerializer,
@@ -109,3 +115,55 @@ class AssignmentListAPIView(APIView):
 
         serializer = AssignmentDetailSerializer(assignment_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExportAssignmentsCSVAPIView(APIView):
+    """
+    API endpoint to export assignments as CSV.
+    Business Logic: Generate CSV file with all assignment details.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests to export assignments as CSV.
+        Returns CSV file download response.
+        """
+        try:
+            csv_content = generate_assignments_csv()
+            
+            response = HttpResponse(csv_content, content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.csv"'
+            
+            return response
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ExportAssignmentsPDFAPIView(APIView):
+    """
+    API endpoint to export assignments as PDF.
+    Business Logic: Generate PDF report with all assignment details.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests to export assignments as PDF.
+        Returns PDF file download response.
+        """
+        try:
+            pdf_content = generate_assignments_pdf()
+            
+            response = HttpResponse(pdf_content, content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.pdf"'
+            
+            return response
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
