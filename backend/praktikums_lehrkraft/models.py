@@ -108,6 +108,8 @@ class PraktikumsLehrkraft(TimeStampedModel):
         Calculates the number of internships this PL must supervise.
         Rule: 1 Anrechnungsstunde = 2 Internships.
         """
+        if self.anrechnungsstunden is None:
+            return 0
         return int(self.anrechnungsstunden * 2)
 
     @property

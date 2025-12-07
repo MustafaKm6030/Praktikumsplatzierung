@@ -186,6 +186,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://132.231.2.121",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://malik08.stud.fim.uni-passau.de",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -196,6 +197,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://132.231.2.121",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://malik08.stud.fim.uni-passau.de",
 ]
 
 # CSRF Settings for frontend

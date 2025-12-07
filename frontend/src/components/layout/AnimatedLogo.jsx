@@ -34,7 +34,7 @@ const AnimatedLogo = ({ animationState = 'animating' }) => {
             {/* Show header content only when in header state */}
             {animationState === 'done' && (
                 <div className="header-content">
-                    <h2 className="header-title">Praktikumsamt Management System</h2>
+                    <h2 className="header-title">Praktikumsamt-Verwaltungssystem</h2>
                 </div>
             )}
         </div>
