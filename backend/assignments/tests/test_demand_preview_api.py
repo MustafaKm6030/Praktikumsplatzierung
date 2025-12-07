@@ -14,6 +14,7 @@ from .factories import (
     create_test_pl,
     create_test_student,
 )
+from praktikums_lehrkraft.models import PraktikumsLehrkraft
 
 
 class DemandPreviewAPITests(APITestCase):
@@ -143,35 +144,31 @@ class DemandPreviewAPITests(APITestCase):
         )
 
     def test_demand_preview_pdp_demand_calculation(self):
-        """Test total_pdp_demand includes only PDP_I and PDP_II."""
+        """Test total_pdp_demand returns count of PLs who can supervise PDP_I and PDP_II."""
         url = reverse("demand-preview-api")
         response = self.client.get(url)
 
-        breakdown = response.data["detailed_breakdown"]
-        expected_pdp = sum(
-            item["required_slots"]
-            for item in breakdown
-            if item["practicum_type"] in ["PDP_I", "PDP_II"]
-        )
+        pls_with_pdp = PraktikumsLehrkraft.objects.filter(
+            is_active=True,
+            available_praktikum_types__code__in=['PDP_I', 'PDP_II']
+        ).distinct().count()
 
         self.assertEqual(
-            response.data["summary_cards"]["total_pdp_demand"], expected_pdp
+            response.data["summary_cards"]["total_pdp_demand"], pls_with_pdp
         )
 
     def test_demand_preview_wednesday_demand_calculation(self):
-        """Test total_wednesday_demand includes only SFP and ZSP."""
+        """Test total_wednesday_demand returns count of PLs who can supervise SFP and ZSP."""
         url = reverse("demand-preview-api")
         response = self.client.get(url)
 
-        breakdown = response.data["detailed_breakdown"]
-        expected_wednesday = sum(
-            item["required_slots"]
-            for item in breakdown
-            if item["practicum_type"] in ["SFP", "ZSP"]
-        )
+        pls_with_wednesday = PraktikumsLehrkraft.objects.filter(
+            is_active=True,
+            available_praktikum_types__code__in=['SFP', 'ZSP']
+        ).distinct().count()
 
         self.assertEqual(
-            response.data["summary_cards"]["total_wednesday_demand"], expected_wednesday
+            response.data["summary_cards"]["total_wednesday_demand"], pls_with_wednesday
         )
 
     def test_demand_preview_pl_capacity_calculation(self):

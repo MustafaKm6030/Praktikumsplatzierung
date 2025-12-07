@@ -12,6 +12,7 @@ from assignments.services import (
     _calculate_total_pl_capacity,
     _calculate_summary_cards,
 )
+from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from .factories import (
     create_test_subjects,
     create_test_school,
@@ -140,6 +141,19 @@ class DemandPreviewServiceTests(TestCase):
 
     def test_calculate_summary_cards_with_mixed_types(self):
         """Test summary cards calculation with different practicum types."""
+        from subjects.models import PraktikumType
+        
+        pdp1 = PraktikumType.objects.create(code="PDP_I", name="PDP I", is_block_praktikum=True, is_active=True)
+        pdp2 = PraktikumType.objects.create(code="PDP_II", name="PDP II", is_block_praktikum=True, is_active=True)
+        sfp = PraktikumType.objects.create(code="SFP", name="SFP", is_block_praktikum=False, is_active=True)
+        zsp = PraktikumType.objects.create(code="ZSP", name="ZSP", is_block_praktikum=False, is_active=True)
+        
+        pl_pdp = create_test_pl("PL_PDP", "plpdp@test.de", self.school_gs, "GS")
+        pl_pdp.available_praktikum_types.add(pdp1, pdp2)
+        
+        pl_wednesday = create_test_pl("PL_WED", "plwed@test.de", self.school_gs, "GS")
+        pl_wednesday.available_praktikum_types.add(sfp, zsp)
+        
         detailed_breakdown = [
             {"practicum_type": "PDP_I", "required_slots": 10},
             {"practicum_type": "PDP_II", "required_slots": 15},
@@ -150,8 +164,8 @@ class DemandPreviewServiceTests(TestCase):
         summary = _calculate_summary_cards(detailed_breakdown, 100)
 
         self.assertEqual(summary["total_demand_slots"], 50)
-        self.assertEqual(summary["total_pdp_demand"], 25)
-        self.assertEqual(summary["total_wednesday_demand"], 25)
+        self.assertEqual(summary["total_pdp_demand"], 1)
+        self.assertEqual(summary["total_wednesday_demand"], 1)
         self.assertEqual(summary["total_pl_capacity_slots"], 100)
 
     def test_calculate_summary_cards_empty_breakdown(self):
@@ -159,8 +173,16 @@ class DemandPreviewServiceTests(TestCase):
         summary = _calculate_summary_cards([], 50)
 
         self.assertEqual(summary["total_demand_slots"], 0)
-        self.assertEqual(summary["total_pdp_demand"], 0)
-        self.assertEqual(summary["total_wednesday_demand"], 0)
+        pdp_pls = PraktikumsLehrkraft.objects.filter(
+            is_active=True,
+            available_praktikum_types__code__in=['PDP_I', 'PDP_II']
+        ).distinct().count()
+        wednesday_pls = PraktikumsLehrkraft.objects.filter(
+            is_active=True,
+            available_praktikum_types__code__in=['SFP', 'ZSP']
+        ).distinct().count()
+        self.assertEqual(summary["total_pdp_demand"], pdp_pls)
+        self.assertEqual(summary["total_wednesday_demand"], wednesday_pls)
         self.assertEqual(summary["total_pl_capacity_slots"], 50)
 
     def test_get_demand_preview_data_integration(self):
