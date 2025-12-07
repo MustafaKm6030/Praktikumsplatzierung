@@ -50,7 +50,7 @@ export const UniversityLogo = ({
                         fill="#666"
                         className={animationState === 'animating' ? 'system-title' : 'system-title-hidden'}
                     >
-                        Praktikumsamt Management System
+                        Praktikumsamt-Verwaltungssystem
                     </text>
                 </g>
             </g>

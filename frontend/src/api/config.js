@@ -1,12 +1,40 @@
 import axios from 'axios';
 
+// Helper function to get CSRF token from cookies
+const getCsrfToken = () => {
+  const name = 'csrftoken';
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const trimmedCookie = cookie.trim();
+    if (trimmedCookie.startsWith(name + '=')) {
+      return trimmedCookie.substring(name.length + 1);
+    }
+  }
+  return null;
+};
+
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true,
 });
+
+// Add CSRF token to all POST, PUT, PATCH, DELETE requests
+api.interceptors.request.use(
+  (config) => {
+    const csrfToken = getCsrfToken();
+    if (csrfToken && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
+      config.headers['X-CSRFToken'] = csrfToken;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 api.interceptors.response.use(
   (response) => response,
