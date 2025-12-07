@@ -38,7 +38,7 @@ const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
             <TableCell>{school.distance_km || 'N/A'}</TableCell>
             <TableCell>
                 <Chip
-                    label={isActive ? 'Active' : 'Inactive'}
+                    label={isActive ? 'Aktiv' : 'Inaktiv'}
                     color={getStatusColor(isActive)}
                     size="small"
                 />
@@ -47,7 +47,7 @@ const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
                 <IconButton
                     size="small"
                     color="primary"
-                    title="View Details"
+                    title="Details anzeigen"
                     onClick={() => onView && onView(school)}
                 >
                     <VisibilityIcon fontSize="small" />
@@ -55,7 +55,7 @@ const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
                 <IconButton
                     size="small"
                     color="primary"
-                    title="Edit"
+                    title="Bearbeiten"
                     onClick={() => onEdit && onEdit(school)}
                 >
                     <EditIcon fontSize="small" />
@@ -63,7 +63,7 @@ const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
                 <IconButton
                     size="small"
                     color="error"
-                    title="Delete"
+                    title="Löschen"
                     onClick={() => onDelete && onDelete(school)}
                 >
                     <DeleteIcon fontSize="small" />

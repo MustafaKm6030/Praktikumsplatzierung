@@ -92,7 +92,7 @@ const DemandOverviewStep = ({ onComplete }) => {
     };
 
     if (loading) {
-        return <Loader message="Loading demand overview..." />;
+        return <Loader message="Bedarfsübersicht wird geladen..." />;
     }
 
     if (error) {
@@ -102,7 +102,7 @@ const DemandOverviewStep = ({ onComplete }) => {
                     {error}
                 </Alert>
                 <Button onClick={fetchDemandPreview}>
-                    Retry
+                    Erneut versuchen
                 </Button>
             </Box>
         );
@@ -111,7 +111,7 @@ const DemandOverviewStep = ({ onComplete }) => {
     if (!data) {
         return (
             <Alert severity="warning">
-                No data available
+                Keine Daten verfügbar
             </Alert>
         );
     }
@@ -119,27 +119,27 @@ const DemandOverviewStep = ({ onComplete }) => {
     return (
         <Box>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151' }}>
-                System Capacity Snapshot
+                Systemkapazität-Übersicht
             </Typography>
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Total Demand" value={data.summary_cards.total_demand} icon={<Person />} color="#3b82f6" />
+                    <KPICard label="Gesamtbedarf" value={data.summary_cards.total_demand} icon={<Person />} color="#3b82f6" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="PL Capacity" value={data.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
+                    <KPICard label="PL-Kapazität" value={data.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Block PLs" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
+                    <KPICard label="Block-Praktika" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Wednesday PLs" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
+                    <KPICard label="Mittwochs-Praktika" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
                 </Grid>
             </Grid>
 
             {/* --- SECTION 2: INTERACTIVE FILTERS --- */}
             <Paper sx={{ p: 3, borderRadius: '16px', mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Demand Distribution</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Bedarfsverteilung</Typography>
                     
                     {/* GS/MS Toggle */}
                     <Box sx={{ bgcolor: '#f3f4f6', p: 0.5, borderRadius: '8px', display: 'flex' }}>
@@ -169,7 +169,7 @@ const DemandOverviewStep = ({ onComplete }) => {
                     {/* LEFT: Bar Chart */}
                     <Grid item xs={12} md={5}>
                         <Typography variant="subtitle2" sx={{ mb: 2, color: '#6b7280', textAlign: 'center' }}>
-                            Demand by Praktikum Type ({programFilter})
+                            Bedarf nach Praktikumstyp ({programFilter})
                         </Typography>
                         <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={chartData} onClick={(data) => data && setSelectedPracticum(data.activePayload[0].payload.name)}>
@@ -185,23 +185,23 @@ const DemandOverviewStep = ({ onComplete }) => {
                             </BarChart>
                         </ResponsiveContainer>
                         <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 1, color: '#9ca3af' }}>
-                            * Click a bar to filter the table
+                            * Klicken Sie auf einen Balken, um die Tabelle zu filtern
                         </Typography>
                     </Grid>
 
                     {/* RIGHT: Detailed Table */}
                     <Grid item xs={12} md={7}>
                         <Typography variant="subtitle2" sx={{ mb: 2, color: '#6b7280' }}>
-                            Subject Breakdown: {selectedPracticum === 'ALL' ? 'All Types' : selectedPracticum}
+                            Fächeraufschlüsselung: {selectedPracticum === 'ALL' ? 'Alle Typen' : selectedPracticum}
                         </Typography>
                         <TableContainer sx={{ maxHeight: 250 }}>
                             <Table size="small" stickyHeader>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Subject</TableCell>
-                                        <TableCell>Type</TableCell>
-                                        <TableCell align="right">Demand</TableCell>
-                                        <TableCell align="right">Supply (PLs)</TableCell>
+                                        <TableCell>Fach</TableCell>
+                                        <TableCell>Typ</TableCell>
+                                        <TableCell align="right">Bedarf</TableCell>
+                                        <TableCell align="right">Angebot (PLs)</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -225,7 +225,7 @@ const DemandOverviewStep = ({ onComplete }) => {
             {/* Navigation */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
                 <Button onClick={onComplete} size="large" endIcon={<ArrowForward />}>
-                    Continue to Auto-Allocation
+                    Weiter zur automatischen Zuteilung
                 </Button>
             </Box>
         </Box>

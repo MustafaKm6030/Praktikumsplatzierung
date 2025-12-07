@@ -7,8 +7,8 @@ import ButtonGroup from '../ui/ButtonGroup';
 
 // Defined outside component to prevent recreation on every render
 const VIEW_OPTIONS = [
-    { value: 'map', label: 'Map View', icon: <MapIcon /> },
-    { value: 'list', label: 'List View', icon: <ListIcon /> }
+    { value: 'map', label: 'Kartenansicht', icon: <MapIcon /> },
+    { value: 'list', label: 'Listenansicht', icon: <ListIcon /> }
 ];
 
 const ViewToggle = ({ viewMode, onViewChange }) => {

@@ -20,13 +20,13 @@ const TeachersTable = ({ teachers }) => {
       <Table>
         <TableHead>
           <TableRow sx={{ backgroundColor: '#fef9f3' }}>
-            <TableCell><strong>PL ID</strong></TableCell>
+            <TableCell><strong>PL-ID</strong></TableCell>
             <TableCell><strong>Name</strong></TableCell>
-            <TableCell><strong>School</strong></TableCell>
-            <TableCell><strong>Program</strong></TableCell>
-            <TableCell><strong>Preferred Praktika</strong></TableCell>
-            <TableCell><strong>Credit Hrs (Anre-Std.)</strong></TableCell>
-            <TableCell><strong>Capacity</strong></TableCell>
+            <TableCell><strong>Schule</strong></TableCell>
+            <TableCell><strong>Studiengang</strong></TableCell>
+            <TableCell><strong>Bevorzugte Praktika</strong></TableCell>
+            <TableCell><strong>Anrechnungsstunden</strong></TableCell>
+            <TableCell><strong>Kapazität</strong></TableCell>
             <TableCell><strong>Schulamt</strong></TableCell>
             <TableCell><strong>Status</strong></TableCell>
           </TableRow>
@@ -36,7 +36,7 @@ const TeachersTable = ({ teachers }) => {
           {(!teachers || teachers.length === 0) ? (
             <TableRow>
               <TableCell colSpan={10} align="center" sx={{ py: 8, color: 'text.secondary' }}>
-                No PLs found matching your criteria
+                Keine Praktikumslehrkräfte gefunden, die Ihren Kriterien entsprechen
               </TableCell>
             </TableRow>
           ) : (

@@ -25,7 +25,7 @@ const MapView = ({ schools = [] }) => {
     }, []);
 
     if (isLoading) {
-        return <Loader message="Loading map..." />;
+        return <Loader message="Karte wird geladen..." />;
     }
 
     return (
@@ -53,8 +53,8 @@ const MapView = ({ schools = [] }) => {
                                     <strong>{school.name}</strong>
                                     <br />
                                     {school.city && <span>{school.city}</span>}
-                                    {school.district && <span><br />District: {school.district}</span>}
-                                    {school.type && <span><br />Type: {school.type}</span>}
+                                    {school.district && <span><br />Bezirk: {school.district}</span>}
+                                    {school.type && <span><br />Typ: {school.type}</span>}
                                 </div>
                             </Popup>
                         </Marker>

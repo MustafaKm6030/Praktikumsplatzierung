@@ -22,17 +22,17 @@ export default function StudentsPage() {
 
   // Actions (wire to your real service later if you want)
   const handleAddStudent = useCallback(() => {
-    alert('Add New Student — to be implemented');
+    alert('Neuen Studierenden hinzufügen — Wird noch implementiert');
   }, []);
 
   const handleImport = useCallback(() => {
     // If you already have studentService.importCSV(file) you can add a hidden file input here.
-    alert('Import Students (CSV/Excel) — to be implemented');
+    alert('Studierende importieren (CSV/Excel) — Wird noch implementiert');
   }, []);
 
   const handleExport = useCallback(() => {
     // If you already have studentService.exportCSV(), call it here.
-    alert('Export Students — to be implemented');
+    alert('Studierende exportieren — Wird noch implementiert');
   }, []);
 
   return (
@@ -66,13 +66,13 @@ export default function StudentsPage() {
         gap: 2
       }}>
         <span style={{ color: '#6b7280', fontSize: 14 }}>
-          Showing {filteredStudents.length} of {students.length} students
+          {filteredStudents.length} von {students.length} Studierende werden angezeigt
           {'  '}• GS: {stats.gs} • MS: {stats.ms}
         </span>
         {/* (If you later want a list/map toggle like Schools, add a ButtonGroup here) */}
       </Box>
 
-      {loading && <Loader message="Loading students..." />}
+      {loading && <Loader message="Studierende werden geladen..." />}
 
       {!loading && (
         <StudentsTable students={filteredStudents} />

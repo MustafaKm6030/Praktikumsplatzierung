@@ -16,7 +16,7 @@ const TeachersActionButtons = ({ onAddTeacher, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Add New PL
+        Neue Praktikumslehrkraft hinzufügen
       </Button>
 
       <Button
@@ -25,7 +25,7 @@ const TeachersActionButtons = ({ onAddTeacher, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Import PLs (CSV/Excel)
+        Praktikumslehrkräfte importieren (CSV/Excel)
       </Button>
 
       <Button
@@ -34,7 +34,7 @@ const TeachersActionButtons = ({ onAddTeacher, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Export PL List
+        Praktikumslehrkräfte exportieren
       </Button>
     </Stack>
   );

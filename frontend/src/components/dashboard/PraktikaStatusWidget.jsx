@@ -14,16 +14,16 @@ const PraktikaStatusWidget = ({ data = [] }) => {
                     <TableHead>
                         <TableRow sx={{ backgroundColor: '#fef9f3' }}>
                             <TableCell><strong>Praktikum</strong></TableCell>
-                            <TableCell align="center"><strong>Demand</strong></TableCell>
-                            <TableCell align="center"><strong>Assigned</strong></TableCell>
-                            <TableCell align="center"><strong>Unassigned</strong></TableCell>
+                            <TableCell align="center"><strong>Bedarf</strong></TableCell>
+                            <TableCell align="center"><strong>Zugewiesen</strong></TableCell>
+                            <TableCell align="center"><strong>Nicht zugewiesen</strong></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {data.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#6b7280' }}>
-                                    No assignment data available
+                                    Keine Zuteilungsdaten verfügbar
                                 </TableCell>
                             </TableRow>
                         ) : (

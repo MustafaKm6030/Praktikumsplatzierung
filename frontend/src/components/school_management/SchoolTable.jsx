@@ -20,22 +20,22 @@ const SchoolTable = ({ schools, onView, onEdit, onDelete }) => {
             <Table>
                 <TableHead>
                     <TableRow sx={{ backgroundColor: '#fef9f3' }}>
-                        <TableCell><strong>School Name</strong></TableCell>
-                        <TableCell><strong>District</strong></TableCell>
-                        <TableCell><strong>School Type</strong></TableCell>
-                        <TableCell><strong>City</strong></TableCell>
+                        <TableCell><strong>Schulname</strong></TableCell>
+                        <TableCell><strong>Bezirk</strong></TableCell>
+                        <TableCell><strong>Schultyp</strong></TableCell>
+                        <TableCell><strong>Stadt</strong></TableCell>
                         <TableCell><strong>Zone</strong></TableCell>
                         <TableCell><strong>ÖPNV Code</strong></TableCell>
-                        <TableCell><strong>Distance (km)</strong></TableCell>
+                        <TableCell><strong>Entfernung (km)</strong></TableCell>
                         <TableCell><strong>Status</strong></TableCell>
-                        <TableCell align="center"><strong>Actions</strong></TableCell>
+                        <TableCell align="center"><strong>Aktionen</strong></TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {schools.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={8} align="center" sx={{ py: 8, color: 'text.secondary' }}>
-                                No schools found matching your criteria
+                                Keine Schulen gefunden, die Ihren Kriterien entsprechen
                             </TableCell>
                         </TableRow>
                     ) : (

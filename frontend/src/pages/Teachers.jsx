@@ -22,15 +22,15 @@ export default function Teachers() {
 
   // Actions (wire to your plService later)
   const handleAddTeacher = useCallback(() => {
-    alert('Add New PL — to be implemented');
+    alert('Neue Praktikumslehrkraft hinzufügen — Wird noch implementiert');
   }, []);
 
   const handleImport = useCallback(() => {
-    alert('Import PLs (CSV/Excel) — to be implemented');
+    alert('Praktikumslehrkräfte importieren (CSV/Excel) — Wird noch implementiert');
   }, []);
 
   const handleExport = useCallback(() => {
-    alert('Export PL list — to be implemented');
+    alert('Praktikumslehrkräfte exportieren — Wird noch implementiert');
   }, []);
 
   return (
@@ -64,11 +64,11 @@ export default function Teachers() {
         gap: 2
       }}>
         <span style={{ color: '#6b7280', fontSize: 14 }}>
-          Showing {filteredTeachers.length} of {teachers.length} PLs • Available: {stats.available}
+          {filteredTeachers.length} von {teachers.length} Praktikumslehrkräfte werden angezeigt • Verfügbar: {stats.available}
         </span>
       </Box>
 
-      {loading && <Loader message="Loading PLs..." />}
+      {loading && <Loader message="Praktikumslehrkräfte werden geladen..." />}
 
       {!loading && (
         <TeachersTable teachers={filteredTeachers} />

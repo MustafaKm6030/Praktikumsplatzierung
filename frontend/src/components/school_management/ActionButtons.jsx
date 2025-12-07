@@ -16,7 +16,7 @@ const ActionButtons = ({ onAddSchool, onImport, onExport }) => {
                 variant="primary"
                 size="medium"
             >
-                Add New School
+                Neue Schule hinzufügen
             </Button>
             <Button
                 startIcon={<UploadIcon />}
@@ -24,7 +24,7 @@ const ActionButtons = ({ onAddSchool, onImport, onExport }) => {
                 variant="primary"
                 size="medium"
             >
-                Import Schools (CSV/Excel)
+                Schulen importieren (CSV/Excel)
             </Button>
             <Button
                 startIcon={<DownloadIcon />}
@@ -32,7 +32,7 @@ const ActionButtons = ({ onAddSchool, onImport, onExport }) => {
                 variant="primary"
                 size="medium"
             >
-                Export School List
+                Schulliste exportieren
             </Button>
         </Stack>
     );

@@ -2,10 +2,10 @@ import React from 'react';
 import { Box, Stack, Chip, Typography } from '@mui/material';
 
 const TABS = [
-    { id: 'general', label: 'General', enabled: true },
-    { id: 'users', label: 'Users', enabled: true },
+    { id: 'general', label: 'Allgemein', enabled: true },
+    { id: 'users', label: 'Benutzer', enabled: true },
     { id: 'praktikum', label: 'Praktikum', enabled: true },
-    { id: 'geography', label: 'Map', enabled: true },
+    { id: 'geography', label: 'Karte', enabled: true },
 ];
 
 function SettingsTabs({ activeTab, onTabChange }) {
@@ -48,7 +48,7 @@ function SettingsTabs({ activeTab, onTabChange }) {
 
                             {!tab.enabled && (
                                 <Chip
-                                    label="Coming Soon"
+                                    label="Kommt bald"
                                     size="small"
                                     sx={{
                                         height: '20px',

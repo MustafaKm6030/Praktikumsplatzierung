@@ -16,7 +16,7 @@ const StudentsActionButtons = ({ onAddStudent, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Add New Student
+        Neuen Studierenden hinzufügen
       </Button>
 
       <Button
@@ -25,7 +25,7 @@ const StudentsActionButtons = ({ onAddStudent, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Import Students (CSV/Excel)
+        Studierende importieren (CSV/Excel)
       </Button>
 
       <Button
@@ -34,7 +34,7 @@ const StudentsActionButtons = ({ onAddStudent, onImport, onExport }) => {
         variant="primary"
         size="medium"
       >
-        Export Student List mohamed
+        Studierendenliste exportieren
       </Button>
     </Stack>
   );

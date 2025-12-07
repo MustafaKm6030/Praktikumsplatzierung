@@ -13,11 +13,11 @@ import "./Sidebar.css";
 function Sidebar() {
     const navItems = [
         { path: "/", label: "Dashboard", Icon: DashboardIcon },
-        { path: "/students", label: "Students", Icon: StudentIcon },
-        { path: "/teachers", label: "Teachers", Icon: TeacherIcon },
-        { path: "/schools", label: "Schools", Icon: SchoolsIcon },
-        { path: "/allocation", label: "Allocation", Icon: AllocationIcon }, 
-        { path: "/settings", label: "Settings", Icon: SettingsIcon },
+        { path: "/students", label: "Studierende", Icon: StudentIcon },
+        { path: "/teachers", label: "Lehrkräfte", Icon: TeacherIcon },
+        { path: "/schools", label: "Schulen", Icon: SchoolsIcon },
+        { path: "/allocation", label: "Zuteilung", Icon: AllocationIcon }, 
+        { path: "/settings", label: "Einstellungen", Icon: SettingsIcon },
     ];
 
     return (
