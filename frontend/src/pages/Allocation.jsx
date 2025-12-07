@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Box, Stepper, Step, StepLabel, Typography, Container, Paper } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
-import Button from '../components/ui/Button';
+import { Box, Stepper, Step, StepLabel, Typography, Container } from '@mui/material';
 
+import DemandOverviewStep from '../components/allocation/DemandOverviewStep';
 import AllocationRunStep from '../components/allocation/AllocationRunStep';
 import AllocationResultsStep from '../components/allocation/AllocationResultsStep';
+import AllocationFinalizeStep from '../components/allocation/AllocationFinalizeStep';
 
 // Workflow steps
 const STEPS = [
@@ -15,8 +15,7 @@ const STEPS = [
 ];
 
 export default function Allocation() {
-    // We start at Step 1 (Index 1) for testing this feature
-    // Later you can change this back to 0
+    
     const [activeStep, setActiveStep] = useState(0);
 
     const handleStepComplete = () => {
@@ -50,17 +49,9 @@ export default function Allocation() {
 
                 {/* Step Content */}
                 <Box>
-                    {/* STEP 1: DEMAND OVERVIEW (Placeholder) */}
+                    {/* STEP 1: DEMAND OVERVIEW */}
                     {activeStep === 0 && (
-                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
-                            <Typography variant="h5" sx={{ mb: 2 }}>Step 1: Demand Overview</Typography>
-                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                                Visualization widgets coming in the next feature update.
-                            </Typography>
-                            <Button onClick={handleStepComplete} endIcon={<ArrowForward />} variant="secondary">
-                                Next Step (Demo)
-                            </Button>
-                        </Paper>
+                        <DemandOverviewStep onComplete={handleStepComplete} />
                     )}
                     
                     {/* STEP 2: RUN AUTO-ALLOCATION */}
@@ -68,22 +59,14 @@ export default function Allocation() {
                         <AllocationRunStep onComplete={handleStepComplete} />
                     )}
 
-                    {/* STEP 3: REVIEW RESULTS (Placeholder) */}
+                    {/* STEP 3: REVIEW RESULTS */}
                     {activeStep === 2 && (
                         <AllocationResultsStep onComplete={handleStepComplete} />
                     )}
 
-                    {/* STEP 4: FINALIZE (Placeholder) */}
+                    {/* STEP 4: FINALIZE */}
                     {activeStep === 3 && (
-                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
-                            <Typography variant="h5" sx={{ mb: 2 }}>Step 4: Finalize</Typography>
-                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                                Reporting and archiving tools.
-                            </Typography>
-                            <Button onClick={() => setActiveStep(0)} variant="secondary">
-                                Restart Wizard
-                            </Button>
-                        </Paper>
+                        <AllocationFinalizeStep />
                     )}
                 </Box>
             </Container>
