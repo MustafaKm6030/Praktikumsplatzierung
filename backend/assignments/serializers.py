@@ -47,3 +47,50 @@ class DemandPreviewSerializer(serializers.Serializer):
     """
     summary_cards = SummaryCardsSerializer()
     detailed_breakdown = DetailedBreakdownSerializer(many=True)
+
+
+# ==================== SOLVER SERIALIZERS ====================
+
+class AssignmentResultSerializer(serializers.Serializer):
+    """
+    Serializer for individual assignment result from solver.
+    """
+    mentor_name = serializers.CharField()
+    practicum_type = serializers.CharField()
+    subject = serializers.CharField()
+
+
+class UnassignedMentorSerializer(serializers.Serializer):
+    """
+    Serializer for unassigned mentor information.
+    """
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    email = serializers.EmailField()
+    reason = serializers.CharField()
+    school = serializers.CharField()
+
+
+class SolverResultSerializer(serializers.Serializer):
+    """
+    Main serializer for solver API response.
+    """
+    status = serializers.CharField()
+    assignments = AssignmentResultSerializer(many=True)
+    unassigned = UnassignedMentorSerializer(many=True)
+    total_assignments = serializers.IntegerField()
+    total_unassigned = serializers.IntegerField()
+
+
+class AssignmentDetailSerializer(serializers.Serializer):
+    """
+    Serializer for detailed assignment information for results table.
+    """
+    id = serializers.IntegerField()
+    student_id = serializers.CharField(allow_null=True)
+    student_name = serializers.CharField(allow_null=True)
+    practicum_type = serializers.CharField()
+    subject = serializers.CharField(allow_null=True)
+    mentor_name = serializers.CharField()
+    school_name = serializers.CharField()
+    status = serializers.CharField()

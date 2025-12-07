@@ -972,9 +972,10 @@ class BuildAssignmentStatusListTestCase(TestCase):
         self.assertEqual(pdp2["demand_slots"], 0)
         self.assertEqual(zsp["demand_slots"], 0)
 
-    def test_build_applies_mock_data_correctly(self):
+    def test_build_applies_real_assignment_data_correctly(self):
         """
-        Tests that mock assigned/unassigned data is applied correctly.
+        Tests that real assignment data is applied correctly.
+        When no assignments exist, unassigned equals demand.
         """
         practicum_totals = {
             "PDP_I": 50,
@@ -985,15 +986,15 @@ class BuildAssignmentStatusListTestCase(TestCase):
 
         result = build_assignment_status_list(practicum_totals)
 
-        # SFP should have 2 unassigned based on mock data
+        # With no assignments in database, all should have 0 assigned and unassigned equals demand
         sfp = next(item for item in result if item["practicum_type"] == "SFP")
-        self.assertEqual(sfp["unassigned_slots"], 2)
-        self.assertEqual(sfp["assigned_slots"], 58)
+        self.assertEqual(sfp["unassigned_slots"], 60)
+        self.assertEqual(sfp["assigned_slots"], 0)
 
-        # Others should be fully assigned
+        # Others should also have 0 assigned
         pdp1 = next(item for item in result if item["practicum_type"] == "PDP I")
-        self.assertEqual(pdp1["unassigned_slots"], 0)
-        self.assertEqual(pdp1["assigned_slots"], 50)
+        self.assertEqual(pdp1["unassigned_slots"], 50)
+        self.assertEqual(pdp1["assigned_slots"], 0)
 
     def test_build_returns_correct_structure(self):
         """
@@ -1055,6 +1056,11 @@ class SerializerTestCase(TestCase):
         data = {
             "total_students": 1000,
             "unplaced_students": 50,
+            "placed_students": 950,
+            "unplaced_students_gs": 30,
+            "unplaced_students_ms": 20,
+            "placed_students_gs": 570,
+            "placed_students_ms": 380,
             "active_pls_total": 200,
             "active_pls_gs": 120,
             "active_pls_ms": 80,
@@ -1069,7 +1075,22 @@ class SerializerTestCase(TestCase):
         """
         Tests DashboardSummarySerializer with complete valid data.
         """
-        data = {
+        # 1. Get Data from helper
+        data = self._get_complete_dashboard_data()
+
+        # 2. Validate
+        serializer = DashboardSummarySerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        # 3. Verify nested data types
+        validated = serializer.validated_data
+        self.assertIsInstance(validated["assignment_status"], list)
+        self.assertIsInstance(validated["budget_summary"], dict)
+        self.assertIsInstance(validated["entity_counts"], dict)
+
+    def _get_complete_dashboard_data(self):
+        """Helper to return a full payload for testing."""
+        return {
             "assignment_status": [
                 {
                     "practicum_type": "PDP I",
@@ -1087,19 +1108,16 @@ class SerializerTestCase(TestCase):
             "entity_counts": {
                 "total_students": 1000,
                 "unplaced_students": 50,
+                "placed_students": 950,
+                "unplaced_students_gs": 30,
+                "unplaced_students_ms": 20,
+                "placed_students_gs": 570,
+                "placed_students_ms": 380,
                 "active_pls_total": 200,
                 "active_pls_gs": 120,
                 "active_pls_ms": 80,
             },
         }
-
-        serializer = DashboardSummarySerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-
-        # Verify nested data
-        self.assertIsInstance(serializer.validated_data["assignment_status"], list)
-        self.assertIsInstance(serializer.validated_data["budget_summary"], dict)
-        self.assertIsInstance(serializer.validated_data["entity_counts"], dict)
 
     def test_dashboard_summary_serializer_multiple_assignment_statuses(self):
         """
@@ -1129,6 +1147,11 @@ class SerializerTestCase(TestCase):
             "entity_counts": {
                 "total_students": 1000,
                 "unplaced_students": 50,
+                "placed_students": 950,
+                "unplaced_students_gs": 30,
+                "unplaced_students_ms": 20,
+                "placed_students_gs": 570,
+                "placed_students_ms": 380,
                 "active_pls_total": 200,
                 "active_pls_gs": 120,
                 "active_pls_ms": 80,
@@ -1154,6 +1177,11 @@ class SerializerTestCase(TestCase):
             "entity_counts": {
                 "total_students": 0,
                 "unplaced_students": 0,
+                "placed_students": 0,
+                "unplaced_students_gs": 0,
+                "unplaced_students_ms": 0,
+                "placed_students_gs": 0,
+                "placed_students_ms": 0,
                 "active_pls_total": 0,
                 "active_pls_gs": 0,
                 "active_pls_ms": 0,

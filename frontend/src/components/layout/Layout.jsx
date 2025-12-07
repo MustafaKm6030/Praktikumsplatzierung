@@ -10,12 +10,10 @@ function Layout({ children }) {
     return (
         <div className="layout">
             <Sidebar />
-            <div className="layout-main">
+            <div className={`layout-main ${isDashboard ? 'layout-main-dashboard' : ''}`}>
                 {isDashboard ? (
-                    // Dashboard renders directly without white container
                     children
                 ) : (
-                    // Other pages get the white container
                     <main className="layout-content">
                         {children}
                     </main>

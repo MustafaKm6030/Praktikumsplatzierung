@@ -14,7 +14,7 @@ const useDashboardData = () => {
         setError(null);
 
         try {
-            const response = await fetch('/api/dashboard/');
+            const response = await fetch('/api/dashboard/summary');
 
             if (!response.ok) {
                 console.error('Failed to fetch dashboard data:', response.status, response.statusText);

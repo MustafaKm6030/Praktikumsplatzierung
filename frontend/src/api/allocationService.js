@@ -3,10 +3,10 @@ import api from './config';
 const allocationService = {
     /**
      * Trigger the auto-allocation algorithm.
-     * Endpoint: POST /api/assignments/generate/
+     * Endpoint: POST /api/assignments/run-solver/
      */
     runAutoAllocation: (payload = {}) => {
-        return api.post('/assignments/generate/', payload);
+        return api.post('/assignments/run-solver/', payload);
     },
 
     /**

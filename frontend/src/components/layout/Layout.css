@@ -11,8 +11,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Add top padding to account for fixed header */
   padding-top: 70px;
+}
+
+.layout-main-dashboard {
+  overflow-y: auto;
 }
 
 .layout-content {

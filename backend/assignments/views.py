@@ -3,7 +3,14 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .services import aggregate_demand, get_demand_preview_data
-from .serializers import DemandSerializer, DemandPreviewSerializer
+from .serializers import (
+    DemandSerializer,
+    DemandPreviewSerializer,
+    SolverResultSerializer,
+    AssignmentDetailSerializer,
+)
+from .solver import run_solver
+from .models import Assignment
 
 
 class DemandAPIView(APIView):
@@ -34,4 +41,71 @@ class DemandPreviewAPIView(APIView):
         """
         preview_data = get_demand_preview_data()
         serializer = DemandPreviewSerializer(preview_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SolverRunAPIView(APIView):
+    """
+    API endpoint to run the allocation solver.
+    Business Logic: Executes the optimization algorithm and returns results.
+    """
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles POST requests to run the solver.
+        Returns solver results with assignments and unassigned mentors.
+        """
+        try:
+            result = run_solver()
+
+            response_data = {
+                "status": result["status"],
+                "assignments": result["assignments"],
+                "unassigned": result["unassigned"],
+                "total_assignments": len(result["assignments"]),
+                "total_unassigned": len(result["unassigned"]),
+            }
+
+            serializer = SolverResultSerializer(response_data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e), "status": "FAILURE"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class AssignmentListAPIView(APIView):
+    """
+    API endpoint to retrieve all assignments for the results table.
+    Business Logic: Returns detailed assignment information including
+    student assignments (when available) and mentor details.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests to retrieve all assignments.
+        Returns list of assignment details for the results table.
+        """
+        assignments = Assignment.objects.select_related(
+            "mentor", "practicum_type", "subject", "school"
+        ).all()
+
+        assignment_list = []
+        for assignment in assignments:
+            assignment_list.append(
+                {
+                    "id": assignment.id,
+                    "student_id": None,
+                    "student_name": None,
+                    "practicum_type": assignment.practicum_type.get_code_display(),
+                    "subject": assignment.subject.code if assignment.subject else "N/A",
+                    "mentor_name": f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
+                    "school_name": assignment.school.name,
+                    "status": "ok",
+                }
+            )
+
+        serializer = AssignmentDetailSerializer(assignment_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
