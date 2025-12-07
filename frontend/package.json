@@ -24,7 +24,7 @@
   },
   "proxy": "http://localhost:8000",
   "scripts": {
-    "start": "react-scripts start",
+    "start": "cross-env DANGEROUSLY_DISABLE_HOST_CHECK=true WDS_SOCKET_HOST=localhost react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -51,5 +51,8 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(axios)/)"
     ]
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }
