@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Box, Stepper, Step, StepLabel, Typography, Container, Paper } from '@mui/material';
-import Button from '../components/ui/Button';
+import { Box, Stepper, Step, StepLabel, Typography, Container } from '@mui/material';
 
+import DemandOverviewStep from '../components/allocation/DemandOverviewStep';
 import AllocationRunStep from '../components/allocation/AllocationRunStep';
 import AllocationResultsStep from '../components/allocation/AllocationResultsStep';
-import DemandOverviewStep from '../components/allocation/DemandOverviewStep';
+import AllocationFinalizeStep from '../components/allocation/AllocationFinalizeStep';
 
 // Workflow steps
 const STEPS = [
@@ -64,17 +64,9 @@ export default function Allocation() {
                         <AllocationResultsStep onComplete={handleStepComplete} />
                     )}
 
-                    {/* STEP 4: FINALIZE (Placeholder) */}
+                    {/* STEP 4: FINALIZE */}
                     {activeStep === 3 && (
-                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px' }}>
-                            <Typography variant="h5" sx={{ mb: 2 }}>Step 4: Finalize</Typography>
-                            <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                                Reporting and archiving tools.
-                            </Typography>
-                            <Button onClick={() => setActiveStep(0)} variant="secondary">
-                                Restart Wizard
-                            </Button>
-                        </Paper>
+                        <AllocationFinalizeStep />
                     )}
                 </Box>
             </Container>
