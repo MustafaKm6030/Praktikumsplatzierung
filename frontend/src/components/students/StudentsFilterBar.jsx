@@ -26,11 +26,11 @@ const StudentsFilterBar = ({
         <TextField
           value={searchQuery}
           onChange={onSearchChange}
-          placeholder="Search by Student Name, ID, or Email..."
+          placeholder="Suche nach Name, ID oder E-Mail..."
         />
 
         <Select
-          label="Program"
+          label="Studiengang"
           value={selectedProgram}
           onChange={onProgramChange}
           options={programs}

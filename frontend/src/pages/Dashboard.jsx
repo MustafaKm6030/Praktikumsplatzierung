@@ -12,7 +12,7 @@ function Dashboard() {
     if (loading) {
         return (
             <Box sx={{ minHeight: '100vh', backgroundColor: '#f1f1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader message="Loading dashboard..." />
+                <Loader message="Dashboard wird geladen..." />
             </Box>
         );
     }

@@ -36,7 +36,7 @@ const AllocationResultsStep = ({ onComplete }) => {
     };
 
     const handleManualAdjust = (assignmentId) => {
-        alert(`Manual Adjustment for Assignment ${assignmentId} - Feature coming in Sprint 4`);
+        alert(`Manuelle Anpassung für Zuweisung ${assignmentId} - Funktion kommt in Sprint 4`);
     };
 
     const filteredAssignments = assignments.filter(assignment => {
@@ -55,16 +55,16 @@ const AllocationResultsStep = ({ onComplete }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937' }}>
-                        Draft Allocation Review
+                        Entwurfszuteilung überprüfen
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                        Visualize and adjust generated assignments.
+                        Generierte Zuweisungen visualisieren und anpassen.
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button variant="secondary" startIcon={<FilterList />}>Filter</Button>
                     <TextField 
-                        placeholder="Search..." 
+                        placeholder="Suchen..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         sx={{ width: 250 }}
@@ -87,20 +87,20 @@ const AllocationResultsStep = ({ onComplete }) => {
                     <Table>
                         <TableHead sx={{ bgcolor: '#f9fafb' }}>
                             <TableRow>
-                                <TableCell><strong>Assignment ID</strong></TableCell>
+                                <TableCell><strong>Zuweisungs-ID</strong></TableCell>
                                 <TableCell><strong>Mentor</strong></TableCell>
-                                <TableCell><strong>Praktikum Type</strong></TableCell>
-                                <TableCell><strong>Subject</strong></TableCell>
-                                <TableCell><strong>School</strong></TableCell>
+                                <TableCell><strong>Praktikumstyp</strong></TableCell>
+                                <TableCell><strong>Fach</strong></TableCell>
+                                <TableCell><strong>Schule</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
-                                <TableCell align="right"><strong>Actions</strong></TableCell>
+                                <TableCell align="right"><strong>Aktionen</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {filteredAssignments.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#6b7280' }}>
-                                        {searchTerm ? 'No assignments match your search.' : 'No assignments found. Run the allocation algorithm first.'}
+                                        {searchTerm ? 'Keine Zuweisungen entsprechen Ihrer Suche.' : 'Keine Zuweisungen gefunden. Führen Sie zuerst den Zuteilungsalgorithmus aus.'}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -128,7 +128,7 @@ const AllocationResultsStep = ({ onComplete }) => {
                                                 <Stack direction="row" spacing={1} alignItems="center">
                                                     <Warning sx={{ color: '#F59E0B' }} />
                                                     <Typography variant="caption" sx={{ color: '#d97706', fontWeight: 600 }}>
-                                                        {assignment.issue || 'Issue'}
+                                                        {assignment.issue || 'Problem'}
                                                     </Typography>
                                                 </Stack>
                                             )}
@@ -140,7 +140,7 @@ const AllocationResultsStep = ({ onComplete }) => {
                                                 onClick={() => handleManualAdjust(assignment.id)}
                                                 startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                                             >
-                                                Adjust
+                                                Anpassen
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -158,7 +158,7 @@ const AllocationResultsStep = ({ onComplete }) => {
                     size="large" 
                     endIcon={<ArrowForward />}
                 >
-                    Finalize & Generate Reports
+                    Abschließen & Berichte generieren
                 </Button>
             </Box>
         </Box>

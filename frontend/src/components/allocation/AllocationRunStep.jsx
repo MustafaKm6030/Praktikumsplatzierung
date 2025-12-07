@@ -22,15 +22,15 @@ const AllocationRunStep = ({ onComplete }) => {
         setProgress(0);
 
         try {
-            updateProgress(1, "Loading student records...");
-            updateProgress(2, "Analyzing mentor capacity...");
-            updateProgress(3, "Calculating demand...");
-            updateProgress(4, "Running optimization algorithm...");
+            updateProgress(1, "Studierendendaten werden geladen...");
+            updateProgress(2, "Mentor-Kapazität wird analysiert...");
+            updateProgress(3, "Bedarf wird berechnet...");
+            updateProgress(4, "Optimierungsalgorithmus läuft...");
 
             const response = await allocationService.runAutoAllocation({});
             const solverResult = response.data;
 
-            updateProgress(5, "Finalizing matches...");
+            updateProgress(5, "Zuordnungen werden finalisiert...");
 
             const totalAssignments = solverResult.total_assignments || 0;
             const totalUnassigned = solverResult.total_unassigned || 0;
@@ -50,7 +50,7 @@ const AllocationRunStep = ({ onComplete }) => {
 
         } catch (err) {
             console.error('Allocation error:', err);
-            setLogs(prev => [...prev, `Error: ${err.message || 'Failed to run allocation'}`]);
+            setLogs(prev => [...prev, `Fehler: ${err.message || 'Zuteilung fehlgeschlagen'}`]);
             setStatus('error');
         }
     };
@@ -60,15 +60,15 @@ const AllocationRunStep = ({ onComplete }) => {
         return (
             <Box sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center', py: 4 }}>
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-                    Run Auto-Allocation
+                    Automatische Zuteilung durchführen
                 </Typography>
                 <Typography sx={{ mb: 4, color: '#6b7280' }}>
-                    This will execute the matching algorithm based on the defined constraints.
-                    Existing draft allocations will be overwritten.
+                    Dies führt den Zuordnungsalgorithmus basierend auf den definierten Einschränkungen aus.
+                    Bestehende Entwurfszuteilungen werden überschrieben.
                 </Typography>
 
                 {status === 'error' && (
-                    <Alert severity="error" sx={{ mb: 3 }}>Failed to start allocation.</Alert>
+                    <Alert severity="error" sx={{ mb: 3 }}>Zuteilung konnte nicht gestartet werden.</Alert>
                 )}
 
                 <Button
@@ -77,7 +77,7 @@ const AllocationRunStep = ({ onComplete }) => {
                     startIcon={<PlayArrow />}
                     sx={{ px: 4, py: 1.5 }}
                 >
-                    Start Allocation Algorithm
+                    Zuteilungsalgorithmus starten
                 </Button>
             </Box>
         );
@@ -88,7 +88,7 @@ const AllocationRunStep = ({ onComplete }) => {
         return (
             <Paper sx={{ p: 5, maxWidth: 700, mx: 'auto', borderRadius: '16px' }}>
                 <Typography variant="h6" align="center" sx={{ mb: 3 }}>
-                    Running Allocation...
+                    Zuteilung läuft...
                 </Typography>
 
                 <Box sx={{ width: '100%', mb: 4 }}>
@@ -98,7 +98,7 @@ const AllocationRunStep = ({ onComplete }) => {
                         sx={{ height: 10, borderRadius: 5, backgroundColor: '#f1f5f9', '& .MuiLinearProgress-bar': { backgroundColor: '#3b82f6' } }}
                     />
                     <Typography align="right" variant="caption" sx={{ mt: 1, display: 'block', color: '#6b7280' }}>
-                        {progress}% Complete
+                        {progress}% Abgeschlossen
                     </Typography>
                 </Box>
 
@@ -118,7 +118,7 @@ const AllocationRunStep = ({ onComplete }) => {
                         </div>
                     ))}
                     <div style={{ animation: 'pulse 1s infinite', color: '#3b82f6' }}>
-                        ▌ Processing...
+                        ▌ Verarbeitung läuft...
                     </div>
                 </Box>
             </Paper>
@@ -129,13 +129,13 @@ const AllocationRunStep = ({ onComplete }) => {
     return (
         <Box>
             <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
-                Allocation Results Summary
+                Zuteilungsergebnisse - Zusammenfassung
             </Typography>
 
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Success Rate"
+                        label="Erfolgsquote"
                         value={results.matchRate}
                         icon={<CheckCircle />}
                         color="#10b981"
@@ -143,7 +143,7 @@ const AllocationRunStep = ({ onComplete }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Total Assignments"
+                        label="Gesamtzuweisungen"
                         value={results.totalAssignments || 0}
                         icon={<CheckCircle />}
                         color="#3b82f6"
@@ -151,7 +151,7 @@ const AllocationRunStep = ({ onComplete }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Unassigned Mentors"
+                        label="Nicht zugewiesene Mentoren"
                         value={results.unmatchedCount || 0}
                         icon={<Warning />}
                         color="#dc2626"
@@ -165,7 +165,7 @@ const AllocationRunStep = ({ onComplete }) => {
                     size="large"
                     variant="primary"
                 >
-                    Review Draft Allocation
+                    Entwurfszuteilung überprüfen
                 </Button>
             </Box>
         </Box>

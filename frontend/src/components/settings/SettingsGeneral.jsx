@@ -84,7 +84,7 @@ function SettingsGeneral() {
         } catch (error) {
             console.error('Error loading settings:', error);
             // Now safe to use because showSnackbar is stable
-            showSnackbar('Error loading settings: ' + getErrorMessage(error), 'error');
+            showSnackbar('Fehler beim Laden der Einstellungen: ' + getErrorMessage(error), 'error');
         } finally {
             setLoading(false);
         }
@@ -116,17 +116,17 @@ function SettingsGeneral() {
             };
 
             await settingsService.partialUpdate(settings.id, updateData);
-            showSnackbar('Settings saved successfully!', 'success');
+            showSnackbar('Einstellungen erfolgreich gespeichert!', 'success');
             await loadSettings();
         } catch (error) {
             console.error('Error saving settings:', error);
-            showSnackbar('Error saving: ' + getErrorMessage(error), 'error');
+            showSnackbar('Fehler beim Speichern: ' + getErrorMessage(error), 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (loading) return <Loader message="Loading settings..." />;
+    if (loading) return <Loader message="Einstellungen werden geladen..." />;
 
     return (
         <Box>
@@ -134,10 +134,10 @@ function SettingsGeneral() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937' }}>
-                        General Settings
+                        Allgemeine Einstellungen
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6b7280', mt: 0.5 }}>
-                        Manage university details and defaults
+                        Universitätsdetails und Standardeinstellungen verwalten
                     </Typography>
                 </Box>
 
@@ -148,17 +148,17 @@ function SettingsGeneral() {
                     startIcon={<SaveIcon />}
                     disabled={isSaving}
                 >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? 'Wird gespeichert...' : 'Änderungen speichern'}
                 </Button>
             </Box>
 
             <form id="settings-form" onSubmit={handleSave}>
                 <Stack spacing={3}>
-                    <SettingsSection title="Academic Year Settings">
+                    <SettingsSection title="Einstellungen zum akademischen Jahr">
                         <Grid container spacing={3}>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="Current Academic Year"
+                                    label="Aktuelles akademisches Jahr"
                                     value={settings.academicYear}
                                     onChange={(e) => handleChange('academicYear', e.target.value)}
                                     placeholder="2024/2025"
@@ -169,7 +169,7 @@ function SettingsGeneral() {
                         </Grid>
                     </SettingsSection>
 
-                    <SettingsSection title="Praktikum Deadlines">
+                    <SettingsSection title="Praktikumsfristen">
                         <Grid container spacing={3}>
                             <Grid item xs={12} md={6}>
                                 <TextField
@@ -194,11 +194,11 @@ function SettingsGeneral() {
                         </Grid>
                     </SettingsSection>
 
-                    <SettingsSection title="University Information">
+                    <SettingsSection title="Universitätsinformationen">
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <TextField
-                                    label="University Name"
+                                    label="Universitätsname"
                                     value={settings.universityName}
                                     onChange={(e) => handleChange('universityName', e.target.value)}
                                     placeholder="Universität Passau"
@@ -207,7 +207,7 @@ function SettingsGeneral() {
                             </Grid>
                             <Grid item xs={12}>
                                 <TextField
-                                    label="Address"
+                                    label="Adresse"
                                     value={settings.universityAddress}
                                     onChange={(e) => handleChange('universityAddress', e.target.value)}
                                     placeholder="Innstraße 41, 94032 Passau"
@@ -216,7 +216,7 @@ function SettingsGeneral() {
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="Contact Email"
+                                    label="Kontakt-E-Mail"
                                     type="email"
                                     value={settings.contactEmail}
                                     onChange={(e) => handleChange('contactEmail', e.target.value)}
@@ -226,7 +226,7 @@ function SettingsGeneral() {
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="Contact Phone"
+                                    label="Kontakttelefon"
                                     type="tel"
                                     value={settings.contactPhone}
                                     onChange={(e) => handleChange('contactPhone', e.target.value)}
@@ -236,36 +236,36 @@ function SettingsGeneral() {
                         </Grid>
                     </SettingsSection>
 
-                    <SettingsSection title="Budget Allocation">
+                    <SettingsSection title="Budgetzuweisung">
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <TextField
-                                    label="Total Credit Hours Budget"
+                                    label="Gesamtes Anrechnungsstunden-Budget"
                                     type="number"
                                     value={settings.totalBudget}
                                     onChange={(e) => handleChange('totalBudget', e.target.value)}
                                     step="0.01"
-                                    helperText="Total budget hours available for allocation"
+                                    helperText="Gesamtbudget in Stunden für die Zuteilung verfügbar"
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="GS Budget Percentage"
+                                    label="GS Budget-Prozentsatz"
                                     type="number"
                                     value={settings.gsPercentage}
                                     onChange={(e) => handleChange('gsPercentage', e.target.value)}
                                     step="0.01"
-                                    helperText="Grundschule percentage"
+                                    helperText="Grundschule-Prozentsatz"
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="MS Budget Percentage"
+                                    label="MS Budget-Prozentsatz"
                                     type="number"
                                     value={settings.msPercentage}
                                     onChange={(e) => handleChange('msPercentage', e.target.value)}
                                     step="0.01"
-                                    helperText="Mittelschule percentage"
+                                    helperText="Mittelschule-Prozentsatz"
                                 />
                             </Grid>
                         </Grid>

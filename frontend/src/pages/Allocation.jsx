@@ -8,10 +8,10 @@ import AllocationFinalizeStep from '../components/allocation/AllocationFinalizeS
 
 // Workflow steps
 const STEPS = [
-    'Demand Overview',
-    'Run Auto-Allocation',
-    'Review Results',
-    'Finalize'
+    'Bedarfsübersicht',
+    'Automatische Zuteilung durchführen',
+    'Ergebnisse überprüfen',
+    'Abschließen'
 ];
 
 export default function Allocation() {
@@ -27,10 +27,10 @@ export default function Allocation() {
             <Container maxWidth="lg">
                 {/* Header */}
                 <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: '#1f2937' }}>
-                    Praktika Planning & Allocation
+                    Praktikumsplanung & Zuteilung
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 5, color: '#6b7280' }}>
-                    Match student demand with available PLs and school slots.
+                    Studierende mit verfügbaren Praktikumslehrkräften und Schulplätzen zusammenführen.
                 </Typography>
 
                 {/* Workflow Stepper */}

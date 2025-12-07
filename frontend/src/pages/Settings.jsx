@@ -16,9 +16,9 @@ function Settings() {
       {activeTab === 'general' && <SettingsGeneral />}
 
       {/* Other tabs will be added in future sprints */}
-      {activeTab === 'users' && <div>Users & Permissions</div>}
-      {activeTab === 'praktikum' && <div>Praktikum Types</div>}
-      {activeTab === 'geographical' && <div>Geographical Data</div>}
+      {activeTab === 'users' && <div>Benutzer & Berechtigungen</div>}
+      {activeTab === 'praktikum' && <div>Praktikumstypen</div>}
+      {activeTab === 'geographical' && <div>Geografische Daten</div>}
     </div>
   );
 }

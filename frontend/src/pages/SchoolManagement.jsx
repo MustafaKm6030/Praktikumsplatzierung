@@ -37,32 +37,32 @@ const SchoolManagement = () => {
 
     // Action handlers
     const handleAddNewSchool = () => {
-        alert('Add New School functionality - To be implemented');
+        alert('Neue Schule hinzufügen - Wird noch implementiert');
     };
 
     const handleImportSchools = () => {
-        alert('Import Schools (CSV/Excel) functionality - To be implemented');
+        alert('Schulen importieren (CSV/Excel) - Wird noch implementiert');
     };
 
     const handleExportSchoolList = () => {
-        alert('Export School List functionality - To be implemented');
+        alert('Schulliste exportieren - Wird noch implementiert');
     };
 
     // Table action handlers
     const handleViewSchool = (school) => {
         console.log('View school:', school);
-        alert(`View school: ${school.name}`);
+        alert(`Schule anzeigen: ${school.name}`);
     };
 
     const handleEditSchool = (school) => {
         console.log('Edit school:', school);
-        alert(`Edit school: ${school.name}`);
+        alert(`Schule bearbeiten: ${school.name}`);
     };
 
     const handleDeleteSchool = (school) => {
         console.log('Delete school:', school);
-        if (window.confirm(`Are you sure you want to delete ${school.name}?`)) {
-            alert(`Delete school: ${school.name}`);
+        if (window.confirm(`Möchten Sie wirklich ${school.name} löschen?`)) {
+            alert(`Schule löschen: ${school.name}`);
         }
     };
 
@@ -100,7 +100,7 @@ const SchoolManagement = () => {
                 gap: 2
             }}>
                 <Typography variant="body2" color="text.secondary">
-                    Showing {filteredSchools.length} of {schools.length} schools
+                    {filteredSchools.length} von {schools.length} Schulen werden angezeigt
                 </Typography>
 
                 <ViewToggle
@@ -111,7 +111,7 @@ const SchoolManagement = () => {
             </Box>
 
             {/* Loading State */}
-            {loading && <Loader message="Loading schools..." />}
+            {loading && <Loader message="Schulen werden geladen..." />}
 
             {!loading && viewMode === 'list' && (
                 <SchoolTable

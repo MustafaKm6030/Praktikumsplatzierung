@@ -29,24 +29,24 @@ describe('SettingsGeneral Component', () => {
   test('renders without crashing', async () => {
     render(<SettingsGeneral />);
     await waitFor(() => {
-      expect(screen.getByText(/General Settings/i)).toBeInTheDocument();
+      expect(screen.getByText(/Allgemeine Einstellungen/i)).toBeInTheDocument();
     });
   });
 
   test('shows all required form fields', async () => {
     render(<SettingsGeneral />);
     await waitFor(() => {
-      expect(screen.getByLabelText(/Current Academic Year/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Aktuelles akademisches Jahr/i)).toBeInTheDocument();
     });
     expect(screen.getByLabelText(/PDP I\/II Deadline/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/SFP\/ZSP Deadline/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/University Name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Universitätsname/i)).toBeInTheDocument();
   });
 
   test('Save button is functional', async () => {
     render(<SettingsGeneral />);
     await waitFor(() => {
-      const saveButton = screen.getByText(/Save Changes/i);
+      const saveButton = screen.getByText(/Änderungen speichern/i);
       expect(saveButton).toBeInTheDocument();
       expect(saveButton).not.toBeDisabled();
     });

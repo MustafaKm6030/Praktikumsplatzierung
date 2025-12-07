@@ -16,13 +16,13 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         alerts.push({
             severity: 'error',
             icon: <ErrorIcon />,
-            message: `${unplacedStudents} unplaced students require attention`,
+            message: `${unplacedStudents} nicht platzierte Studierende benötigen Aufmerksamkeit`,
         });
     } else if (unplacedStudents === 0 && entityCounts.total_students > 0) {
         alerts.push({
             severity: 'success',
             icon: <SuccessIcon />,
-            message: 'All students successfully placed',
+            message: 'Alle Studierenden erfolgreich platziert',
         });
     }
 
@@ -32,13 +32,13 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         alerts.push({
             severity: 'error',
             icon: <ErrorIcon />,
-            message: `Budget exceeded by ${Math.abs(remainingBudget)} hours`,
+            message: `Budget um ${Math.abs(remainingBudget)} Stunden überschritten`,
         });
     } else if (remainingBudget < 10 && remainingBudget > 0) {
         alerts.push({
             severity: 'warning',
             icon: <WarningIcon />,
-            message: `Low budget remaining: ${remainingBudget} hours`,
+            message: `Niedriges Restbudget: ${remainingBudget} Stunden`,
         });
     }
 
@@ -48,13 +48,13 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         alerts.push({
             severity: 'success',
             icon: <SuccessIcon />,
-            message: 'All Praktika fully assigned',
+            message: 'Alle Praktika vollständig zugewiesen',
         });
     } else if (totalUnassigned > 0) {
         alerts.push({
             severity: 'warning',
             icon: <WarningIcon />,
-            message: `${totalUnassigned} slots unassigned across Praktika types`,
+            message: `${totalUnassigned} Plätze nicht zugewiesen über alle Praktikumstypen`,
         });
     }
 
@@ -63,13 +63,13 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         alerts.push({
             severity: 'success',
             icon: <SuccessIcon />,
-            message: 'Allocation successful - System ready',
+            message: 'Zuteilung erfolgreich - System bereit',
         });
     }
 
     return (
         <WidgetContainer
-            title="System Alerts"
+            title="Systembenachrichtigungen"
             sx={{
                 height: '100%',
                 display: 'flex',
@@ -78,7 +78,7 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         >
             {alerts.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4, color: '#6b7280', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography variant="body2">No alerts - Waiting for allocation data</Typography>
+                    <Typography variant="body2">Keine Benachrichtigungen - Warte auf Zuteilungsdaten</Typography>
                 </Box>
             ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>

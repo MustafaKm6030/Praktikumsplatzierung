@@ -31,13 +31,13 @@ const FilterBar = ({
                 <TextField
                     value={searchQuery}
                     onChange={onSearchChange}
-                    placeholder="Search by School Name, District, City..."
+                    placeholder="Suche nach Schulname, Bezirk, Stadt..."
                     fullWidth
                     startIcon={<SearchIcon sx={{ color: '#6b7280' }} />}
                 />
 
                 <Select
-                    label="District"
+                    label="Bezirk"
                     value={selectedDistrict}
                     onChange={onDistrictChange}
                     options={districts}
@@ -46,7 +46,7 @@ const FilterBar = ({
                 />
 
                 <Select
-                    label="Type"
+                    label="Typ"
                     value={selectedType}
                     onChange={onTypeChange}
                     options={types}

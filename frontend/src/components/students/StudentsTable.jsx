@@ -20,11 +20,11 @@ const StudentsTable = ({ students }) => {
       <Table>
         <TableHead>
           <TableRow sx={{ backgroundColor: '#fef9f3' }}>
-            <TableCell><strong>Student ID</strong></TableCell>
+            <TableCell><strong>Studierenden-ID</strong></TableCell>
             <TableCell><strong>Name</strong></TableCell>
-            <TableCell><strong>Program</strong></TableCell>
-            <TableCell><strong>Main Subject</strong></TableCell>
-            <TableCell><strong>Email</strong></TableCell>
+            <TableCell><strong>Studiengang</strong></TableCell>
+            <TableCell><strong>Hauptfach</strong></TableCell>
+            <TableCell><strong>E-Mail</strong></TableCell>
             <TableCell><strong>Region</strong></TableCell>
             <TableCell><strong>Status</strong></TableCell>
           </TableRow>
@@ -34,7 +34,7 @@ const StudentsTable = ({ students }) => {
           {(!students || students.length === 0) ? (
             <TableRow>
               <TableCell colSpan={8} align="center" sx={{ py: 8, color: 'text.secondary' }}>
-                No students found matching your criteria
+                Keine Studierenden gefunden, die Ihren Kriterien entsprechen
               </TableCell>
             </TableRow>
           ) : (
@@ -56,7 +56,7 @@ const StudentsTable = ({ students }) => {
 
                 <TableCell>
                   <Chip
-                    label={s.placement_status || 'UNPLACED'}
+                    label={s.placement_status === 'PLACED' ? 'PLATZIERT' : 'NICHT PLATZIERT'}
                     size="small"
                     color={s.placement_status === 'PLACED' ? 'success' : 'default'}
                   />

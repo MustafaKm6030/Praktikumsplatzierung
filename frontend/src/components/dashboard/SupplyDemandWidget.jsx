@@ -44,7 +44,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
             <Grid container spacing={2} sx={{ mb: 3 }} >
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Active PLs"
+                        label="Aktive Praktikumslehrkräfte"
                         value={active_pls_total}
                         icon={<PeopleIcon />}
                         color="#8b5cf6"
@@ -52,7 +52,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Total Students"
+                        label="Studierende gesamt"
                         value={total_students}
                         icon={<StudentIcon />}
                         color="#3b82f6"
@@ -60,7 +60,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Unplaced Students"
+                        label="Nicht platzierte Studierende"
                         value={unplaced_students}
                         icon={<WarningIcon />}
                         color={unplaced_students > 0 ? '#dc2626' : '#10b981'}
@@ -72,7 +72,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937', mb: 2 }}>
-                        PL Supply (GS vs MS)
+                        Praktikumslehrkräfte-Angebot (GS vs MS)
                     </Typography>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={plData}>
@@ -87,7 +87,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
 
                 <Grid item xs={12} md={4}>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937', mb: 2 }}>
-                        Placed Students (GS vs MS)
+                        Platzierte Studierende (GS vs MS)
                     </Typography>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={placedStudentData}>
@@ -102,7 +102,7 @@ const SupplyDemandWidget = ({ data = {} }) => {
 
                 <Grid item xs={12} md={4}>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937', mb: 2 }}>
-                        Unplaced Students (GS vs MS)
+                        Nicht platzierte Studierende (GS vs MS)
                     </Typography>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={unplacedStudentData}>
