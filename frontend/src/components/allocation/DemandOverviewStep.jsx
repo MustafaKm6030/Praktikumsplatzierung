@@ -1,39 +1,70 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Typography, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Box, Typography, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { School, Person, CalendarToday, EventAvailable, ArrowForward} from '@mui/icons-material';
 import KPICard from '../dashboard/KPICard';
 import Button from '../ui/Button';
+import Loader from '../ui/Loader';
+import allocationService from '../../api/allocationService';
+import { getErrorMessage } from '../../api/config';
 
-// --- MOCK DATA ---
-const MOCK_DATA = {
-    summary_cards: {
-        total_demand: 210,
-        pl_capacity: 220,
-        pdp_slots: 95,
-        wednesday_slots: 115
-    },
-    // Detailed breakdown used for charts and tables
-    detailed_breakdown: [
-        { practicum_type: "PDP I", program_type: "GS", subject_display_name: "General", required_slots: 50, available_pls: 55 },
-        { practicum_type: "PDP I", program_type: "MS", subject_display_name: "General", required_slots: 15, available_pls: 12 },
-        { practicum_type: "PDP II", program_type: "GS", subject_display_name: "General", required_slots: 45, available_pls: 48 },
-        { practicum_type: "SFP", program_type: "GS", subject_display_name: "Deutsch", required_slots: 35, available_pls: 30 },
-        { practicum_type: "SFP", program_type: "GS", subject_display_name: "Mathe", required_slots: 29, available_pls: 30 },
-        { practicum_type: "SFP", program_type: "MS", subject_display_name: "Englisch", required_slots: 12, available_pls: 10 },
-        { practicum_type: "ZSP", program_type: "GS", subject_display_name: "HSU", required_slots: 20, available_pls: 20 },
-        { practicum_type: "ZSP", program_type: "MS", subject_display_name: "Sport", required_slots: 8, available_pls: 8 },
-    ]
+const formatPracticumType = (type) => {
+    const mapping = {
+        'PDP_I': 'PDP I',
+        'PDP_II': 'PDP II',
+        'SFP': 'SFP',
+        'ZSP': 'ZSP'
+    };
+    return mapping[type] || type;
 };
 
 const DemandOverviewStep = ({ onComplete }) => {
-    const [programFilter, setProgramFilter] = useState('GS'); // 'GS' or 'MS'
-    const [selectedPracticum, setSelectedPracticum] = useState('ALL'); // 'ALL', 'PDP I', etc.
+    const [programFilter, setProgramFilter] = useState('GS');
+    const [selectedPracticum, setSelectedPracticum] = useState('ALL');
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // 1. Filter Data based on Program (GS/MS)
+    const fetchDemandPreview = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await allocationService.getDemandPreview();
+            const apiData = response.data;
+
+            const transformedData = {
+                summary_cards: {
+                    total_demand: apiData.summary_cards.total_demand_slots,
+                    pl_capacity: apiData.summary_cards.total_pl_capacity_slots,
+                    pdp_slots: apiData.summary_cards.total_pdp_demand,
+                    wednesday_slots: apiData.summary_cards.total_wednesday_demand
+                },
+                detailed_breakdown: apiData.detailed_breakdown.map(item => ({
+                    practicum_type: formatPracticumType(item.practicum_type),
+                    program_type: item.program_type,
+                    subject_display_name: item.subject_display_name,
+                    required_slots: item.required_slots,
+                    available_pls: item.available_pls
+                }))
+            };
+
+            setData(transformedData);
+        } catch (err) {
+            console.error('Error fetching demand preview:', err);
+            setError(getErrorMessage(err));
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchDemandPreview();
+    }, [fetchDemandPreview]);
+
     const programData = useMemo(() => {
-        return MOCK_DATA.detailed_breakdown.filter(item => item.program_type === programFilter);
-    }, [programFilter]);
+        if (!data) return [];
+        return data.detailed_breakdown.filter(item => item.program_type === programFilter);
+    }, [data, programFilter]);
 
     // 2. Aggregate Data for the Bar Chart
     const chartData = useMemo(() => {
@@ -60,24 +91,48 @@ const DemandOverviewStep = ({ onComplete }) => {
         return '#dc2626'; // Red (Shortage)
     };
 
+    if (loading) {
+        return <Loader message="Loading demand overview..." />;
+    }
+
+    if (error) {
+        return (
+            <Box>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+                <Button onClick={fetchDemandPreview}>
+                    Retry
+                </Button>
+            </Box>
+        );
+    }
+
+    if (!data) {
+        return (
+            <Alert severity="warning">
+                No data available
+            </Alert>
+        );
+    }
+
     return (
         <Box>
-            {/* --- SECTION 1: SUMMARY CARDS --- */}
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151' }}>
                 System Capacity Snapshot
             </Typography>
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Total Demand" value={MOCK_DATA.summary_cards.total_demand} icon={<Person />} color="#3b82f6" />
+                    <KPICard label="Total Demand" value={data.summary_cards.total_demand} icon={<Person />} color="#3b82f6" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="PL Capacity" value={MOCK_DATA.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
+                    <KPICard label="PL Capacity" value={data.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="PDP Slots (Block)" value={MOCK_DATA.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
+                    <KPICard label="Block PLs" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Wed. Slots" value={MOCK_DATA.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
+                    <KPICard label="Wednesday PLs" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
                 </Grid>
             </Grid>
 

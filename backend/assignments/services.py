@@ -286,10 +286,38 @@ def _calculate_total_pl_capacity():
     return sum(pl.capacity for pl in active_pls)
 
 
+def _count_pls_for_block_praktikums():
+    """
+    Count PLs who can supervise block praktikums (PDP I, PDP II).
+    Business Logic: Count active PLs with PDP_I or PDP_II in their available types.
+    
+    Returns:
+        int: count of PLs available for block praktikums
+    """
+    return PraktikumsLehrkraft.objects.filter(
+        is_active=True,
+        available_praktikum_types__code__in=['PDP_I', 'PDP_II']
+    ).distinct().count()
+
+
+def _count_pls_for_wednesday_praktikums():
+    """
+    Count PLs who can supervise Wednesday praktikums (SFP, ZSP).
+    Business Logic: Count active PLs with SFP or ZSP in their available types.
+    
+    Returns:
+        int: count of PLs available for Wednesday praktikums
+    """
+    return PraktikumsLehrkraft.objects.filter(
+        is_active=True,
+        available_praktikum_types__code__in=['SFP', 'ZSP']
+    ).distinct().count()
+
+
 def _calculate_summary_cards(detailed_breakdown, total_pl_capacity):
     """
     Calculate summary card metrics from detailed breakdown.
-    Business Logic: Aggregate demand counts by practicum type categories.
+    Business Logic: Aggregate demand counts and PL supply by practicum type categories.
     
     Args:
         detailed_breakdown: list of demand items with required_slots
@@ -299,23 +327,18 @@ def _calculate_summary_cards(detailed_breakdown, total_pl_capacity):
         dict: summary_cards with all metrics
     """
     total_demand_slots = 0
-    total_pdp_demand = 0
-    total_wednesday_demand = 0
     
     for item in detailed_breakdown:
-        slots = item['required_slots']
-        total_demand_slots += slots
-        
-        if item['practicum_type'] in ['PDP_I', 'PDP_II']:
-            total_pdp_demand += slots
-        elif item['practicum_type'] in ['SFP', 'ZSP']:
-            total_wednesday_demand += slots
+        total_demand_slots += item['required_slots']
+    
+    total_pdp_pls = _count_pls_for_block_praktikums()
+    total_wednesday_pls = _count_pls_for_wednesday_praktikums()
     
     return {
         'total_demand_slots': total_demand_slots,
         'total_pl_capacity_slots': total_pl_capacity,
-        'total_pdp_demand': total_pdp_demand,
-        'total_wednesday_demand': total_wednesday_demand,
+        'total_pdp_demand': total_pdp_pls,
+        'total_wednesday_demand': total_wednesday_pls,
     }
 
 
@@ -339,3 +362,4 @@ def get_demand_preview_data():
         'summary_cards': summary_cards,
         'detailed_breakdown': detailed_breakdown,
     }
+
