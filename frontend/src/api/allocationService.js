@@ -23,6 +23,26 @@ const allocationService = {
      */
     getAssignments: (params = {}) => {
         return api.get('/assignments/', { params });
+    },
+
+    /**
+     * Export assignments as CSV file.
+     * Endpoint: GET /api/assignments/export/csv/
+     */
+    exportCSV: () => {
+        return api.get('/assignments/export/csv/', {
+            responseType: 'blob'
+        });
+    },
+
+    /**
+     * Export assignments as PDF file.
+     * Endpoint: GET /api/assignments/export/pdf/
+     */
+    exportPDF: () => {
+        return api.get('/assignments/export/pdf/', {
+            responseType: 'blob'
+        });
     }
 };
 

@@ -363,3 +363,115 @@ def get_demand_preview_data():
         'detailed_breakdown': detailed_breakdown,
     }
 
+
+# ==================== EXPORT SERVICES ====================
+
+def generate_assignments_csv():
+    """
+    Generate CSV export of all assignments.
+    Business Logic: Export assignment master list with all details for archiving.
+    
+    Returns:
+        str: CSV content as string
+    """
+    from .models import Assignment
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        'ID',
+        'Praktikumstyp',
+        'Fach',
+        'Praktikumslehrkraft',
+        'Schule',
+        'Status'
+    ])
+    
+    # Fetch assignments with related data
+    assignments = Assignment.objects.select_related(
+        'mentor', 'practicum_type', 'subject', 'school'
+    ).all()
+    
+    # Write data rows
+    for assignment in assignments:
+        writer.writerow([
+            assignment.id,
+            assignment.practicum_type.get_code_display(),
+            assignment.subject.code if assignment.subject else 'N/A',
+            f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
+            assignment.school.name,
+            'Zugewiesen'
+        ])
+    
+    return output.getvalue()
+
+
+def generate_assignments_pdf():
+    """
+    Generate PDF export of all assignments.
+    Business Logic: Create formatted PDF reports for official documentation.
+    
+    Returns:
+        bytes: PDF content as bytes
+    """
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib.units import cm
+    from io import BytesIO
+    from .models import Assignment
+    from datetime import datetime
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Add title
+    title = Paragraph(
+        f"<b>Praktikumszuteilungen - {datetime.now().strftime('%d.%m.%Y')}</b>",
+        styles['Title']
+    )
+    elements.append(title)
+    elements.append(Paragraph("<br/><br/>", styles['Normal']))
+    
+    # Prepare table data
+    data = [['ID', 'Typ', 'Fach', 'PL', 'Schule', 'Status']]
+    
+    assignments = Assignment.objects.select_related(
+        'mentor', 'practicum_type', 'subject', 'school'
+    ).all()
+    
+    for assignment in assignments:
+        data.append([
+            str(assignment.id),
+            assignment.practicum_type.get_code_display(),
+            assignment.subject.code if assignment.subject else 'N/A',
+            f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
+            assignment.school.name[:30],  # Truncate long names
+            'OK'
+        ])
+    
+    # Create and style table
+    table = Table(data, colWidths=[1.5*cm, 3*cm, 2*cm, 5*cm, 6*cm, 2*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(table)
+    doc.build(elements)
+    
+    return buffer.getvalue()
+
