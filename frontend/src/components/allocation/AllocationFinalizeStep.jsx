@@ -4,7 +4,6 @@ import {
     CheckCircleOutline,
     FileDownload,
     PictureAsPdf,
-    Send,
     Dashboard as DashboardIcon
 } from '@mui/icons-material';
 import Button from '../ui/Button';
@@ -13,27 +12,29 @@ import allocationService from '../../api/allocationService';
 
 const AllocationFinalizeStep = () => {
     const navigate = useNavigate();
-    const [isLoadingCsv, setIsLoadingCsv] = useState(false);
+    const [isLoadingExcel, setIsLoadingExcel] = useState(false);
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
-    const handleDownloadCsv = async () => {
-        setIsLoadingCsv(true);
+    const handleDownloadExcel = async () => {
+        setIsLoadingExcel(true);
         try {
-            const response = await allocationService.exportCSV();
-            const blob = new Blob([response.data], { type: 'text/csv' });
+            const response = await allocationService.exportExcel();
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'praktikumszuteilungen.csv';
+            link.download = 'praktikumszuteilungen.xlsx';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('CSV export failed:', error);
-            alert('CSV-Export fehlgeschlagen. Bitte versuchen Sie es erneut.');
+            console.error('Excel export failed:', error);
+            alert('Excel-Export fehlgeschlagen. Bitte versuchen Sie es erneut.');
         } finally {
-            setIsLoadingCsv(false);
+            setIsLoadingExcel(false);
         }
     };
 
@@ -57,8 +58,6 @@ const AllocationFinalizeStep = () => {
             setIsLoadingPdf(false);
         }
     };
-
-    const handlePublish = () => alert("Ergebnisse werden im Studierendenportal veröffentlicht...");
 
     return (
         <Box sx={{ maxWidth: 800, mx: 'auto' }}>
@@ -90,13 +89,13 @@ const AllocationFinalizeStep = () => {
                             Laden Sie die Zuweisungsdaten für externe Systeme oder Excel-Archivierung herunter.
                         </Typography>
                         <Button
-                            onClick={handleDownloadCsv}
+                            onClick={handleDownloadExcel}
                             variant="secondary"
                             fullWidth
                             startIcon={<FileDownload />}
-                            disabled={isLoadingCsv}
+                            disabled={isLoadingExcel}
                         >
-                            {isLoadingCsv ? 'Wird exportiert...' : 'Masterliste exportieren (Excel)'}
+                            {isLoadingExcel ? 'Wird exportiert...' : 'Masterliste exportieren (Excel)'}
                         </Button>
                     </Paper>
                 </Grid>
@@ -126,7 +125,7 @@ const AllocationFinalizeStep = () => {
             <Divider sx={{ my: 6 }} />
 
             {/* Final Actions */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Button
                     onClick={() => navigate('/')}
                     variant="secondary"

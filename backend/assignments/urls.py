@@ -4,7 +4,7 @@ from .views import (
     DemandPreviewAPIView,
     SolverRunAPIView,
     AssignmentListAPIView,
-    ExportAssignmentsCSVAPIView,
+    ExportAssignmentsExcelAPIView,
     ExportAssignmentsPDFAPIView
 )
 
@@ -13,6 +13,6 @@ urlpatterns = [
     path("demand-preview/", DemandPreviewAPIView.as_view(), name="demand-preview-api"),
     path("run-solver/", SolverRunAPIView.as_view(), name="solver-run-api"),
     path("", AssignmentListAPIView.as_view(), name="assignment-list-api"),
-    path("export/csv/", ExportAssignmentsCSVAPIView.as_view(), name="export-csv"),
+    path("export/excel/", ExportAssignmentsExcelAPIView.as_view(), name="export-excel"),
     path("export/pdf/", ExportAssignmentsPDFAPIView.as_view(), name="export-pdf"),
 ]
