@@ -366,30 +366,38 @@ def get_demand_preview_data():
 
 # ==================== EXPORT SERVICES ====================
 
-def generate_assignments_csv():
+def generate_assignments_excel():
     """
-    Generate CSV export of all assignments.
+    Generate Excel export of all assignments.
     Business Logic: Export assignment master list with all details for archiving.
     
     Returns:
-        str: CSV content as string
+        bytes: Excel file content as bytes
     """
     from .models import Assignment
-    import csv
-    from io import StringIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
     
-    output = StringIO()
-    writer = csv.writer(output)
+    # Create workbook and active sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Praktikumszuteilungen"
+    
+    # Define header style
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="center")
     
     # Write header
-    writer.writerow([
-        'ID',
-        'Praktikumstyp',
-        'Fach',
-        'Praktikumslehrkraft',
-        'Schule',
-        'Status'
-    ])
+    headers = ['ID', 'Praktikumstyp', 'Fach', 'Praktikumslehrkraft', 'Schule', 'Status']
+    ws.append(headers)
+    
+    # Apply header styling
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
     
     # Fetch assignments with related data
     assignments = Assignment.objects.select_related(
@@ -398,7 +406,7 @@ def generate_assignments_csv():
     
     # Write data rows
     for assignment in assignments:
-        writer.writerow([
+        ws.append([
             assignment.id,
             assignment.practicum_type.get_code_display(),
             assignment.subject.code if assignment.subject else 'N/A',
@@ -406,6 +414,20 @@ def generate_assignments_csv():
             assignment.school.name,
             'Zugewiesen'
         ])
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[column_letter].width = max_length + 2
+    
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
     
     return output.getvalue()
 
