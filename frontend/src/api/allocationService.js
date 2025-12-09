@@ -26,11 +26,11 @@ const allocationService = {
     },
 
     /**
-     * Export assignments as CSV file.
-     * Endpoint: GET /api/assignments/export/csv/
+     * Export assignments as Excel file.
+     * Endpoint: GET /api/assignments/export/excel/
      */
-    exportCSV: () => {
-        return api.get('/assignments/export/csv/', {
+    exportExcel: () => {
+        return api.get('/assignments/export/excel/', {
             responseType: 'blob'
         });
     },

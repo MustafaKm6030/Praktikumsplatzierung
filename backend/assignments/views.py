@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from .services import (
     aggregate_demand,
     get_demand_preview_data,
-    generate_assignments_csv,
+    generate_assignments_excel,
     generate_assignments_pdf
 )
 from .serializers import (
@@ -117,22 +117,25 @@ class AssignmentListAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class ExportAssignmentsCSVAPIView(APIView):
+class ExportAssignmentsExcelAPIView(APIView):
     """
-    API endpoint to export assignments as CSV.
-    Business Logic: Generate CSV file with all assignment details.
+    API endpoint to export assignments as Excel.
+    Business Logic: Generate Excel file with all assignment details.
     """
 
     def get(self, request, *args, **kwargs):
         """
-        Handles GET requests to export assignments as CSV.
-        Returns CSV file download response.
+        Handles GET requests to export assignments as Excel.
+        Returns Excel file download response.
         """
         try:
-            csv_content = generate_assignments_csv()
+            excel_content = generate_assignments_excel()
             
-            response = HttpResponse(csv_content, content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.csv"'
+            response = HttpResponse(
+                excel_content, 
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.xlsx"'
             
             return response
             
