@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, Grid, Divider } from '@mui/material';
-import { 
-    CheckCircleOutline, 
-    FileDownload, 
-    PictureAsPdf, 
-    Send, 
-    Dashboard as DashboardIcon 
+import {
+    CheckCircleOutline,
+    FileDownload,
+    PictureAsPdf,
+    Send,
+    Dashboard as DashboardIcon
 } from '@mui/icons-material';
 import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
@@ -62,7 +62,7 @@ const AllocationFinalizeStep = () => {
 
     return (
         <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-            
+
             {/* Success Hero Section */}
             <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '16px', mb: 4, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                 <CheckCircleOutline sx={{ fontSize: 80, color: '#16a34a', mb: 2 }} />
@@ -89,14 +89,14 @@ const AllocationFinalizeStep = () => {
                         <Typography variant="body2" sx={{ mb: 3, color: '#6b7280' }}>
                             Laden Sie die Zuweisungsdaten für externe Systeme oder Excel-Archivierung herunter.
                         </Typography>
-                        <Button 
-                            onClick={handleDownloadCsv} 
-                            variant="secondary" 
-                            fullWidth 
+                        <Button
+                            onClick={handleDownloadCsv}
+                            variant="secondary"
+                            fullWidth
                             startIcon={<FileDownload />}
                             disabled={isLoadingCsv}
                         >
-                            {isLoadingCsv ? 'Wird exportiert...' : 'Masterliste exportieren (CSV)'}
+                            {isLoadingCsv ? 'Wird exportiert...' : 'Masterliste exportieren (Excel)'}
                         </Button>
                     </Paper>
                 </Grid>
@@ -110,10 +110,10 @@ const AllocationFinalizeStep = () => {
                         <Typography variant="body2" sx={{ mb: 3, color: '#6b7280' }}>
                             Erstellen Sie Zuweisungsschreiben für Schulen, Praktikumslehrkräfte und Studierende.
                         </Typography>
-                        <Button 
-                            onClick={handleDownloadPdf} 
-                            variant="secondary" 
-                            fullWidth 
+                        <Button
+                            onClick={handleDownloadPdf}
+                            variant="secondary"
+                            fullWidth
                             startIcon={<PictureAsPdf />}
                             disabled={isLoadingPdf}
                         >
@@ -127,21 +127,12 @@ const AllocationFinalizeStep = () => {
 
             {/* Final Actions */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Button 
-                    onClick={() => navigate('/')} 
-                    variant="secondary" 
+                <Button
+                    onClick={() => navigate('/')}
+                    variant="secondary"
                     startIcon={<DashboardIcon />}
                 >
                     Zum Dashboard zurückkehren
-                </Button>
-
-                <Button 
-                    onClick={handlePublish} 
-                    size="large" 
-                    startIcon={<Send />}
-                    sx={{ px: 4 }}
-                >
-                    Ergebnisse veröffentlichen
                 </Button>
             </Box>
         </Box>

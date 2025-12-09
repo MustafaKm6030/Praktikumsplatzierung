@@ -151,7 +151,7 @@ const AllocationRunStep = ({ onComplete }) => {
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <KPICard
-                        label="Nicht zugewiesene Mentoren"
+                        label="Nicht zugewiesene Lehrkräfte"
                         value={results.unmatchedCount || 0}
                         icon={<Warning />}
                         color="#dc2626"

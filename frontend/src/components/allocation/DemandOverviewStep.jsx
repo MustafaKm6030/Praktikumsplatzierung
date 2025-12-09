@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { School, Person, CalendarToday, EventAvailable, ArrowForward} from '@mui/icons-material';
+import { School, Person, CalendarToday, EventAvailable, ArrowForward } from '@mui/icons-material';
 import KPICard from '../dashboard/KPICard';
 import Button from '../ui/Button';
 import Loader from '../ui/Loader';
@@ -129,10 +129,10 @@ const DemandOverviewStep = ({ onComplete }) => {
                     <KPICard label="PL-Kapazität" value={data.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Block-Praktika" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
+                    <KPICard label="Block-Praktika PLs" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <KPICard label="Mittwochs-Praktika" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
+                    <KPICard label="Mittwochs-Praktika PLs" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
                 </Grid>
             </Grid>
 
@@ -140,7 +140,7 @@ const DemandOverviewStep = ({ onComplete }) => {
             <Paper sx={{ p: 3, borderRadius: '16px', mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Bedarfsverteilung</Typography>
-                    
+
                     {/* GS/MS Toggle */}
                     <Box sx={{ bgcolor: '#f3f4f6', p: 0.5, borderRadius: '8px', display: 'flex' }}>
                         {['GS', 'MS'].map((type) => (
@@ -172,12 +172,20 @@ const DemandOverviewStep = ({ onComplete }) => {
                             Bedarf nach Praktikumstyp ({programFilter})
                         </Typography>
                         <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={chartData} onClick={(data) => data && setSelectedPracticum(data.activePayload[0].payload.name)}>
+                            <BarChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                                 <YAxis />
                                 <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                <Bar 
+                                    dataKey="value" 
+                                    radius={[4, 4, 0, 0]}
+                                    onClick={(data) => {
+                                        if (data && data.name) {
+                                            setSelectedPracticum(data.name);
+                                        }
+                                    }}
+                                >
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={selectedPracticum === entry.name ? '#F8971C' : '#3b82f6'} cursor="pointer" />
                                     ))}
