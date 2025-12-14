@@ -94,3 +94,14 @@ class AssignmentDetailSerializer(serializers.Serializer):
     mentor_name = serializers.CharField()
     school_name = serializers.CharField()
     status = serializers.CharField()
+
+
+class AssignmentUpdateSerializer(serializers.Serializer):
+    """
+    Serializer for updating assignment fields.
+    Business Logic: Allows editing mentor, school, subject, practicum type.
+    """
+    mentor_id = serializers.IntegerField(required=False)
+    school_id = serializers.IntegerField(required=False)
+    subject_id = serializers.IntegerField(required=False, allow_null=True)
+    practicum_type_id = serializers.IntegerField(required=False)

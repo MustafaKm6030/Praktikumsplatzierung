@@ -497,3 +497,84 @@ def generate_assignments_pdf():
     
     return buffer.getvalue()
 
+
+def update_assignment(assignment_id, update_data):
+    """
+    Business Logic: Updates an assignment with new values.
+    Allows editing mentor, school, subject, and practicum type.
+    """
+    from .models import Assignment
+    from schools.models import School
+    from subjects.models import Subject, PraktikumType
+
+    try:
+        assignment = Assignment.objects.get(id=assignment_id)
+    except Assignment.DoesNotExist:
+        return {"error": "Assignment not found"}, 404
+
+    # Update mentor if provided
+    if "mentor_id" in update_data:
+        mentor = _get_mentor(update_data["mentor_id"])
+        if not mentor:
+            return {"error": "Mentor not found"}, 400
+        assignment.mentor = mentor
+
+    # Update school if provided
+    if "school_id" in update_data:
+        school = _get_school(update_data["school_id"])
+        if not school:
+            return {"error": "School not found"}, 400
+        assignment.school = school
+
+    # Update subject if provided
+    if "subject_id" in update_data:
+        subject = _get_subject(update_data["subject_id"])
+        assignment.subject = subject
+
+    # Update practicum type if provided
+    if "practicum_type_id" in update_data:
+        practicum_type = _get_practicum_type(update_data["practicum_type_id"])
+        if not practicum_type:
+            return {"error": "Practicum type not found"}, 400
+        assignment.practicum_type = practicum_type
+
+    assignment.save()
+    return {"success": True, "assignment_id": assignment.id}, 200
+
+
+def _get_mentor(mentor_id):
+    """Helper: Fetches mentor by ID."""
+    try:
+        return PraktikumsLehrkraft.objects.get(id=mentor_id)
+    except PraktikumsLehrkraft.DoesNotExist:
+        return None
+
+
+def _get_school(school_id):
+    """Helper: Fetches school by ID."""
+    from schools.models import School
+    try:
+        return School.objects.get(id=school_id)
+    except School.DoesNotExist:
+        return None
+
+
+def _get_subject(subject_id):
+    """Helper: Fetches subject by ID or returns None."""
+    from subjects.models import Subject
+    if subject_id is None:
+        return None
+    try:
+        return Subject.objects.get(id=subject_id)
+    except Subject.DoesNotExist:
+        return None
+
+
+def _get_practicum_type(practicum_type_id):
+    """Helper: Fetches practicum type by ID."""
+    from subjects.models import PraktikumType
+    try:
+        return PraktikumType.objects.get(id=practicum_type_id)
+    except PraktikumType.DoesNotExist:
+        return None
+
