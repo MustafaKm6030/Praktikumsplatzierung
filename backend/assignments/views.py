@@ -7,13 +7,15 @@ from .services import (
     aggregate_demand,
     get_demand_preview_data,
     generate_assignments_excel,
-    generate_assignments_pdf
+    generate_assignments_pdf,
+    update_assignment,
 )
 from .serializers import (
     DemandSerializer,
     DemandPreviewSerializer,
     SolverResultSerializer,
     AssignmentDetailSerializer,
+    AssignmentUpdateSerializer,
 )
 from .solver import run_solver
 from .models import Assignment
@@ -170,3 +172,26 @@ class ExportAssignmentsPDFAPIView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class AssignmentUpdateAPIView(APIView):
+    """
+    API endpoint to update an assignment.
+    Business Logic: Allows manual adjustment of assignment fields.
+    """
+
+    def patch(self, request, assignment_id, *args, **kwargs):
+        """
+        Handles PATCH requests to update assignment.
+        Allows updating mentor, school, subject, practicum type.
+        """
+        serializer = AssignmentUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        result, status_code = update_assignment(assignment_id, serializer.validated_data)
+
+        if status_code == 200:
+            return Response(result, status=status.HTTP_200_OK)
+        else:
+            return Response(result, status=status_code)

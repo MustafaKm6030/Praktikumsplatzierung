@@ -62,3 +62,109 @@ def get_reachable_schools(praktikum_type_code: str):
 
     # For any other or unknown type, return an empty queryset
     return School.objects.none()
+
+
+def import_schools_from_csv(file_obj):
+    """
+    Business Logic: Imports schools from CSV file.
+    Creates or updates schools based on name as unique identifier.
+    """
+    import csv
+    import io
+    from django.db import transaction
+
+    decoded_file = file_obj.read().decode("utf-8")
+    io_string = io.StringIO(decoded_file)
+    reader = csv.DictReader(io_string)
+
+    created_count = 0
+    updated_count = 0
+    errors = []
+
+    with transaction.atomic():
+        for row_num, row in enumerate(reader, start=2):
+            try:
+                name = row.get("name", "").strip()
+                if not name:
+                    errors.append(f"Row {row_num}: name is required")
+                    continue
+
+                school_data = _build_school_data(row)
+                school, created = School.objects.update_or_create(
+                    name=name, defaults=school_data
+                )
+
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+
+            except Exception as e:
+                errors.append(f"Row {row_num}: {str(e)}")
+
+    return {"created": created_count, "updated": updated_count, "errors": errors}
+
+
+def _build_school_data(row):
+    """Helper: Builds school data dictionary from CSV row."""
+    return {
+        "school_type": row.get("school_type", "GS"),
+        "city": row.get("city", ""),
+        "district": row.get("district", ""),
+        "zone": int(row.get("zone", 1)) if row.get("zone") else 1,
+        "opnv_code": row.get("opnv_code", ""),
+        "distance_km": float(row.get("distance_km", 0)) if row.get("distance_km") else 0,
+        "is_active": row.get("is_active", "true").lower() == "true",
+        "notes": row.get("notes", ""),
+        "latitude": float(row.get("latitude", 0)) if row.get("latitude") else None,
+        "longitude": float(row.get("longitude", 0)) if row.get("longitude") else None,
+    }
+
+
+def export_schools_to_csv():
+    """
+    Business Logic: Exports all schools to CSV format.
+    Returns CSV string content ready for download.
+    """
+    import csv
+    import io
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(_get_school_csv_headers())
+
+    schools = School.objects.all().order_by("name")
+    for school in schools:
+        writer.writerow(_get_school_row(school))
+
+    return output.getvalue()
+
+
+def _get_school_csv_headers():
+    """Helper: Returns CSV header row for schools."""
+    return [
+        "id", "name", "school_type", "city", "district", "zone",
+        "opnv_code", "distance_km", "is_active", "notes",
+        "latitude", "longitude", "created_at", "updated_at",
+    ]
+
+
+def _get_school_row(school):
+    """Helper: Formats a School instance as CSV row."""
+    return [
+        school.id,
+        school.name,
+        school.school_type,
+        school.city,
+        school.district,
+        school.zone,
+        school.opnv_code,
+        school.distance_km,
+        school.is_active,
+        school.notes or "",
+        school.latitude or "",
+        school.longitude or "",
+        school.created_at.isoformat() if school.created_at else "",
+        school.updated_at.isoformat() if school.updated_at else "",
+    ]

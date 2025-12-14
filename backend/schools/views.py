@@ -1,9 +1,15 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import School
-from .serializers import SchoolListSerializer, SchoolDetailSerializer
+from .serializers import (
+    SchoolListSerializer,
+    SchoolDetailSerializer,
+    SchoolCreateUpdateSerializer,
+)
 
 # Import the refactored services
 from .services import (
@@ -11,6 +17,8 @@ from .services import (
     get_schools_by_type,
     get_school_capacity,
     get_schools_for_wednesday_praktika,
+    import_schools_from_csv,
+    export_schools_to_csv,
 )
 
 
@@ -34,6 +42,8 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "retrieve":
             return SchoolDetailSerializer
+        if self.action in ["create", "update", "partial_update"]:
+            return SchoolCreateUpdateSerializer
         return SchoolListSerializer
 
     @action(detail=False, methods=["get"])
@@ -85,3 +95,87 @@ class SchoolViewSet(viewsets.ModelViewSet):
         schools = get_schools_for_wednesday_praktika()
         serializer = self.get_serializer(schools, many=True)
         return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        POST /api/schools/ - Create new school.
+        Business Logic: Creates new school with validation.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT /api/schools/{id}/ - Full update of school.
+        Business Logic: Updates all fields of existing school.
+        """
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH /api/schools/{id}/ - Partial update of school.
+        Business Logic: Updates only specified fields.
+        """
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        DELETE /api/schools/{id}/ - Delete school.
+        Business Logic: Permanently removes school from database.
+        """
+        instance = self.get_object()
+        instance.delete()
+        return Response(
+            {"message": "School deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @action(
+        detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser]
+    )
+    def import_csv(self, request):
+        """
+        POST /api/schools/import_csv/ - Import schools from CSV.
+        Business Logic: Bulk creates/updates schools from uploaded CSV file.
+        """
+        file_obj = request.FILES.get("file")
+        if not file_obj:
+            return Response(
+                {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not file_obj.name.endswith(".csv"):
+            return Response(
+                {"error": "File must be a CSV"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = import_schools_from_csv(file_obj)
+            return Response(result, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["get"])
+    def export(self, request):
+        """
+        GET /api/schools/export/ - Export schools to CSV.
+        Business Logic: Generates CSV file with all schools data.
+        """
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="schools_export.csv"'
+
+        csv_data = export_schools_to_csv()
+        response.write(csv_data)
+
+        return response
