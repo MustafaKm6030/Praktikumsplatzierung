@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Typography, Paper, Table, TableBody, TableCell, 
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, Stack, CircularProgress, Alert
 } from '@mui/material';
-import { 
-    CheckCircle, Warning, Edit as EditIcon, 
-    ArrowForward, FilterList 
+import {
+    CheckCircle, Warning, Edit as EditIcon,
+    ArrowForward, FilterList
 } from '@mui/icons-material';
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
@@ -63,8 +63,8 @@ const AllocationResultsStep = ({ onComplete }) => {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button variant="secondary" startIcon={<FilterList />}>Filter</Button>
-                    <TextField 
-                        placeholder="Suchen..." 
+                    <TextField
+                        placeholder="Suchen..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         sx={{ width: 250 }}
@@ -88,7 +88,7 @@ const AllocationResultsStep = ({ onComplete }) => {
                         <TableHead sx={{ bgcolor: '#f9fafb' }}>
                             <TableRow>
                                 <TableCell><strong>Zuweisungs-ID</strong></TableCell>
-                                <TableCell><strong>Mentor</strong></TableCell>
+                                <TableCell><strong>PLs</strong></TableCell>
                                 <TableCell><strong>Praktikumstyp</strong></TableCell>
                                 <TableCell><strong>Fach</strong></TableCell>
                                 <TableCell><strong>Schule</strong></TableCell>
@@ -113,10 +113,10 @@ const AllocationResultsStep = ({ onComplete }) => {
                                             {assignment.mentor_name || 'N/A'}
                                         </TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                label={assignment.practicum_type || 'N/A'} 
-                                                size="small" 
-                                                sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontWeight: 600 }} 
+                                            <Chip
+                                                label={assignment.practicum_type || 'N/A'}
+                                                size="small"
+                                                sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}
                                             />
                                         </TableCell>
                                         <TableCell>{assignment.subject || 'N/A'}</TableCell>
@@ -134,9 +134,9 @@ const AllocationResultsStep = ({ onComplete }) => {
                                             )}
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Button 
-                                                variant="secondary" 
-                                                size="small" 
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
                                                 onClick={() => handleManualAdjust(assignment.id)}
                                                 startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                                             >
@@ -153,9 +153,9 @@ const AllocationResultsStep = ({ onComplete }) => {
 
             {/* Navigation Footer */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
-                <Button 
-                    onClick={onComplete} 
-                    size="large" 
+                <Button
+                    onClick={onComplete}
+                    size="large"
                     endIcon={<ArrowForward />}
                 >
                     Abschließen & Berichte generieren
