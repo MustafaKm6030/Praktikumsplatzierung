@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Snackbar, Alert } from '@mui/material';
 import ActionButtons from '../components/school_management/ActionButtons';
 import FilterBar from '../components/school_management/FilterBar';
 import ViewToggle from '../components/school_management/ViewToggle';
 import SchoolTable from '../components/school_management/SchoolTable';
 import useSchoolData from '../components/school_management/useSchoolData';
-
+import SchoolFormDialog from '../components/school_management/SchoolFormDialog';
+import SchoolViewDialog from '../components/school_management/SchoolViewDialog';
 import Loader from '../components/ui/Loader';
 import MapView from "../components/school_management/MapView";
+import { exportSchoolsCSV, importSchoolsCSV, deleteSchool } from '../components/school_management/SchoolsApi';
 
 /**
  * Main School Management Component
- * This component orchestrates all child components and manages the overall state
  */
 const SchoolManagement = () => {
     const [viewMode, setViewMode] = useState('list');
+    const [openAddDialog, setOpenAddDialog] = useState(false);
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [openViewDialog, setOpenViewDialog] = useState(false);
+    const [selectedSchool, setSelectedSchool] = useState(null);
+
+    // Snackbar for notifications
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
 
     // Use custom hook for data management
     const {
         schools,
         filteredSchools,
         loading,
+        error,
         searchQuery,
         setSearchQuery,
         selectedDistrict,
@@ -32,39 +45,115 @@ const SchoolManagement = () => {
         districts,
         types,
         zones,
-
+        fetchSchools: refetchSchools,
     } = useSchoolData();
+
+    // Show notification
+    const showNotification = (message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
+
+    // Close notification
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
 
     // Action handlers
     const handleAddNewSchool = () => {
-        alert('Neue Schule hinzufügen - Wird noch implementiert');
+        setSelectedSchool(null);
+        setOpenAddDialog(true);
     };
 
     const handleImportSchools = () => {
-        alert('Schulen importieren (CSV/Excel) - Wird noch implementiert');
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const result = await importSchoolsCSV(file);
+                showNotification(
+                    `Import erfolgreich: ${result.created} erstellt, ${result.updated} aktualisiert`,
+                    result.errors?.length > 0 ? 'warning' : 'success'
+                );
+
+                if (result.errors?.length > 0) {
+                    console.error('Import errors:', result.errors);
+                }
+
+                await refetchSchools();
+            } catch (error) {
+                console.error('Import error:', error);
+                showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
+            }
+        };
+        input.click();
     };
 
-    const handleExportSchoolList = () => {
-        alert('Schulliste exportieren - Wird noch implementiert');
+    const handleExportSchoolList = async () => {
+        try {
+            await exportSchoolsCSV();
+            showNotification('Schulliste erfolgreich exportiert', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showNotification(`Export fehlgeschlagen: ${error.message}`, 'error');
+        }
     };
 
     // Table action handlers
     const handleViewSchool = (school) => {
-        console.log('View school:', school);
-        alert(`Schule anzeigen: ${school.name}`);
+        setSelectedSchool(school);
+        setOpenViewDialog(true);
     };
 
     const handleEditSchool = (school) => {
-        console.log('Edit school:', school);
-        alert(`Schule bearbeiten: ${school.name}`);
+        setSelectedSchool(school);
+        setOpenEditDialog(true);
     };
 
-    const handleDeleteSchool = (school) => {
-        console.log('Delete school:', school);
+    const handleDeleteSchool = async (school) => {
         if (window.confirm(`Möchten Sie wirklich ${school.name} löschen?`)) {
-            alert(`Schule löschen: ${school.name}`);
+            try {
+                await deleteSchool(school.id);
+                showNotification(`${school.name} wurde erfolgreich gelöscht`, 'success');
+                await refetchSchools();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showNotification(`Löschen fehlgeschlagen: ${error.message}`, 'error');
+            }
         }
     };
+
+    // Dialog handlers
+    const handleSchoolSaved = async () => {
+        setOpenAddDialog(false);
+        setOpenEditDialog(false);
+        setSelectedSchool(null);
+        await refetchSchools();
+        showNotification('Schule erfolgreich gespeichert', 'success');
+    };
+
+    const handleDialogClose = () => {
+        setOpenAddDialog(false);
+        setOpenEditDialog(false);
+        setOpenViewDialog(false);
+        setSelectedSchool(null);
+    };
+
+    // Show error message if API fails
+    if (error) {
+        return (
+            <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    Fehler beim Laden der Schulen: {error}
+                    <br />
+                    Stellen Sie sicher, dass das Backend läuft und CORS richtig konfiguriert ist.
+                </Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
@@ -107,23 +196,64 @@ const SchoolManagement = () => {
                     viewMode={viewMode}
                     onViewChange={setViewMode}
                 />
-
             </Box>
 
             {/* Loading State */}
-            {loading && <Loader message="Schulen werden geladen..." />}
+            {loading ? (
+                <Loader message="Schulen werden geladen..." />
+            ) : (
+                <>
+                    {/* Table View */}
+                    {viewMode === 'list' && (
+                        <SchoolTable
+                            schools={filteredSchools}
+                            onView={handleViewSchool}
+                            onEdit={handleEditSchool}
+                            onDelete={handleDeleteSchool}
+                        />
+                    )}
 
-            {!loading && viewMode === 'list' && (
-                <SchoolTable
-                    schools={filteredSchools}
-                    onView={handleViewSchool}
-                    onEdit={handleEditSchool}
-                    onDelete={handleDeleteSchool}
-                />
+                    {/* Map View */}
+                    {viewMode === 'map' && <MapView schools={filteredSchools} />}
+                </>
             )}
 
-            {/* Map View */}
-            {!loading && viewMode === 'map' && <MapView schools={filteredSchools} />}
+            {/* Add School Dialog */}
+            <SchoolFormDialog
+                open={openAddDialog}
+                onClose={handleDialogClose}
+                onSave={handleSchoolSaved}
+                school={null}
+                title="Neue Schule hinzufügen"
+            />
+
+            {/* Edit School Dialog */}
+            <SchoolFormDialog
+                open={openEditDialog}
+                onClose={handleDialogClose}
+                onSave={handleSchoolSaved}
+                school={selectedSchool}
+                title="Schule bearbeiten"
+            />
+
+            {/* View School Dialog */}
+            <SchoolViewDialog
+                open={openViewDialog}
+                onClose={handleDialogClose}
+                school={selectedSchool}
+            />
+
+            {/* Notification Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
