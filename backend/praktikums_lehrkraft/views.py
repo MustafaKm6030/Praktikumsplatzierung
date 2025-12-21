@@ -198,10 +198,11 @@ class PLViewSet(viewsets.ModelViewSet):
                 {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        allowed_extensions = (".xlsx", ".xls")
+        allowed_extensions = ".xlsx", ".xls"
         if not file_obj.name.endswith(allowed_extensions):
             return Response(
-                {"error": "File must be an Excel file (.xlsx or .xls)"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "File must be an Excel file (.xlsx or .xls)"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:

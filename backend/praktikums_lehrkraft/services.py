@@ -86,200 +86,140 @@ def get_pls_by_subject(subject_id, praktikum_type_id=None):
     )
 
 
+def _extract_school_data(row):
+    """Parses school-related fields from a row."""
+    name_raw = str(row.get("Schulart", "")).strip()
+    ort_raw = str(row.get("Schulort", "")).strip()
+
+    # Zone, Distance, and ÖPNV parsing
+    try:
+        raw_z, raw_d = row.get("Zone 1"), row.get("Entfern-ungs km")
+        zone = int(float(raw_z)) if pd.notna(raw_z) else 1
+        dist = int(float(raw_d)) if pd.notna(raw_d) else None
+    except (ValueError, TypeError):
+        zone, dist = 1, None
+
+    opnv = str(row.get("ÖPNV", "")).strip()
+    return {
+        "unique_name": f"{name_raw} {ort_raw}".strip() or name_raw,
+        "city": ort_raw,
+        "zone": zone,
+        "dist": dist,
+        "opnv": opnv if opnv in ["4a", "4b"] else "",
+        "type": "GS" if "grund" in name_raw.lower() else "MS",
+    }
+
+
+def _save_pl_data(index, row, school, first_name, last_name):
+    """Prepares the dictionary for PraktikumsLehrkraft."""
+    # 1. Flatten numeric parsing using pd.to_numeric to avoid try/except blocks
+    raw_anre = row.get("Anre-Std.SJ 25_26") or row.get("Anre-Std. SJ 25_26")
+    anre_std = pd.to_numeric(raw_anre, errors="coerce")
+    if pd.isna(anre_std):
+        anre_std = 1.0
+
+    # 2. Clean strings and handle slicing in-place
+    prog = str(row.get("LA", "GS")).strip()
+    email = f"{first_name.lower()}.{last_name.lower()}.{index}@placeholder.local"
+
+    # 3. Return the flat structure
+    return {
+        "email": email,
+        "defaults": {
+            "first_name": first_name,
+            "last_name": last_name,
+            "school": school,
+            "program": prog[:2] if len(prog) >= 2 else "GS",
+            "anrechnungsstunden": float(anre_std),
+            "preferred_praktika_raw": str(row.get("bevorzugte Praktika der PL", "")),
+            "schulamt": str(row.get("Schul-amt", "")).strip(),
+            "current_year_notes": str(row.get("Besonderheiten SJ 25_26", "")),
+            "is_active": str(row.get("Status", "ok")).lower() == "ok",
+        },
+    }
+
+
+# --- MAIN FUNCTION (Now ~50 lines) ---
+
+
 def import_pls_from_csv(file_obj):
-    """
-    Business Logic: Imports PLs from an Excel file (.xlsx) using pandas.
-    Includes robust 'End of Data' detection based on row structure.
-    """
-    import pandas as pd
-    from django.db import transaction
-    from schools.models import School
-    from subjects.models import Subject, PraktikumType
-
     print("--- STARTING EXCEL IMPORT ---")
-
-    created_count = 0
-    updated_count = 0
-    errors = []
-    consecutive_empty_rows = 0
+    created_count, updated_count, errors, consecutive_empty_rows = 0, 0, [], 0
 
     try:
-        # 1. Read Excel
         df = pd.read_excel(file_obj, engine="openpyxl")
-
-        # Clean headers
         df.columns = (
             df.columns.astype(str).str.replace("\n", "", regex=False).str.strip()
         )
-        print(f"Found Columns: {df.columns.tolist()}")
 
-        # 2. Cache DB objects
-        schools_cache = {school.name: school for school in School.objects.all()}
-        subjects_cache = {subject.code: subject for subject in Subject.objects.all()}
+        subjects_cache = {s.code: s for s in Subject.objects.all()}
         ptypes_cache = {pt.code: pt for pt in PraktikumType.objects.all()}
-
-        SUBJECT_COLUMNS = [col for col in df.columns if col in subjects_cache]
+        SUB_COLS = [col for col in df.columns if col in subjects_cache]
 
         with transaction.atomic():
             for index, row in df.iterrows():
                 try:
-                    # --- ROBUST END-OF-DATA CHECK ---
-                    raw_last_name = row.get("Nachname")
-                    raw_first_name = row.get(
-                        "Vor-name"
-                    )  # Check exact header name from your logs!
+                    f_name = str(row.get("Vor-name", "")).strip().replace("nan", "")
+                    l_name = str(row.get("Nachname", "")).strip().replace("nan", "")
 
-                    last_name = str(raw_last_name).strip()
-                    first_name = str(raw_first_name).strip()
-
-                    # Handle "nan" string conversion from pandas
-                    if last_name.lower() == "nan":
-                        last_name = ""
-                    if first_name.lower() == "nan":
-                        first_name = ""
-
-                    # 1. Check for Empty Row
-                    if not last_name:
+                    if not l_name:
                         consecutive_empty_rows += 1
                         if consecutive_empty_rows >= 5:
-                            print(
-                                f"Row {index + 2}: 5 consecutive empty rows. Stopping."
-                            )
                             break
-                        continue  # Skip this empty row
-
-                    # 2. Reset empty counter since we found a non-empty Last Name
-                    consecutive_empty_rows = 0
-
-                    # 3. CRITICAL STOP CONDITION: Text in Last Name, but NO First Name
-                    # This catches "Legende:", "Schuljahr...", notes, etc.
-                    # A valid teacher MUST have a first name.
-                    if last_name and not first_name:
-                        print(
-                            f"Row {index + 2}: Found text '{last_name}' but no First Name. Assuming End of Data."
-                        )
-                        break
-                    # --------------------------------
-
-                    # --- School Logic ---
-                    school_name_raw = str(row.get("Schulart", "")).strip()
-                    school_ort_raw = str(row.get("Schulort", "")).strip()
-
-                    if school_name_raw and school_ort_raw:
-                        school_unique_name = f"{school_name_raw} {school_ort_raw}"
-                    elif school_name_raw:
-                        school_unique_name = school_name_raw
-                    else:
-                        print(f"Row {index + 2}: No school data. Skipping.")
                         continue
 
-                    # --- NEW: Extract Real Geo-Data ---
-                    # 1. Zone (Handle floats like 1.0)
-                    try:
-                        raw_zone = row.get("Zone 1")
-                        zone_val = int(float(raw_zone)) if pd.notna(raw_zone) else 1
-                    except (ValueError, TypeError):
-                        zone_val = 1  # Fallback
+                    if l_name and not f_name:
+                        break  # End of data check
+                    consecutive_empty_rows = 0
 
-                    # 2. Distance (Handle floats/ints)
-                    try:
-                        raw_dist = row.get("Entfern-ungs km")
-                        dist_val = int(float(raw_dist)) if pd.notna(raw_dist) else None
-                    except (ValueError, TypeError):
-                        dist_val = None
+                    # Process School
+                    s_data = _extract_school_data(row)
+                    if not s_data["unique_name"]:
+                        continue
 
-                    # 3. ÖPNV Code (String)
-                    raw_opnv = str(row.get("ÖPNV", "")).strip()
-                    # Only accept valid codes, otherwise blank
-                    opnv_val = raw_opnv if raw_opnv in ["4a", "4b"] else ""
-
-                    # --- CREATE OR UPDATE SCHOOL ---
-                    school_type_guess = (
-                        "GS" if "grund" in school_name_raw.lower() else "MS"
-                    )
-
-                    # We use update_or_create to fix existing schools with bad defaults
                     school, _ = School.objects.update_or_create(
-                        name=school_unique_name,
+                        name=s_data["unique_name"],
                         defaults={
-                            "school_type": school_type_guess,
-                            "city": school_ort_raw,
-                            "district": str(
-                                row.get("Schul-amt", "")
-                            ).strip(),  # Ensure district is set
-                            "zone": zone_val,
-                            "opnv_code": opnv_val,
-                            "distance_km": dist_val,
+                            "school_type": s_data["type"],
+                            "city": s_data["city"],
+                            "district": str(row.get("Schul-amt", "")).strip(),
+                            "zone": s_data["zone"],
+                            "opnv_code": s_data["opnv"],
+                            "distance_km": s_data["dist"],
                             "is_active": True,
                         },
                     )
-                    schools_cache[school_unique_name] = school
 
-                    # --- Data Extraction ---
-                    # Use index to ensure email uniqueness even for duplicate names
-                    email = f"{first_name.lower()}.{last_name.lower()}.{index}@placeholder.local"
-                    schulamt_val = str(row.get("Schul-amt", "")).strip()
-                    program_raw = str(row.get("LA", "GS")).strip()
-                    program = program_raw[:2] if len(program_raw) >= 2 else "GS"
-                    raw_anre = row.get("Anre-Std.SJ 25_26")
-                    if pd.isna(raw_anre):
-                        raw_anre = row.get("Anre-Std. SJ 25_26")
-                    try:
-                        anre_std = float(raw_anre) if pd.notna(raw_anre) else 1.0
-                    except (ValueError, TypeError):
-                        anre_std = 1.0
-
-                    pl_data = {
-                        "first_name": first_name,
-                        "last_name": last_name,
-                        "school": school,
-                        "program": program,
-                        "anrechnungsstunden": anre_std,
-                        "preferred_praktika_raw": str(
-                            row.get("bevorzugte Praktika der PL", "")
-                        ),
-                        "schulamt": schulamt_val,
-                        "current_year_notes": str(
-                            row.get("Besonderheiten SJ 25_26", "")
-                        ),
-                        "is_active": str(row.get("Status", "ok")).lower() == "ok",
-                    }
-
+                    # Process Teacher
+                    pl_info = _save_pl_data(index, row, school, f_name, l_name)
                     pl, created = PraktikumsLehrkraft.objects.update_or_create(
-                        email=email, defaults=pl_data
+                        email=pl_info["email"], defaults=pl_info["defaults"]
                     )
 
-                    # --- M2M Relations ---
-                    # Subjects
-                    pl_subjects = []
-                    for sub_code in SUBJECT_COLUMNS:
-                        val = str(row.get(sub_code, "")).strip().lower()
-                        if val == "x":
-                            pl_subjects.append(subjects_cache[sub_code])
-                    pl.available_subjects.set(pl_subjects)
+                    # M2M Relations
+                    subs = [
+                        subjects_cache[c]
+                        for c in SUB_COLS
+                        if str(row.get(c, "")).strip().lower() == "x"
+                    ]
+                    pl.available_subjects.set(subs)
 
-                    # Praktikum Types
-                    pl_ptypes = []
-                    pref_text = pl.preferred_praktika_raw.upper()
-                    for ptype_code, ptype_obj in ptypes_cache.items():
-                        search_term = ptype_code.replace("_", " ")
-                        if search_term in pref_text:
-                            pl_ptypes.append(ptype_obj)
-                    pl.available_praktikum_types.set(pl_ptypes)
+                    pref = pl.preferred_praktika_raw.upper()
+                    ptypes = [
+                        obj
+                        for c, obj in ptypes_cache.items()
+                        if c.replace("_", " ") in pref
+                    ]
+                    pl.available_praktikum_types.set(ptypes)
 
-                    if created:
-                        created_count += 1
-                    else:
-                        updated_count += 1
+                    created_count += 1 if created else 0
+                    updated_count += 1 if not created else 0
 
                 except Exception as e:
                     errors.append(f"Row {index + 2}: {str(e)}")
 
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        errors.append(f"Critical Error Reading Excel File: {str(e)}")
+        errors.append(f"Critical Error: {str(e)}")
 
     return {"created": created_count, "updated": updated_count, "errors": errors}
 

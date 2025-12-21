@@ -1,35 +1,29 @@
 import os
 import django
 
-# --- SETUP DJANGO ---
-# This allows us to use Django models in a standalone script
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
-# --------------------
 
 from praktikums_lehrkraft.services import import_pls_from_csv
 
 
 def main():
     """
-    Main function to run the excel import script.
+    Main function to run the debug script.
     """
-    # Name of your file in the backend directory
-    excel_file_name = "Example_Data.xlsx"
-
-    # Locate file
+    csv_file_name = "Example_Data.xlsx"  # Changed to .xlsx
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, excel_file_name)
+    csv_file_path = os.path.join(script_dir, csv_file_name)
 
-    print(f"--- Attempting to open file: {file_path} ---")
+    print(f"--- Attempting to open file: {csv_file_path} ---")
 
-    if not os.path.exists(file_path):
-        print(f"❌ ERROR: '{excel_file_name}' not found in the backend directory.")
+    if not os.path.exists(csv_file_path):
+        print(f"❌ ERROR: '{csv_file_name}' not found in the backend directory.")
         return
 
     try:
-        # Open the file in binary read mode ('rb') for pandas/openpyxl
-        with open(file_path, "rb") as file_obj:
+        # Open the file in binary read mode ('rb')
+        with open(csv_file_path, "rb") as file_obj:
             results = import_pls_from_csv(file_obj)
 
         print("\n--- SCRIPT FINISHED ---")
@@ -37,7 +31,7 @@ def main():
         print(results)
 
     except Exception as e:
-        print("\n--- A CRITICAL ERROR OCCURRED ---")
+        print("\n--- A CRITICAL ERROR OCCURRED OUTSIDE THE SCRIPT ---")
         import traceback
 
         traceback.print_exc()
