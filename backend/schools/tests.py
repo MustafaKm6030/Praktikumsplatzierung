@@ -74,7 +74,7 @@ class SchoolServicesTests(TestCase):
 
     @classmethod
     def _setup_invalid_schools(cls):
-        # School D: Invalid for Wednesday internships (Zone 1 but no ÖPNV code)
+        # School D: Valid for Wednesday (Zone 1, even without ÖPNV due to permissive logic)
         cls.school_d = School.objects.create(
             name="School D (Block, Z1, no ÖPNV)",
             school_type="MS",
@@ -112,23 +112,25 @@ class SchoolServicesTests(TestCase):
 
     def test_get_reachable_schools_for_wednesday_praktikum(self):
         """
-        Verify that Wednesday Praktika (SFP, ZSP) are strictly filtered:
-        - Must be Zone 1 or 2
-        - Must have ÖPNV code '4a' or '4b'
-        - Must be active
+        Verify that Wednesday Praktika (SFP, ZSP) are filtered by Zone 1/2.
+        Updated: We now allow empty ÖPNV codes if the Zone is correct.
         """
         # Test for SFP
         reachable_sfp = get_reachable_schools("SFP")
-        self.assertEqual(reachable_sfp.count(), 2)  # Only A and B
+
+        # Should include A, B, AND D (Zone 1 with empty ÖPNV)
+        self.assertEqual(reachable_sfp.count(), 3)
         self.assertIn(self.school_a, reachable_sfp)
         self.assertIn(self.school_b, reachable_sfp)
-        self.assertNotIn(self.school_c, reachable_sfp)  # Exclude Zone 3
-        self.assertNotIn(self.school_d, reachable_sfp)  # Exclude school with no ÖPNV
-        self.assertNotIn(self.school_e, reachable_sfp)  # Exclude inactive school
+        self.assertIn(self.school_d, reachable_sfp)  # This is now valid
+
+        # Should NOT include Zone 3 or Inactive
+        self.assertNotIn(self.school_c, reachable_sfp)
+        self.assertNotIn(self.school_e, reachable_sfp)
 
         # Test for ZSP (should have the same result)
         reachable_zsp = get_reachable_schools("ZSP")
-        self.assertEqual(reachable_zsp.count(), 2)
+        self.assertEqual(reachable_zsp.count(), 3)
         self.assertQuerysetEqual(reachable_sfp, reachable_zsp, ordered=False)
 
     def test_get_reachable_schools_for_unknown_type(self):

@@ -188,3 +188,4 @@ def _get_student_row(student):
 def _format_date(date_obj):
     """Formats a date as ISO string or empty string if None."""
     return date_obj.isoformat() if date_obj else ""
+

@@ -1,5 +1,5 @@
 import {
-  useState, useEffect, useMemo,
+  useState, useEffect, useMemo, useCallback
 
   //  useCallback 
 
@@ -190,41 +190,45 @@ function computeStats(teachers) {
 
 /* -------------------- Main hook (now very small) -------------------- */
 
+const performFetch = async (setLoading, setError, setTeachers) => {
+  setLoading(true);
+  try {
+    const data = await fetchTeachersFromApi();
+    setTeachers(data || []);
+  } catch (err) {
+    setError(err.message || 'Fehler beim Laden');
+    setTeachers([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 export default function useTeacherData() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('all');
   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
 
-  useEffect(() => {
-    setLoading(true);
-    fetchTeachersFromApi()
-      .then(data => setTeachers(data))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
+  const refetchTeachers = useCallback(() =>
+    performFetch(setLoading, setError, setTeachers), []);
+
+  useEffect(() => { refetchTeachers(); }, [refetchTeachers]);
 
   const schulamtOptions = useMemo(() => extractSchulamtOptions(teachers), [teachers]);
   const programOptions = useMemo(() => ['GS', 'MS'], []);
 
   const filteredTeachers = useMemo(() => filterTeachers(teachers, {
-    searchQuery,
-    selectedProgram,
-    selectedSchulamt
+    searchQuery, selectedProgram, selectedSchulamt
   }), [teachers, searchQuery, selectedProgram, selectedSchulamt]);
 
   const stats = useMemo(() => computeStats(filteredTeachers), [filteredTeachers]);
 
   return {
-    teachers,
-    filteredTeachers,
-    loading,
-    searchQuery, setSearchQuery,
-    selectedProgram, setSelectedProgram,
-    selectedSchulamt, setSelectedSchulamt,
-    programOptions, schulamtOptions,
-    stats,
+    teachers, filteredTeachers, loading, error, refetchTeachers,
+    searchQuery, setSearchQuery, selectedProgram, setSelectedProgram,
+    selectedSchulamt, setSelectedSchulamt, programOptions, schulamtOptions, stats
   };
 }

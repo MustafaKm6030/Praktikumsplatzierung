@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from core import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -28,6 +29,7 @@ urlpatterns = [
     path("api/", include("students.urls")),
     path("api/assignments/", include("assignments.urls")),
     path("api/dashboard/", include("dashboard.urls")),
+    path("api/csrf/", views.csrf_token_view),
 ]
 
 # Serve static files in development

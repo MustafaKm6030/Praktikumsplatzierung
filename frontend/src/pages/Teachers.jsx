@@ -50,10 +50,16 @@ export default function Teachers() {
   const handleImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.csv';
+    input.accept = '.xlsx,.xls';
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      if (!['xlsx', 'xls'].includes(fileExtension)) {
+        showNotification('Bitte wählen Sie eine Excel-Datei (.xlsx oder .xls)', 'error');
+        return;
+      }
 
       try {
         const result = await importTeachersCSV(file);
@@ -67,6 +73,10 @@ export default function Teachers() {
         }
 
         await refetchTeachers();
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } catch (error) {
         console.error('Import error:', error);
         showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');

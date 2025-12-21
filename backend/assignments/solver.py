@@ -9,9 +9,17 @@ from .services import (
     get_mentor_capacity,
 )
 
+# Import extracted logic
+from .constraints import (
+    add_capacity_constraints,
+    add_valid_pairs_constraints,
+    add_minimum_coverage_constraints,
+)
+from .objectives import set_objective_function
+
 
 def run_solver():
-    print("\n=== 🕵️ STARTING PERMISSIVE SOLVER (MVP MODE) ===")
+    print("\n=== 🕵️ STARTING PERMISSIVE SOLVER (Supply-Only MVP) ===")
     model = cp_model.CpModel()
 
     # 1. Fetch Data
@@ -37,12 +45,17 @@ def run_solver():
     # 4. Apply Logic (Constraints & Objective)
     add_capacity_constraints(model, assignment_vars, mentor_data)
     add_valid_pairs_constraints(model, assignment_vars, mentor_data)
+
+    # --- Hard Coverage Constraint ---
+    add_minimum_coverage_constraints(model, assignment_vars, mentor_data)
+
+    # --- Objective Function with Soft Caps ---
     set_objective_function(model, assignment_vars, mentor_data, demand_map)
 
     # 5. Solve & Process
     print("\n--- Solving ---")
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
+    # solver.parameters.log_search_progress = True
     status = solver.Solve(model)
 
     return _process_solver_results(
@@ -53,7 +66,6 @@ def run_solver():
 def _prepare_supply_variables(model, all_mentors):
     """
     Iterates through mentors, validates data, and creates optimization variables.
-    Returns: assignment_vars, mentor_data, (all_ids, skipped_ids)
     """
     assignment_vars = {}
     mentor_data = {}
@@ -65,7 +77,6 @@ def _prepare_supply_variables(model, all_mentors):
         capacity = get_mentor_capacity(mentor)
         eligibilities = calculate_eligibility_for_pl(mentor)
 
-        # Validation Check
         if not _validate_mentor_data(mentor, capacity, eligibilities):
             skipped_ids.add(mentor.id)
             continue
@@ -76,7 +87,6 @@ def _prepare_supply_variables(model, all_mentors):
             "object": mentor,
         }
 
-        # Create Variables
         for practicum_type, subject_code in eligibilities:
             var_key = mentor.id, practicum_type, subject_code
             assignment_vars[var_key] = model.NewBoolVar(
@@ -87,7 +97,6 @@ def _prepare_supply_variables(model, all_mentors):
 
 
 def _prepare_demand_map():
-    """Aggregates demand into a lookup dictionary."""
     demand_data = aggregate_demand()
     demand_map = {}
     for d in demand_data:
@@ -99,7 +108,6 @@ def _prepare_demand_map():
 def _process_solver_results(
     status, solver, assignment_vars, mentor_data, all_ids, skipped_ids
 ):
-    """Handles the solver outcome, saves to DB, and generates the report."""
     results = {
         "status": "FAILURE",
         "assignments": [],
@@ -110,15 +118,13 @@ def _process_solver_results(
         print(f"✅ Solution found in {solver.WallTime()}s!")
 
         with transaction.atomic():
-            # Save assignments
             assignments_created, assigned_ids = _save_assignments_to_db(
                 solver, assignment_vars, mentor_data
             )
             print(f"Saved {len(assignments_created)} assignments to database.")
 
-            # Calculate report
             unassigned_data = _get_unassigned_mentors_report(
-                all_ids, assigned_ids, skipped_ids
+                all_ids, assigned_ids, skipped_ids, mentor_data, assignment_vars, solver
             )
 
             results["status"] = "SUCCESS"
@@ -131,21 +137,13 @@ def _process_solver_results(
 
 
 def _validate_mentor_data(mentor, capacity, eligibilities):
-    """Checks if mentor has enough subjects/types to meet capacity constraints."""
-    if len(eligibilities) < capacity:
-        print(f"⚠️ Skipping Mentor {mentor.id}: Not enough eligibility options.")
+    if len(eligibilities) == 0:
+        print(f"⚠️ Skipping Mentor {mentor.id}: No eligibility options found.")
         return False
-
-    unique_types = set(e[0] for e in eligibilities)
-    if capacity == 2 and len(unique_types) < 2:
-        print(f"⚠️ Skipping Mentor {mentor.id}: Capacity 2 requires 2 different types.")
-        return False
-
     return True
 
 
 def _save_assignments_to_db(solver, assignment_vars, mentor_data):
-    """Extracts results from the solver and saves them to the DB."""
     Assignment.objects.all().delete()
 
     subjects_map = {s.code: s for s in Subject.objects.all()}
@@ -181,121 +179,79 @@ def _save_assignments_to_db(solver, assignment_vars, mentor_data):
     return assignments_created, assigned_mentor_ids
 
 
-def _get_unassigned_mentors_report(all_ids, assigned_ids, skipped_ids):
-    """Generates the report list for unassigned mentors."""
-    unassigned_ids = all_ids - assigned_ids
-    unassigned_data = []
+def _get_unassigned_mentors_report(
+    all_ids, assigned_ids, skipped_ids, mentor_data, assignment_vars, solver
+):
+    """
+    Orchestrates the reporting of unassigned and partially assigned mentors.
+    """
+    fully_unassigned = _process_fully_unassigned(all_ids, assigned_ids, skipped_ids)
 
-    if unassigned_ids:
-        unassigned_objs = PraktikumsLehrkraft.objects.filter(id__in=unassigned_ids)
-        for pl in unassigned_objs:
-            reason = "Solver Optimization (Leftover)"
-            if pl.id in skipped_ids:
-                reason = "DATA ERROR: Invalid Capacity/Subjects"
+    partially_assigned = _process_partially_assigned(
+        assigned_ids, mentor_data, assignment_vars, solver
+    )
 
-            unassigned_data.append(
+    return fully_unassigned + partially_assigned
+
+
+def _process_fully_unassigned(all_ids, assigned_ids, skipped_ids):
+    """
+    Identifies mentors who received ZERO assignments.
+    """
+    results = []
+    fully_unassigned_ids = all_ids - assigned_ids
+
+    if not fully_unassigned_ids:
+        return results
+
+    unassigned_objs = PraktikumsLehrkraft.objects.filter(
+        id__in=fully_unassigned_ids
+    ).select_related("school")
+
+    for pl in unassigned_objs:
+        reason = "Solver Optimization (Leftover)"
+        if pl.id in skipped_ids:
+            reason = "DATA ERROR: No valid eligibilities found."
+
+        results.append(
+            {
+                "id": pl.id,
+                "name": f"{pl.last_name}, {pl.first_name}",
+                "email": pl.email,
+                "reason": reason,
+                "school": pl.school.name,
+            }
+        )
+    return results
+
+
+def _process_partially_assigned(assigned_ids, mentor_data, assignment_vars, solver):
+    """
+    Identifies mentors who have assignments but fewer than their total capacity.
+    """
+    results = []
+
+    for mentor_id in assigned_ids:
+        mentor_obj = mentor_data[mentor_id]["object"]
+        capacity = mentor_data[mentor_id]["capacity"]
+
+        # Count actual assignments for this mentor
+        actual_count = sum(
+            1
+            for key, var in assignment_vars.items()
+            if key[0] == mentor_id and solver.Value(var) == 1
+        )
+
+        if actual_count < capacity:
+            missing_slots = capacity - actual_count
+            results.append(
                 {
-                    "id": pl.id,
-                    "name": f"{pl.last_name}, {pl.first_name}",
-                    "email": pl.email,
-                    "reason": reason,
-                    "school": pl.school.name,
+                    "id": mentor_obj.id,
+                    "name": f"{mentor_obj.last_name}, {mentor_obj.first_name}",
+                    "email": mentor_obj.email,
+                    "reason": f"Partial Assignment: {actual_count}/{capacity} slots filled. Missing {missing_slots}.",
+                    "school": mentor_obj.school.name,
                 }
             )
 
-    return unassigned_data
-
-
-def add_capacity_constraints(model, assignment_vars, mentor_data):
-    for mentor_id, data in mentor_data.items():
-        mentor_vars = [
-            var for key, var in assignment_vars.items() if key[0] == mentor_id
-        ]
-        if mentor_vars:
-            model.Add(sum(mentor_vars) == data["capacity"])
-
-
-def add_valid_pairs_constraints(model, assignment_vars, mentor_data):
-    valid_pairs = [
-        ("PDP_I", "PDP_II"),
-        ("PDP_I", "SFP"),
-        ("PDP_I", "ZSP"),
-        ("PDP_II", "SFP"),
-        ("PDP_II", "ZSP"),
-        ("SFP", "ZSP"),
-    ]
-    all_types = ["PDP_I", "PDP_II", "SFP", "ZSP"]
-
-    for mentor_id, data in mentor_data.items():
-        if data["capacity"] == 2:
-            _constrain_mentor_to_valid_pair(
-                model, mentor_id, assignment_vars, all_types, valid_pairs
-            )
-
-
-def _constrain_mentor_to_valid_pair(
-    model, mentor_id, assignment_vars, all_types, valid_pairs
-):
-    mentor_has = {}
-    for ptype in all_types:
-        mentor_has[ptype] = model.NewBoolVar(f"mentor_{mentor_id}_has_{ptype}")
-        type_vars = [
-            var
-            for key, var in assignment_vars.items()
-            if key[0] == mentor_id and key[1] == ptype
-        ]
-
-        if not type_vars:
-            model.Add(mentor_has[ptype] == 0)
-        else:
-            model.Add(sum(type_vars) > 0).OnlyEnforceIf(mentor_has[ptype])
-            model.Add(sum(type_vars) == 0).OnlyEnforceIf(mentor_has[ptype].Not())
-
-    model.Add(sum(mentor_has.values()) == 2)
-
-    valid_pair_clauses = []
-    for p1, p2 in valid_pairs:
-        is_pair = model.NewBoolVar(f"mentor_{mentor_id}_is_{p1}_{p2}")
-        model.AddBoolAnd([mentor_has[p1], mentor_has[p2]]).OnlyEnforceIf(is_pair)
-        model.AddBoolOr([mentor_has[p1].Not(), mentor_has[p2].Not()]).OnlyEnforceIf(
-            is_pair.Not()
-        )
-        valid_pair_clauses.append(is_pair)
-
-    model.Add(sum(valid_pair_clauses) == 1)
-
-
-def set_objective_function(model, assignment_vars, mentor_data, demand_map):
-    DEMAND_WEIGHT = 10
-    DIVERSITY_WEIGHT = 5
-    objective_terms = []
-
-    # 1. Prioritize Demand
-    for key, var in assignment_vars.items():
-        mentor_id, practicum_type, subject_code = key
-        mentor_program = mentor_data[mentor_id]["object"].program
-        demand_key = practicum_type, mentor_program, subject_code
-        student_count = demand_map.get(demand_key, 0)
-
-        if student_count > 0:
-            objective_terms.append(var * (student_count * DEMAND_WEIGHT))
-
-    # 2. Diversity
-    school_vars = {}
-    for key, var in assignment_vars.items():
-        mentor_id, ptype, _ = key
-        school_id = mentor_data[mentor_id]["object"].school_id
-        if school_id not in school_vars:
-            school_vars[school_id] = {}
-        if ptype not in school_vars[school_id]:
-            school_vars[school_id][ptype] = []
-        school_vars[school_id][ptype].append(var)
-
-    for school_id, types_dict in school_vars.items():
-        for ptype, vars_list in types_dict.items():
-            school_has_type = model.NewBoolVar(f"school_{school_id}_has_{ptype}")
-            model.Add(sum(vars_list) > 0).OnlyEnforceIf(school_has_type)
-            model.Add(sum(vars_list) == 0).OnlyEnforceIf(school_has_type.Not())
-            objective_terms.append(school_has_type * DIVERSITY_WEIGHT)
-
-    model.Maximize(sum(objective_terms))
+    return results
