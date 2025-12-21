@@ -11,61 +11,64 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("\n=== 🕵️ ELIGIBILITY DEBUGGER (FULL SCAN) ===\n")
 
-        # 1. RAW DATABASE CHECK (The Truth)
+        # 1. RAW DATABASE CHECK
+        self._print_database_raw_counts()
+
+        # 2. SOLVER ELIGIBILITY CHECK
+        self._print_solver_calculated_counts()
+
+        self.stdout.write("\n=======================================")
+
+    def _print_database_raw_counts(self):
+        """Checks source of truth: Active PLs linked to subjects."""
         self.stdout.write("--- 1. Raw Database Counts (Source of Truth) ---")
         self.stdout.write(
             "(Counts all Active PLs who have this subject in 'available_subjects')"
         )
 
-        # Get all subjects ordered by code
         all_subjects = Subject.objects.all().order_by("code")
-
         for sub in all_subjects:
             count = PraktikumsLehrkraft.objects.filter(
                 is_active=True, available_subjects=sub
             ).count()
 
-            # Print row
-            if count > 0:
-                self.stdout.write(
-                    f"- {sub.code.ljust(6)} ({sub.name}): {self.style.SUCCESS(str(count))}"
-                )
-            else:
-                self.stdout.write(
-                    f"- {sub.code.ljust(6)} ({sub.name}): {self.style.WARNING('0')}"
-                )
+            status_style = self.style.SUCCESS if count > 0 else self.style.WARNING
+            self.stdout.write(
+                f"- {sub.code.ljust(6)} ({sub.name}): {status_style(str(count))}"
+            )
 
-        # 2. SOLVER ELIGIBILITY CHECK (What the Solver Sees)
+    def _print_solver_calculated_counts(self):
+        """Checks logic: Active + Reachable + Eligible for SFP/ZSP."""
         self.stdout.write("\n--- 2. Solver Eligibility Counts (Calculated) ---")
         self.stdout.write(
             "(Counts PLs who are Active + Reachable + Eligible for SFP/ZSP)"
         )
 
-        # Structure: { 'SFP': { 'GS': { 'MU': count } } }
-        solver_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        # Structure: { 'PTYPE': { 'PROGRAM': { 'SUBJECT': count } } }
+        counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
-        all_mentors = PraktikumsLehrkraft.objects.filter(
-            is_active=True
-        ).prefetch_related("available_praktikum_types", "available_subjects", "school")
+        mentors = PraktikumsLehrkraft.objects.filter(is_active=True).prefetch_related(
+            "available_praktikum_types", "available_subjects", "school"
+        )
 
-        for pl in all_mentors:
+        for pl in mentors:
             eligibilities = calculate_eligibility_for_pl(pl)
-
             for ptype_code, subject_code in eligibilities:
                 if subject_code != "N/A":
-                    solver_counts[ptype_code][pl.program][subject_code] += 1
+                    counts[ptype_code][pl.program][subject_code] += 1
 
         for ptype in ["SFP", "ZSP"]:
             self.stdout.write(f"\n[{ptype}]")
             for program in ["GS", "MS"]:
-                subjects = solver_counts[ptype][program]
-                if not subjects:
-                    continue
+                self._print_program_line(program, counts[ptype][program])
 
-                sorted_subjects = sorted(
-                    subjects.items(), key=lambda x: x[1], reverse=True
-                )
-                top_str = ", ".join([f"{k}: {v}" for k, v in sorted_subjects])
-                self.stdout.write(f"  {program}: {top_str}")
+    def _print_program_line(self, program_code, subjects_dict):
+        """Helper to format a single line of subject counts for a program."""
+        if not subjects_dict:
+            return
 
-        self.stdout.write("\n=======================================")
+        # Sort by count descending
+        sorted_items = sorted(subjects_dict.items(), key=lambda x: x[1], reverse=True)
+        count_str = ", ".join([f"{code}: {val}" for code, val in sorted_items])
+
+        self.stdout.write(f"  {program_code}: {count_str}")

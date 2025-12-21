@@ -45,80 +45,106 @@ def add_soft_subject_caps(model, assignment_vars, objective_terms):
 
 def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     """
-    OBJECTIVE: High Priority on Diversity (Sport/Art), Controlled by Caps.
+    Orchestrator for the objective function.
+    Aggregates scores from individual assignments, diversity bonuses, and penalties.
     """
-    UTILIZATION_WEIGHT = 100
-    DIVERSITY_WEIGHT = 70
-
-    # LOW SCARCITY: Don't let Supply Size dictate priority
-    SCARCITY_WEIGHT = 10
-
-    # HIGH BONUS: Force Sport/Art to be assigned initially
-    SPECIFIC_SUBJECT_BONUS = 45
-
-    # LOW CORE: Let Math fill slots, but rely on the higher CAP (55) to get volume
-    CORE_SUBJECT_WEIGHT = 15
-
-    # LOW PENALTY: Allow double-assignments for valid subjects
-    SAME_SUBJECT_PENALTY = -35
-
-    WEDNESDAY_BONUS = 30
-    MIXED_TYPE_BONUS = 20
-
-    CORE_SUBJECTS = {"D", "MA"}
     objective_terms = []
 
-    # --- STEP 1: CALCULATE SUBJECT SCARCITY ---
+    # Configuration
+    config = {
+        "UTILIZATION_WEIGHT": 100,
+        "DIVERSITY_WEIGHT": 70,
+        "SCARCITY_WEIGHT": 10,
+        "SPECIFIC_SUBJECT_BONUS": 45,
+        "CORE_SUBJECT_WEIGHT": 15,
+        "SAME_SUBJECT_PENALTY": -35,
+        "WEDNESDAY_BONUS": 30,
+        "MIXED_TYPE_BONUS": 20,
+        "CORE_SUBJECTS": {"D", "MA"},
+    }
+
+    # 1. Base Scores & Scarcity
+    _add_individual_scores(objective_terms, assignment_vars, mentor_data, config)
+
+    # 2. School Diversity (Variety of types per school)
+    _add_school_diversity_bonus(
+        model, objective_terms, assignment_vars, mentor_data, config
+    )
+
+    # 3. Mentor Variety (Avoid duplicate subjects for one mentor)
+    _add_mentor_subject_penalty(model, objective_terms, assignment_vars, config)
+
+    # 4. Mentor Mixing (Reward taking both Block and Wednesday types)
+    _add_mentor_mixing_bonus(
+        model, objective_terms, assignment_vars, mentor_data, config
+    )
+
+    # 5. Soft Caps (Diminishing returns)
+    add_soft_subject_caps(model, assignment_vars, objective_terms)
+
+    model.Maximize(sum(objective_terms))
+
+
+def _add_individual_scores(objective_terms, assignment_vars, mentor_data, config):
+    """Calculates the base score for every possible assignment."""
+
+    # Calculate Supply for Scarcity Logic
     subject_potential_supply = defaultdict(int)
     for m_data in mentor_data.values():
         for _, scode in m_data["eligibilities"]:
             if scode != "N/A":
                 subject_potential_supply[scode] += 1
 
-    # --- STEP 3: BUILD INDIVIDUAL SCORES ---
     for key, var in assignment_vars.items():
         _, practicum_type, subject_code = key
 
-        # 1. Base Score
-        score = UTILIZATION_WEIGHT
+        score = config["UTILIZATION_WEIGHT"]
 
-        # 2. Scarcity & Subject Bonuses
+        # Subject-specific Bonuses
         if subject_code != "N/A":
-            score += SPECIFIC_SUBJECT_BONUS
+            score += config["SPECIFIC_SUBJECT_BONUS"]
 
+            # Scarcity Bonus
             supply_count = subject_potential_supply.get(subject_code, 1)
-            raw_scarcity = int((100 / supply_count) * SCARCITY_WEIGHT)
+            raw_scarcity = int((100 / supply_count) * config["SCARCITY_WEIGHT"])
             score += min(raw_scarcity, 50)
 
-            if subject_code in CORE_SUBJECTS:
-                score += CORE_SUBJECT_WEIGHT
+            if subject_code in config["CORE_SUBJECTS"]:
+                score += config["CORE_SUBJECT_WEIGHT"]
 
-        # --- Wednesday Bonus ---
+        # Wednesday Bonus
         if practicum_type in ["SFP", "ZSP"]:
-            score += WEDNESDAY_BONUS
+            score += config["WEDNESDAY_BONUS"]
 
         objective_terms.append(var * score)
 
-    # --- STEP 4: SCHOOL DIVERSITY ---
-    school_vars = {}
+
+def _add_school_diversity_bonus(
+    model, objective_terms, assignment_vars, mentor_data, config
+):
+    """Rewards schools that host multiple different types of practicums."""
+    school_vars = defaultdict(lambda: defaultdict(list))
+
     for key, var in assignment_vars.items():
         mentor_id, ptype, _ = key
         school_id = mentor_data[mentor_id]["object"].school_id
-        if school_id not in school_vars:
-            school_vars[school_id] = {}
-        if ptype not in school_vars[school_id]:
-            school_vars[school_id][ptype] = []
         school_vars[school_id][ptype].append(var)
 
     for school_id, types_dict in school_vars.items():
         for ptype, vars_list in types_dict.items():
             school_has_type = model.NewBoolVar(f"school_{school_id}_has_{ptype}")
+
+            # Link boolean to existence of assignments
             model.Add(sum(vars_list) > 0).OnlyEnforceIf(school_has_type)
             model.Add(sum(vars_list) == 0).OnlyEnforceIf(school_has_type.Not())
-            objective_terms.append(school_has_type * DIVERSITY_WEIGHT)
 
-    # --- STEP 5: MENTOR SUBJECT VARIETY ---
+            objective_terms.append(school_has_type * config["DIVERSITY_WEIGHT"])
+
+
+def _add_mentor_subject_penalty(model, objective_terms, assignment_vars, config):
+    """Penalizes assigning the exact same subject twice to the same mentor."""
     mentor_subject_vars = defaultdict(lambda: defaultdict(list))
+
     for key, var in assignment_vars.items():
         m_id, _, s_code = key
         if s_code != "N/A":
@@ -127,40 +153,49 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     for m_id, subjects_dict in mentor_subject_vars.items():
         for s_code, vars_list in subjects_dict.items():
             is_duplicated = model.NewBoolVar(f"dup_{m_id}_{s_code}")
+
             model.Add(sum(vars_list) > 1).OnlyEnforceIf(is_duplicated)
             model.Add(sum(vars_list) <= 1).OnlyEnforceIf(is_duplicated.Not())
-            objective_terms.append(is_duplicated * SAME_SUBJECT_PENALTY)
 
-    # --- STEP 6: MENTOR TYPE MIXING ---
+            objective_terms.append(is_duplicated * config["SAME_SUBJECT_PENALTY"])
+
+
+def _add_mentor_mixing_bonus(
+    model, objective_terms, assignment_vars, mentor_data, config
+):
+    """Rewards mentors who take a mix of Block (PDP) and Wednesday (SFP/ZSP) types."""
+    block_types = {"PDP_I", "PDP_II"}
+    wed_types = {"SFP", "ZSP"}
+
     for m_id in mentor_data.keys():
-        m_vars = [k for k in assignment_vars.keys() if k[0] == m_id]
+        # Get all variables for this mentor
+        m_vars = {k: v for k, v in assignment_vars.items() if k[0] == m_id}
         if not m_vars:
             continue
+
+        block_vars = [v for k, v in m_vars.items() if k[1] in block_types]
+        wed_vars = [v for k, v in m_vars.items() if k[1] in wed_types]
 
         has_block = model.NewBoolVar(f"{m_id}_has_block")
         has_wed = model.NewBoolVar(f"{m_id}_has_wed")
 
-        block_vars = [assignment_vars[k] for k in m_vars if k[1] in ["PDP_I", "PDP_II"]]
-        wed_vars = [assignment_vars[k] for k in m_vars if k[1] in ["SFP", "ZSP"]]
-
+        # Define has_block
         if block_vars:
             model.Add(sum(block_vars) > 0).OnlyEnforceIf(has_block)
             model.Add(sum(block_vars) == 0).OnlyEnforceIf(has_block.Not())
         else:
             model.Add(has_block == 0)
 
+        # Define has_wed
         if wed_vars:
             model.Add(sum(wed_vars) > 0).OnlyEnforceIf(has_wed)
             model.Add(sum(wed_vars) == 0).OnlyEnforceIf(has_wed.Not())
         else:
             model.Add(has_wed == 0)
 
+        # Define Mixed State
         is_mixed = model.NewBoolVar(f"{m_id}_is_mixed")
         model.AddBoolAnd([has_block, has_wed]).OnlyEnforceIf(is_mixed)
         model.AddBoolOr([has_block.Not(), has_wed.Not()]).OnlyEnforceIf(is_mixed.Not())
-        objective_terms.append(is_mixed * MIXED_TYPE_BONUS)
 
-    # --- STEP 7: APPLY SOFT CAPS (The new Equalizer) ---
-    add_soft_subject_caps(model, assignment_vars, objective_terms)
-
-    model.Maximize(sum(objective_terms))
+        objective_terms.append(is_mixed * config["MIXED_TYPE_BONUS"])

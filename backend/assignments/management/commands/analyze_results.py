@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db.models import Count, Q
+from django.db.models import Count
 from assignments.models import Assignment
 
 
@@ -22,29 +22,28 @@ class Command(BaseCommand):
             f"Total Assignments Created: {self.style.SUCCESS(str(total_assignments))}\n"
         )
 
-        # --- 1. Breakdown by Praktikum Type ---
-        self.stdout.write("--- 📌 Breakdown by Type ---")
-
-        # We assume standard order for display
+        # Standard order for display
         type_order = ["PDP_I", "PDP_II", "SFP", "ZSP"]
+
+        self._print_breakdown_by_type(type_order)
+        self._print_detailed_breakdown(type_order)
+
+        self.stdout.write("\n=======================================\n")
+
+    def _print_breakdown_by_type(self, type_order):
+        """Prints high-level stats: Type count and GS/MS split."""
+        self.stdout.write("--- 📌 Breakdown by Type ---")
 
         for type_code in type_order:
             # Get total count for this type
-            total_count = Assignment.objects.filter(
-                practicum_type__code=type_code
-            ).count()
+            qs = Assignment.objects.filter(practicum_type__code=type_code)
+            total_count = qs.count()
 
             if total_count == 0:
                 continue
 
-            # Get breakdown GS vs MS
-            gs_count = Assignment.objects.filter(
-                practicum_type__code=type_code, mentor__program="GS"
-            ).count()
-
-            ms_count = Assignment.objects.filter(
-                practicum_type__code=type_code, mentor__program="MS"
-            ).count()
+            gs_count = qs.filter(mentor__program="GS").count()
+            ms_count = qs.filter(mentor__program="MS").count()
 
             # Format: - PDP_I: 50 [GS: 40 | MS: 10]
             self.stdout.write(
@@ -53,67 +52,53 @@ class Command(BaseCommand):
                 f"{self.style.MIGRATE_HEADING('MS: ' + str(ms_count))}]"
             )
 
-        # --- 2. Detailed Breakdown (Type + Subject) ---
+    def _print_detailed_breakdown(self, type_order):
+        """Prints granular stats: Grouped by Type -> Subject -> Program."""
         self.stdout.write("\n--- 🔬 Detailed Breakdown (Type + Subject + Program) ---")
 
         for type_code in type_order:
-            # Check if we have assignments for this type
             assignments_for_type = Assignment.objects.filter(
                 practicum_type__code=type_code
             )
+
             if not assignments_for_type.exists():
                 continue
 
             self.stdout.write(f"\n[{type_code}]")
+            self._print_subject_groups(assignments_for_type)
 
-            # Group by Subject
-            subject_counts = (
-                assignments_for_type.values("subject__name", "subject__code")
-                .annotate(total=Count("id"))
-                .order_by("-total")
+    def _print_subject_groups(self, assignments_qs):
+        """Helper to aggregate and print subject lines for a specific queryset."""
+        subject_counts = (
+            assignments_qs.values("subject__name", "subject__code")
+            .annotate(total=Count("id"))
+            .order_by("-total")
+        )
+
+        if not subject_counts:
+            self.stdout.write("  (No assignments)")
+            return
+
+        for entry in subject_counts:
+            subj_name = entry["subject__name"]
+            subj_code = entry["subject__code"]
+            count = entry["total"]
+
+            # Calculate GS/MS split for this specific subject line
+            filters = (
+                {"subject__code": subj_code} if subj_code else {"subject__isnull": True}
             )
 
-            has_subjects = False
-            for entry in subject_counts:
-                subj_name = entry["subject__name"]
-                subj_code = entry["subject__code"]
-                count = entry["total"]
+            gs_count = assignments_qs.filter(mentor__program="GS", **filters).count()
+            ms_count = assignments_qs.filter(mentor__program="MS", **filters).count()
 
-                # Calculate GS/MS split for this specific subject line
-                if subj_code:
-                    gs_sub_count = assignments_for_type.filter(
-                        subject__code=subj_code, mentor__program="GS"
-                    ).count()
-                    ms_sub_count = assignments_for_type.filter(
-                        subject__code=subj_code, mentor__program="MS"
-                    ).count()
-                else:
-                    # Handle 'No Subject' / General cases
-                    gs_sub_count = assignments_for_type.filter(
-                        subject__isnull=True, mentor__program="GS"
-                    ).count()
-                    ms_sub_count = assignments_for_type.filter(
-                        subject__isnull=True, mentor__program="MS"
-                    ).count()
+            split_info = f"[GS: {gs_count} | MS: {ms_count}]"
 
-                # Formatting string for the split
-                split_info = f"[GS: {gs_sub_count} | MS: {ms_sub_count}]"
+            if subj_name is None:
+                display_name = "General / No Subject"
+            else:
+                display_name = f"{subj_name} ({subj_code})"
 
-                if subj_name is None:
-                    # PDPs often have no subject
-                    self.stdout.write(
-                        f"  • General / No Subject: {self.style.SUCCESS(str(count))} {split_info}"
-                    )
-                else:
-                    has_subjects = True
-                    self.stdout.write(
-                        f"  • {subj_name} ({subj_code}): {self.style.SUCCESS(str(count))} {split_info}"
-                    )
-
-            if (
-                not has_subjects
-                and not assignments_for_type.filter(subject__isnull=True).exists()
-            ):
-                self.stdout.write("  (No assignments)")
-
-        self.stdout.write("\n=======================================\n")
+            self.stdout.write(
+                f"  • {display_name}: {self.style.SUCCESS(str(count))} {split_info}"
+            )

@@ -144,84 +144,138 @@ def _save_pl_data(index, row, school, first_name, last_name):
 
 def import_pls_from_csv(file_obj):
     print("--- STARTING EXCEL IMPORT ---")
-    created_count, updated_count, errors, consecutive_empty_rows = 0, 0, [], 0
 
     try:
-        df = pd.read_excel(file_obj, engine="openpyxl")
-        df.columns = (
-            df.columns.astype(str).str.replace("\n", "", regex=False).str.strip()
-        )
-
-        subjects_cache = {s.code: s for s in Subject.objects.all()}
-        ptypes_cache = {pt.code: pt for pt in PraktikumType.objects.all()}
-        SUB_COLS = [col for col in df.columns if col in subjects_cache]
+        df = _load_and_clean_dataframe(file_obj)
+        caches = _build_caches(df)
+        stats = {"created": 0, "updated": 0, "errors": []}
 
         with transaction.atomic():
-            for index, row in df.iterrows():
-                try:
-                    f_name = str(row.get("Vor-name", "")).strip().replace("nan", "")
-                    l_name = str(row.get("Nachname", "")).strip().replace("nan", "")
+            _process_all_rows(df, caches, stats)
 
-                    if not l_name:
-                        consecutive_empty_rows += 1
-                        if consecutive_empty_rows >= 5:
-                            break
-                        continue
-
-                    if l_name and not f_name:
-                        break  # End of data check
-                    consecutive_empty_rows = 0
-
-                    # Process School
-                    s_data = _extract_school_data(row)
-                    if not s_data["unique_name"]:
-                        continue
-
-                    school, _ = School.objects.update_or_create(
-                        name=s_data["unique_name"],
-                        defaults={
-                            "school_type": s_data["type"],
-                            "city": s_data["city"],
-                            "district": str(row.get("Schul-amt", "")).strip(),
-                            "zone": s_data["zone"],
-                            "opnv_code": s_data["opnv"],
-                            "distance_km": s_data["dist"],
-                            "is_active": True,
-                        },
-                    )
-
-                    # Process Teacher
-                    pl_info = _save_pl_data(index, row, school, f_name, l_name)
-                    pl, created = PraktikumsLehrkraft.objects.update_or_create(
-                        email=pl_info["email"], defaults=pl_info["defaults"]
-                    )
-
-                    # M2M Relations
-                    subs = [
-                        subjects_cache[c]
-                        for c in SUB_COLS
-                        if str(row.get(c, "")).strip().lower() == "x"
-                    ]
-                    pl.available_subjects.set(subs)
-
-                    pref = pl.preferred_praktika_raw.upper()
-                    ptypes = [
-                        obj
-                        for c, obj in ptypes_cache.items()
-                        if c.replace("_", " ") in pref
-                    ]
-                    pl.available_praktikum_types.set(ptypes)
-
-                    created_count += 1 if created else 0
-                    updated_count += 1 if not created else 0
-
-                except Exception as e:
-                    errors.append(f"Row {index + 2}: {str(e)}")
+        return stats
 
     except Exception as e:
-        errors.append(f"Critical Error: {str(e)}")
+        return {"created": 0, "updated": 0, "errors": [f"Critical Error: {str(e)}"]}
 
-    return {"created": created_count, "updated": updated_count, "errors": errors}
+
+def _load_and_clean_dataframe(file_obj):
+    """Reads Excel and sanitizes column headers."""
+    df = pd.read_excel(file_obj, engine="openpyxl")
+    df.columns = df.columns.astype(str).str.replace("\n", "", regex=False).str.strip()
+    return df
+
+
+def _build_caches(df):
+    """Pre-fetches database objects to avoid queries in the loop."""
+    subjects_cache = {s.code: s for s in Subject.objects.all()}
+    ptypes_cache = {pt.code: pt for pt in PraktikumType.objects.all()}
+
+    # Identify which columns in the Excel file correspond to known Subjects
+    subject_cols = [col for col in df.columns if col in subjects_cache]
+
+    return {
+        "subjects": subjects_cache,
+        "ptypes": ptypes_cache,
+        "subject_cols": subject_cols,
+    }
+
+
+def _process_all_rows(df, caches, stats):
+    """Iterates through dataframe rows and manages the loop state."""
+    consecutive_empty_rows = 0
+
+    for index, row in df.iterrows():
+        try:
+            # 1. Name Validation & Break Conditions
+            names = _extract_names(row)
+            if not names["last"]:
+                consecutive_empty_rows += 1
+                if consecutive_empty_rows >= 5:
+                    break
+                continue
+            elif not names["first"]:
+                break
+
+            consecutive_empty_rows = 0
+
+            # 2. Process Data
+            school = _get_or_create_school(row)
+            if not school:
+                continue
+
+            pl, created = _get_or_create_teacher(index, row, school, names)
+
+            # 3. Update Relationships
+            _update_m2m_relations(pl, row, caches)
+
+            # 4. Update Stats
+            if created:
+                stats["created"] += 1
+            else:
+                stats["updated"] += 1
+
+        except Exception as e:
+            stats["errors"].append(f"Row {index + 2}: {str(e)}")
+
+
+def _extract_names(row):
+    return {
+        "first": str(row.get("Vor-name", "")).strip().replace("nan", ""),
+        "last": str(row.get("Nachname", "")).strip().replace("nan", ""),
+    }
+
+
+def _get_or_create_school(row):
+    """Extracts school data and updates the database."""
+    s_data = _extract_school_data(row)  # Assumes existing helper
+
+    if not s_data["unique_name"]:
+        return None
+
+    school, _ = School.objects.update_or_create(
+        name=s_data["unique_name"],
+        defaults={
+            "school_type": s_data["type"],
+            "city": s_data["city"],
+            "district": str(row.get("Schul-amt", "")).strip(),
+            "zone": s_data["zone"],
+            "opnv_code": s_data["opnv"],
+            "distance_km": s_data["dist"],
+            "is_active": True,
+        },
+    )
+    return school
+
+
+def _get_or_create_teacher(index, row, school, names):
+    """Extracts teacher data and updates the database."""
+    # Assumes existing helper `_save_pl_data`
+    pl_info = _save_pl_data(index, row, school, names["first"], names["last"])
+
+    return PraktikumsLehrkraft.objects.update_or_create(
+        email=pl_info["email"], defaults=pl_info["defaults"]
+    )
+
+
+def _update_m2m_relations(pl, row, caches):
+    """Sets Many-to-Many fields for Subjects and Practicum Types."""
+    # 1. Subjects (marked with 'x' in columns)
+    subs = [
+        caches["subjects"][c]
+        for c in caches["subject_cols"]
+        if str(row.get(c, "")).strip().lower() == "x"
+    ]
+    pl.available_subjects.set(subs)
+
+    # 2. Practicum Types (parsed from raw string preference)
+    pref_raw = pl.preferred_praktika_raw.upper()
+    ptypes = [
+        obj
+        for code, obj in caches["ptypes"].items()
+        if code.replace("_", " ") in pref_raw
+    ]
+    pl.available_praktikum_types.set(ptypes)
 
 
 def export_pls_to_csv():

@@ -82,9 +82,9 @@ def add_minimum_coverage_constraints(model, assignment_vars, mentor_data):
             program = mentor_data[mentor_id]["object"].program
 
             # Create a granular bucket
-            bucket_key = (ptype, program, subject_code)
+            bucket_key = ptype, program, subject_code
             vars_by_bucket[bucket_key].append(var)
 
-    for bucket_key, vars_list in vars_by_bucket.items():
+    for _, vars_list in vars_by_bucket.items():
         if vars_list:
             model.Add(sum(vars_list) >= 1)

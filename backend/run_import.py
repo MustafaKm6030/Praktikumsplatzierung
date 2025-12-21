@@ -30,7 +30,7 @@ def main():
         print("Results:")
         print(results)
 
-    except Exception as e:
+    except Exception:
         print("\n--- A CRITICAL ERROR OCCURRED OUTSIDE THE SCRIPT ---")
         import traceback
 

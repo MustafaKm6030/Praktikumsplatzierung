@@ -182,40 +182,69 @@ def _save_assignments_to_db(solver, assignment_vars, mentor_data):
 def _get_unassigned_mentors_report(
     all_ids, assigned_ids, skipped_ids, mentor_data, assignment_vars, solver
 ):
-    unassigned_data = []
+    """
+    Orchestrates the reporting of unassigned and partially assigned mentors.
+    """
+    fully_unassigned = _process_fully_unassigned(all_ids, assigned_ids, skipped_ids)
 
+    partially_assigned = _process_partially_assigned(
+        assigned_ids, mentor_data, assignment_vars, solver
+    )
+
+    return fully_unassigned + partially_assigned
+
+
+def _process_fully_unassigned(all_ids, assigned_ids, skipped_ids):
+    """
+    Identifies mentors who received ZERO assignments.
+    """
+    results = []
     fully_unassigned_ids = all_ids - assigned_ids
-    if fully_unassigned_ids:
-        unassigned_objs = PraktikumsLehrkraft.objects.filter(
-            id__in=fully_unassigned_ids
-        )
-        for pl in unassigned_objs:
-            reason = "Solver Optimization (Leftover)"
-            if pl.id in skipped_ids:
-                reason = "DATA ERROR: No valid eligibilities found."
 
-            unassigned_data.append(
-                {
-                    "id": pl.id,
-                    "name": f"{pl.last_name}, {pl.first_name}",
-                    "email": pl.email,
-                    "reason": reason,
-                    "school": pl.school.name,
-                }
-            )
+    if not fully_unassigned_ids:
+        return results
+
+    unassigned_objs = PraktikumsLehrkraft.objects.filter(
+        id__in=fully_unassigned_ids
+    ).select_related("school")
+
+    for pl in unassigned_objs:
+        reason = "Solver Optimization (Leftover)"
+        if pl.id in skipped_ids:
+            reason = "DATA ERROR: No valid eligibilities found."
+
+        results.append(
+            {
+                "id": pl.id,
+                "name": f"{pl.last_name}, {pl.first_name}",
+                "email": pl.email,
+                "reason": reason,
+                "school": pl.school.name,
+            }
+        )
+    return results
+
+
+def _process_partially_assigned(assigned_ids, mentor_data, assignment_vars, solver):
+    """
+    Identifies mentors who have assignments but fewer than their total capacity.
+    """
+    results = []
 
     for mentor_id in assigned_ids:
         mentor_obj = mentor_data[mentor_id]["object"]
         capacity = mentor_data[mentor_id]["capacity"]
 
-        actual_count = 0
-        for key, var in assignment_vars.items():
-            if key[0] == mentor_id and solver.Value(var) == 1:
-                actual_count += 1
+        # Count actual assignments for this mentor
+        actual_count = sum(
+            1
+            for key, var in assignment_vars.items()
+            if key[0] == mentor_id and solver.Value(var) == 1
+        )
 
         if actual_count < capacity:
             missing_slots = capacity - actual_count
-            unassigned_data.append(
+            results.append(
                 {
                     "id": mentor_obj.id,
                     "name": f"{mentor_obj.last_name}, {mentor_obj.first_name}",
@@ -225,4 +254,4 @@ def _get_unassigned_mentors_report(
                 }
             )
 
-    return unassigned_data
+    return results
