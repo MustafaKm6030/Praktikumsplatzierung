@@ -189,8 +189,8 @@ class PLViewSet(viewsets.ModelViewSet):
     )
     def import_csv(self, request):
         """
-        POST /api/pls/import_csv/ - Import PLs from CSV.
-        Business Logic: Bulk creates/updates PLs from uploaded CSV file.
+        POST /api/pls/import_csv/ - Import PLs from CSV or Excel.
+        Business Logic: Bulk creates/updates PLs from uploaded CSV or Excel file.
         """
         file_obj = request.FILES.get("file")
         if not file_obj:
@@ -198,9 +198,10 @@ class PLViewSet(viewsets.ModelViewSet):
                 {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not file_obj.name.endswith(".csv"):
+        allowed_extensions = (".xlsx", ".xls")
+        if not file_obj.name.endswith(allowed_extensions):
             return Response(
-                {"error": "File must be a CSV"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "File must be an Excel file (.xlsx or .xls)"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:

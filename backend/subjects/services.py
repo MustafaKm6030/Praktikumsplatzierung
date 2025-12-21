@@ -118,3 +118,22 @@ def get_wednesday_praktikum_types():
     Business Logic: Wednesday Praktika restricted to Zone 1/2.
     """
     return PraktikumType.objects.filter(is_block_praktikum=False, is_active=True)
+
+
+def get_allowed_subject_codes(program_type: str, practicum_type: str) -> set:
+    """
+    Returns a set of valid Subject Codes (e.g., {'D', 'MA', 'HSU'}) for a
+    given Program and Internship Type based on the JSON rules.
+    """
+    allowed_codes = set()
+
+    # 1. Get the specific section from the rules
+    # e.g., _rules['GS']['SFP']
+    type_rules = _rules.get(program_type, {}).get(practicum_type, {})
+
+    # 2. Collect all the target codes
+    for rule in type_rules.values():
+        if "code" in rule:
+            allowed_codes.add(rule["code"])
+
+    return allowed_codes

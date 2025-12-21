@@ -57,7 +57,9 @@ def get_reachable_schools(praktikum_type_code: str):
     # These have strict constraints based on the project briefing.
     if praktikum_type_code in ["SFP", "ZSP"]:
         return School.objects.filter(
-            is_active=True, zone__in=[1, 2], opnv_code__in=["4a", "4b"]
+            is_active=True,
+            zone__in=[1, 2],
+            # opnv_code__in=["4a", "4b"]
         )
 
     # For any other or unknown type, return an empty queryset
@@ -113,7 +115,9 @@ def _build_school_data(row):
         "district": row.get("district", ""),
         "zone": int(row.get("zone", 1)) if row.get("zone") else 1,
         "opnv_code": row.get("opnv_code", ""),
-        "distance_km": float(row.get("distance_km", 0)) if row.get("distance_km") else 0,
+        "distance_km": float(row.get("distance_km", 0))
+        if row.get("distance_km")
+        else 0,
         "is_active": row.get("is_active", "true").lower() == "true",
         "notes": row.get("notes", ""),
         "latitude": float(row.get("latitude", 0)) if row.get("latitude") else None,
@@ -144,9 +148,20 @@ def export_schools_to_csv():
 def _get_school_csv_headers():
     """Helper: Returns CSV header row for schools."""
     return [
-        "id", "name", "school_type", "city", "district", "zone",
-        "opnv_code", "distance_km", "is_active", "notes",
-        "latitude", "longitude", "created_at", "updated_at",
+        "id",
+        "name",
+        "school_type",
+        "city",
+        "district",
+        "zone",
+        "opnv_code",
+        "distance_km",
+        "is_active",
+        "notes",
+        "latitude",
+        "longitude",
+        "created_at",
+        "updated_at",
     ]
 
 

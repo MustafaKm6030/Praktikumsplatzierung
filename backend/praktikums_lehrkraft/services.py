@@ -1,5 +1,9 @@
-from django.db.models import Q, Count
+import pandas as pd
+from django.db import transaction
+from django.db.models import Q
 from .models import PraktikumsLehrkraft
+from schools.models import School
+from subjects.models import Subject, PraktikumType
 
 
 def get_pls_by_school(school_id):
@@ -84,119 +88,200 @@ def get_pls_by_subject(subject_id, praktikum_type_id=None):
 
 def import_pls_from_csv(file_obj):
     """
-    Business Logic: Imports PLs from CSV file.
-    Creates or updates PLs based on email as unique identifier.
+    Business Logic: Imports PLs from an Excel file (.xlsx) using pandas.
+    Includes robust 'End of Data' detection based on row structure.
     """
-    import csv
-    import io
+    import pandas as pd
     from django.db import transaction
     from schools.models import School
     from subjects.models import Subject, PraktikumType
 
-    decoded_file = file_obj.read().decode("utf-8")
-    io_string = io.StringIO(decoded_file)
-    reader = csv.DictReader(io_string)
+    print("--- STARTING EXCEL IMPORT ---")
 
     created_count = 0
     updated_count = 0
     errors = []
+    consecutive_empty_rows = 0
 
-    # Cache for lookups
-    schools_cache = {school.name: school for school in School.objects.all()}
-    subjects_cache = {subject.code: subject for subject in Subject.objects.all()}
+    try:
+        # 1. Read Excel
+        df = pd.read_excel(file_obj, engine="openpyxl")
 
-    with transaction.atomic():
-        for row_num, row in enumerate(reader, start=2):
-            try:
-                email = row.get("email", "").strip()
-                if not email:
-                    errors.append(f"Row {row_num}: email is required")
-                    continue
+        # Clean headers
+        df.columns = (
+            df.columns.astype(str).str.replace("\n", "", regex=False).str.strip()
+        )
+        print(f"Found Columns: {df.columns.tolist()}")
 
-                pl_data = _build_pl_data(row, schools_cache, subjects_cache)
-                if "error" in pl_data:
-                    errors.append(f"Row {row_num}: {pl_data['error']}")
-                    continue
+        # 2. Cache DB objects
+        schools_cache = {school.name: school for school in School.objects.all()}
+        subjects_cache = {subject.code: subject for subject in Subject.objects.all()}
+        ptypes_cache = {pt.code: pt for pt in PraktikumType.objects.all()}
 
-                # Extract many-to-many fields
-                praktikum_types = pl_data.pop("praktikum_types", [])
-                available_subjects = pl_data.pop("available_subjects", [])
+        SUBJECT_COLUMNS = [col for col in df.columns if col in subjects_cache]
 
-                pl, created = PraktikumsLehrkraft.objects.update_or_create(
-                    email=email, defaults=pl_data
-                )
+        with transaction.atomic():
+            for index, row in df.iterrows():
+                try:
+                    # --- ROBUST END-OF-DATA CHECK ---
+                    raw_last_name = row.get("Nachname")
+                    raw_first_name = row.get(
+                        "Vor-name"
+                    )  # Check exact header name from your logs!
 
-                # Update many-to-many relationships
-                if praktikum_types:
-                    pl.available_praktikum_types.set(praktikum_types)
-                if available_subjects:
-                    pl.available_subjects.set(available_subjects)
+                    last_name = str(raw_last_name).strip()
+                    first_name = str(raw_first_name).strip()
 
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                    # Handle "nan" string conversion from pandas
+                    if last_name.lower() == "nan":
+                        last_name = ""
+                    if first_name.lower() == "nan":
+                        first_name = ""
 
-            except Exception as e:
-                errors.append(f"Row {row_num}: {str(e)}")
+                    # 1. Check for Empty Row
+                    if not last_name:
+                        consecutive_empty_rows += 1
+                        if consecutive_empty_rows >= 5:
+                            print(
+                                f"Row {index + 2}: 5 consecutive empty rows. Stopping."
+                            )
+                            break
+                        continue  # Skip this empty row
+
+                    # 2. Reset empty counter since we found a non-empty Last Name
+                    consecutive_empty_rows = 0
+
+                    # 3. CRITICAL STOP CONDITION: Text in Last Name, but NO First Name
+                    # This catches "Legende:", "Schuljahr...", notes, etc.
+                    # A valid teacher MUST have a first name.
+                    if last_name and not first_name:
+                        print(
+                            f"Row {index + 2}: Found text '{last_name}' but no First Name. Assuming End of Data."
+                        )
+                        break
+                    # --------------------------------
+
+                    # --- School Logic ---
+                    school_name_raw = str(row.get("Schulart", "")).strip()
+                    school_ort_raw = str(row.get("Schulort", "")).strip()
+
+                    if school_name_raw and school_ort_raw:
+                        school_unique_name = f"{school_name_raw} {school_ort_raw}"
+                    elif school_name_raw:
+                        school_unique_name = school_name_raw
+                    else:
+                        print(f"Row {index + 2}: No school data. Skipping.")
+                        continue
+
+                    # --- NEW: Extract Real Geo-Data ---
+                    # 1. Zone (Handle floats like 1.0)
+                    try:
+                        raw_zone = row.get("Zone 1")
+                        zone_val = int(float(raw_zone)) if pd.notna(raw_zone) else 1
+                    except (ValueError, TypeError):
+                        zone_val = 1  # Fallback
+
+                    # 2. Distance (Handle floats/ints)
+                    try:
+                        raw_dist = row.get("Entfern-ungs km")
+                        dist_val = int(float(raw_dist)) if pd.notna(raw_dist) else None
+                    except (ValueError, TypeError):
+                        dist_val = None
+
+                    # 3. ÖPNV Code (String)
+                    raw_opnv = str(row.get("ÖPNV", "")).strip()
+                    # Only accept valid codes, otherwise blank
+                    opnv_val = raw_opnv if raw_opnv in ["4a", "4b"] else ""
+
+                    # --- CREATE OR UPDATE SCHOOL ---
+                    school_type_guess = (
+                        "GS" if "grund" in school_name_raw.lower() else "MS"
+                    )
+
+                    # We use update_or_create to fix existing schools with bad defaults
+                    school, _ = School.objects.update_or_create(
+                        name=school_unique_name,
+                        defaults={
+                            "school_type": school_type_guess,
+                            "city": school_ort_raw,
+                            "district": str(
+                                row.get("Schul-amt", "")
+                            ).strip(),  # Ensure district is set
+                            "zone": zone_val,
+                            "opnv_code": opnv_val,
+                            "distance_km": dist_val,
+                            "is_active": True,
+                        },
+                    )
+                    schools_cache[school_unique_name] = school
+
+                    # --- Data Extraction ---
+                    # Use index to ensure email uniqueness even for duplicate names
+                    email = f"{first_name.lower()}.{last_name.lower()}.{index}@placeholder.local"
+                    schulamt_val = str(row.get("Schul-amt", "")).strip()
+                    program_raw = str(row.get("LA", "GS")).strip()
+                    program = program_raw[:2] if len(program_raw) >= 2 else "GS"
+                    raw_anre = row.get("Anre-Std.SJ 25_26")
+                    if pd.isna(raw_anre):
+                        raw_anre = row.get("Anre-Std. SJ 25_26")
+                    try:
+                        anre_std = float(raw_anre) if pd.notna(raw_anre) else 1.0
+                    except (ValueError, TypeError):
+                        anre_std = 1.0
+
+                    pl_data = {
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "school": school,
+                        "program": program,
+                        "anrechnungsstunden": anre_std,
+                        "preferred_praktika_raw": str(
+                            row.get("bevorzugte Praktika der PL", "")
+                        ),
+                        "schulamt": schulamt_val,
+                        "current_year_notes": str(
+                            row.get("Besonderheiten SJ 25_26", "")
+                        ),
+                        "is_active": str(row.get("Status", "ok")).lower() == "ok",
+                    }
+
+                    pl, created = PraktikumsLehrkraft.objects.update_or_create(
+                        email=email, defaults=pl_data
+                    )
+
+                    # --- M2M Relations ---
+                    # Subjects
+                    pl_subjects = []
+                    for sub_code in SUBJECT_COLUMNS:
+                        val = str(row.get(sub_code, "")).strip().lower()
+                        if val == "x":
+                            pl_subjects.append(subjects_cache[sub_code])
+                    pl.available_subjects.set(pl_subjects)
+
+                    # Praktikum Types
+                    pl_ptypes = []
+                    pref_text = pl.preferred_praktika_raw.upper()
+                    for ptype_code, ptype_obj in ptypes_cache.items():
+                        search_term = ptype_code.replace("_", " ")
+                        if search_term in pref_text:
+                            pl_ptypes.append(ptype_obj)
+                    pl.available_praktikum_types.set(pl_ptypes)
+
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+
+                except Exception as e:
+                    errors.append(f"Row {index + 2}: {str(e)}")
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        errors.append(f"Critical Error Reading Excel File: {str(e)}")
 
     return {"created": created_count, "updated": updated_count, "errors": errors}
-
-
-def _build_pl_data(row, schools_cache, subjects_cache):
-    """Helper: Builds PL data dictionary from CSV row."""
-    from subjects.models import PraktikumType
-
-    school_name = row.get("school_name", "").strip()
-    school = schools_cache.get(school_name)
-    if not school and school_name:
-        return {"error": f"School '{school_name}' not found"}
-
-    main_subject_code = row.get("main_subject_code", "").strip()
-    main_subject = subjects_cache.get(main_subject_code) if main_subject_code else None
-
-    # Parse praktikum types
-    praktikum_types = _parse_praktikum_types(row.get("praktikum_types", ""))
-
-    # Parse available subjects
-    available_subjects = _parse_subjects(row.get("available_subjects", ""), subjects_cache)
-
-    return {
-        "first_name": row.get("first_name", ""),
-        "last_name": row.get("last_name", ""),
-        "phone": row.get("phone", ""),
-        "school": school,
-        "program": row.get("program", "GS"),
-        "main_subject": main_subject,
-        "schulamt": row.get("schulamt", ""),
-        "anrechnungsstunden": float(row.get("anrechnungsstunden", 0)) if row.get("anrechnungsstunden") else 0,
-        "preferred_praktika_raw": row.get("preferred_praktika_raw", ""),
-        "current_year_notes": row.get("current_year_notes", ""),
-        "is_active": row.get("is_active", "true").lower() == "true",
-        "notes": row.get("notes", ""),
-        "praktikum_types": praktikum_types,
-        "available_subjects": available_subjects,
-    }
-
-
-def _parse_praktikum_types(types_str):
-    """Helper: Parses praktikum types from comma-separated string."""
-    from subjects.models import PraktikumType
-
-    if not types_str:
-        return []
-
-    codes = [code.strip() for code in types_str.split(",")]
-    return list(PraktikumType.objects.filter(code__in=codes))
-
-
-def _parse_subjects(subjects_str, subjects_cache):
-    """Helper: Parses subjects from comma-separated string."""
-    if not subjects_str:
-        return []
-
-    codes = [code.strip() for code in subjects_str.split(",")]
-    return [subjects_cache[code] for code in codes if code in subjects_cache]
 
 
 def export_pls_to_csv():
@@ -212,7 +297,12 @@ def export_pls_to_csv():
 
     writer.writerow(_get_pl_csv_headers())
 
-    pls = PraktikumsLehrkraft.objects.all().select_related("school", "main_subject").prefetch_related("available_praktikum_types", "available_subjects").order_by("last_name", "first_name")
+    pls = (
+        PraktikumsLehrkraft.objects.all()
+        .select_related("school", "main_subject")
+        .prefetch_related("available_praktikum_types", "available_subjects")
+        .order_by("last_name", "first_name")
+    )
     for pl in pls:
         writer.writerow(_get_pl_row(pl))
 
@@ -222,12 +312,25 @@ def export_pls_to_csv():
 def _get_pl_csv_headers():
     """Helper: Returns CSV header row for PLs."""
     return [
-        "id", "first_name", "last_name", "email", "phone",
-        "school_name", "program", "main_subject_code",
-        "schulamt", "anrechnungsstunden", "capacity",
-        "praktikum_types", "available_subjects",
-        "preferred_praktika_raw", "current_year_notes",
-        "is_active", "notes", "created_at", "updated_at",
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "school_name",
+        "program",
+        "main_subject_code",
+        "schulamt",
+        "anrechnungsstunden",
+        "capacity",
+        "praktikum_types",
+        "available_subjects",
+        "preferred_praktika_raw",
+        "current_year_notes",
+        "is_active",
+        "notes",
+        "created_at",
+        "updated_at",
     ]
 
 

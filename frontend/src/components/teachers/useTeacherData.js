@@ -193,18 +193,34 @@ function computeStats(teachers) {
 export default function useTeacherData() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('all');
   const [selectedSchulamt, setSelectedSchulamt] = useState('all');
 
-  useEffect(() => {
+  const fetchTeachers = async () => {
     setLoading(true);
-    fetchTeachersFromApi()
-      .then(data => setTeachers(data))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+    setError(null);
+    try {
+      const data = await fetchTeachersFromApi();
+      setTeachers(data || []);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Fehler beim Laden der Praktikumslehrkräfte');
+      setTeachers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeachers();
   }, []);
+
+  const refetchTeachers = async () => {
+    await fetchTeachers();
+  };
 
   const schulamtOptions = useMemo(() => extractSchulamtOptions(teachers), [teachers]);
   const programOptions = useMemo(() => ['GS', 'MS'], []);
@@ -221,6 +237,8 @@ export default function useTeacherData() {
     teachers,
     filteredTeachers,
     loading,
+    error,
+    refetchTeachers,
     searchQuery, setSearchQuery,
     selectedProgram, setSelectedProgram,
     selectedSchulamt, setSelectedSchulamt,

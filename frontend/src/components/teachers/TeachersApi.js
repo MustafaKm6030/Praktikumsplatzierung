@@ -1,7 +1,5 @@
 // API utility functions for Teachers (Praktikumslehrkräfte) Management
-const BASE_URL = 'http://malik08.stud.fim.uni-passau.de/api';
-
-console.log('🔗 Teachers API Base URL:', BASE_URL);
+const BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'http://malik08.stud.fim.uni-passau.de/api' : '/api');
 
 /**
  * Get CSRF token from cookie
@@ -176,7 +174,7 @@ export const deleteTeacher = async (id) => {
 };
 
 /**
- * Import teachers from CSV
+ * Import teachers from Excel
  */
 export const importTeachersCSV = async (file) => {
     try {
@@ -194,13 +192,22 @@ export const importTeachersCSV = async (file) => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to import teachers');
+            let errorMessage = 'Failed to import teachers';
+            try {
+                const error = await response.json();
+                errorMessage = error.error || errorMessage;
+            } catch (e) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
         console.error('Import teachers error:', error);
+        if (error.message === 'Failed to fetch') {
+            throw new Error('Verbindung zum Server fehlgeschlagen. Bitte stellen Sie sicher, dass der Backend-Server läuft.');
+        }
         throw error;
     }
 };
