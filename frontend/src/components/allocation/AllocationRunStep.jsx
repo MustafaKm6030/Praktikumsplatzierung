@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import KPICard from '../dashboard/KPICard';
 import allocationService from '../../api/allocationService';
 
-const AllocationRunStep = ({ onComplete }) => {
+const AllocationRunStep = ({ onComplete, onAllocationRun, allocationRun }) => {
     const [status, setStatus] = useState('idle');
     const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState([]);
@@ -48,6 +48,11 @@ const AllocationRunStep = ({ onComplete }) => {
             setStatus('complete');
             setProgress(100);
 
+            // Trigger the parent to show AllocationResultsStep
+            if (onAllocationRun) {
+                onAllocationRun(true);
+            }
+
         } catch (err) {
             console.error('Allocation error:', err);
             setLogs(prev => [...prev, `Fehler: ${err.message || 'Zuteilung fehlgeschlagen'}`]);
@@ -55,7 +60,7 @@ const AllocationRunStep = ({ onComplete }) => {
         }
     };
 
-    // --- RENDER: 1. IDLE STATE ---
+    //  1. IDLE STATE
     if (status === 'idle' || status === 'error') {
         return (
             <Box sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center', py: 4 }}>
@@ -83,7 +88,7 @@ const AllocationRunStep = ({ onComplete }) => {
         );
     }
 
-    // --- RENDER: 2. RUNNING STATE ---
+    // 2. RUNNING STATE
     if (status === 'running') {
         return (
             <Paper sx={{ p: 5, maxWidth: 700, mx: 'auto', borderRadius: '16px' }}>
@@ -125,7 +130,7 @@ const AllocationRunStep = ({ onComplete }) => {
         );
     }
 
-    // --- RENDER: 3. COMPLETE STATE (Results Summary) ---
+    //3. COMPLETE STATE (
     return (
         <Box>
             <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
@@ -158,16 +163,6 @@ const AllocationRunStep = ({ onComplete }) => {
                     />
                 </Grid>
             </Grid>
-
-            <Box sx={{ textAlign: 'center' }}>
-                <Button
-                    onClick={onComplete} // Moves to Step 3 (Review)
-                    size="large"
-                    variant="primary"
-                >
-                    Entwurfszuteilung überprüfen
-                </Button>
-            </Box>
         </Box>
     );
 };

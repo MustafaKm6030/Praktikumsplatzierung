@@ -11,15 +11,17 @@ import Button from '../ui/Button';
 import TextField from '../ui/TextField';
 import allocationService from '../../api/allocationService';
 
-const AllocationResultsStep = ({ onComplete }) => {
+const AllocationResultsStep = ({ onComplete, shouldFetch }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [assignments, setAssignments] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetchAssignments();
-    }, []);
+        if (shouldFetch) {
+            fetchAssignments();
+        }
+    }, [shouldFetch]);
 
     const fetchAssignments = async () => {
         try {
