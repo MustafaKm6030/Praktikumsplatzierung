@@ -9,6 +9,7 @@ from .services import (
     generate_assignments_excel,
     generate_assignments_pdf,
     update_assignment,
+    get_all_pls_with_assignment_status,
 )
 from .serializers import (
     DemandSerializer,
@@ -86,36 +87,18 @@ class SolverRunAPIView(APIView):
 
 class AssignmentListAPIView(APIView):
     """
-    API endpoint to retrieve all assignments for the results table.
-    Business Logic: Returns detailed assignment information including
-    student assignments (when available) and mentor details.
+    API endpoint to retrieve all PLs (assigned and unassigned) for the results table.
+    Business Logic: Returns both assigned PLs with assignment details and unassigned PLs
+    to allow manual adjustment of assignments.
     """
 
     def get(self, request, *args, **kwargs):
         """
-        Handles GET requests to retrieve all assignments.
-        Returns list of assignment details for the results table.
+        Handles GET requests to retrieve all PLs with their assignment status.
+        Returns list including both assigned and unassigned PLs for manual adjustment.
         """
-        assignments = Assignment.objects.select_related(
-            "mentor", "practicum_type", "subject", "school"
-        ).all()
-
-        assignment_list = []
-        for assignment in assignments:
-            assignment_list.append(
-                {
-                    "id": assignment.id,
-                    "student_id": None,
-                    "student_name": None,
-                    "practicum_type": assignment.practicum_type.get_code_display(),
-                    "subject": assignment.subject.code if assignment.subject else "N/A",
-                    "mentor_name": f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
-                    "school_name": assignment.school.name,
-                    "status": "ok",
-                }
-            )
-
-        serializer = AssignmentDetailSerializer(assignment_list, many=True)
+        pl_list = get_all_pls_with_assignment_status()
+        serializer = AssignmentDetailSerializer(pl_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

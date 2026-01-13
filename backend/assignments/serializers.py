@@ -85,8 +85,10 @@ class SolverResultSerializer(serializers.Serializer):
 class AssignmentDetailSerializer(serializers.Serializer):
     """
     Serializer for detailed assignment information for results table.
+    Includes both assigned and unassigned PLs for manual adjustment.
     """
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(allow_null=True)
+    pl_id = serializers.IntegerField()
     student_id = serializers.CharField(allow_null=True)
     student_name = serializers.CharField(allow_null=True)
     practicum_type = serializers.CharField()

@@ -611,3 +611,63 @@ def _get_practicum_type(practicum_type_id):
         return PraktikumType.objects.get(id=practicum_type_id)
     except PraktikumType.DoesNotExist:
         return None
+
+
+def get_all_pls_with_assignment_status():
+    """
+    Business Logic: Returns all PLs (both assigned and unassigned) for the allocation table.
+    Allows manual adjustment of assignments for any PL.
+    
+    Returns:
+        list: PL records with assignment details (if assigned) or N/A (if unassigned)
+    """
+    from .models import Assignment
+    
+    # Get all active PLs
+    all_pls = PraktikumsLehrkraft.objects.filter(is_active=True).select_related('school')
+    
+    # Get all assignments
+    assignments = Assignment.objects.select_related(
+        "mentor", "practicum_type", "subject", "school"
+    ).all()
+    
+    # Create a mapping of mentor_id to their assignments
+    mentor_assignments = {}
+    for assignment in assignments:
+        if assignment.mentor_id not in mentor_assignments:
+            mentor_assignments[assignment.mentor_id] = []
+        mentor_assignments[assignment.mentor_id].append(assignment)
+    
+    result_list = []
+    
+    # Add assigned PLs with their assignment details
+    for mentor_id, assignments_list in mentor_assignments.items():
+        for assignment in assignments_list:
+            result_list.append({
+                "id": assignment.id,
+                "pl_id": assignment.mentor.id,
+                "student_id": None,
+                "student_name": None,
+                "practicum_type": assignment.practicum_type.get_code_display(),
+                "subject": assignment.subject.code if assignment.subject else "N/A",
+                "mentor_name": f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
+                "school_name": assignment.school.name,
+                "status": "assigned",
+            })
+    
+    # Add unassigned PLs
+    for pl in all_pls:
+        if pl.id not in mentor_assignments:
+            result_list.append({
+                "id": None,
+                "pl_id": pl.id,
+                "student_id": None,
+                "student_name": None,
+                "practicum_type": "N/A",
+                "subject": "N/A",
+                "mentor_name": f"{pl.last_name}, {pl.first_name}",
+                "school_name": pl.school.name,
+                "status": "unassigned",
+            })
+    
+    return result_list
