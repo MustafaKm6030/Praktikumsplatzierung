@@ -16,6 +16,8 @@ from .services import (
     import_pls_from_csv,
     export_pls_to_csv,
 )
+from assignments.models import Assignment
+from assignments.services import calculate_eligibility_for_pl
 
 
 class PLViewSet(viewsets.ModelViewSet):
@@ -224,3 +226,44 @@ class PLViewSet(viewsets.ModelViewSet):
         response.write(csv_data)
 
         return response
+
+    @action(detail=True, methods=["get"])
+    def adjustment_data(self, request, pk=None):
+        """
+        GET /api/pls/{id}/adjustment-data/
+        Returns all data needed for the manual adjustment modal.
+        """
+        try:
+            mentor = self.get_object()
+        except PraktikumsLehrkraft.DoesNotExist:
+            return Response(
+                {"error": "Mentor not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 1. Get current assignments from the DB
+        current_assignments = Assignment.objects.filter(mentor=mentor)
+        assigned_data = [
+            {
+                "practicum_type": assign.practicum_type.code,
+                "subject_code": assign.subject.code if assign.subject else "N/A",
+            }
+            for assign in current_assignments
+        ]
+
+        # 2. Get all possible legal assignments
+        all_eligibilities = calculate_eligibility_for_pl(mentor)
+        eligibilities_data = [
+            {"practicum_type": p_type, "subject_code": s_code}
+            for p_type, s_code in all_eligibilities
+        ]
+
+        # 3. Assemble the response payload
+        response_data = {
+            "mentor_id": mentor.id,
+            "mentor_name": f"{mentor.first_name} {mentor.last_name}",
+            "capacity": mentor.capacity,
+            "current_assignments": assigned_data,
+            "all_eligibilities": eligibilities_data,
+        }
+
+        return Response(response_data)

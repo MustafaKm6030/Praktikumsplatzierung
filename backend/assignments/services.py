@@ -7,10 +7,13 @@ from subjects.services import (
     get_subject_display_name,
     get_allowed_subject_codes,
 )
-from subjects.models import PraktikumType
+from subjects.models import Subject, PraktikumType
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
 import re
 from schools.services import get_reachable_schools
+
+from django.db import transaction
+from .models import Assignment
 
 
 def aggregate_demand():
@@ -611,3 +614,89 @@ def _get_practicum_type(practicum_type_id):
         return PraktikumType.objects.get(id=practicum_type_id)
     except PraktikumType.DoesNotExist:
         return None
+
+
+def _is_valid_pair(types_tuple):
+    """Checks if a sorted tuple of 2 types is a valid pair."""
+    valid_pairs = {
+        ("PDP_I", "PDP_II"),
+        ("PDP_I", "SFP"),
+        ("PDP_I", "ZSP"),
+        ("PDP_II", "SFP"),
+        ("PDP_II", "ZSP"),
+        ("SFP", "ZSP"),
+    }
+    return tuple(sorted(types_tuple)) in valid_pairs
+
+
+def _has_duplicate_subjects(assignments):
+    """Checks if any subject is assigned more than once."""
+    subjects = [a["subject_code"] for a in assignments if a["subject_code"] != "N/A"]
+    return len(subjects) != len(set(subjects))
+
+
+def adjust_mentor_assignments(
+    mentor_id: int, proposed_assignments: list, force_override: bool
+) -> list:
+    """
+    Validates and saves a manually adjusted assignment schedule for a single mentor.
+    """
+    try:
+        mentor = PraktikumsLehrkraft.objects.get(id=mentor_id)
+    except PraktikumsLehrkraft.DoesNotExist:
+        raise ValueError("Mentor not found.")
+
+    _validate_assignment_rules(mentor, proposed_assignments, force_override)
+    return _update_mentor_assignments(mentor, proposed_assignments)
+
+
+def _validate_assignment_rules(mentor, assignments: list, force_override: bool):
+    """Internal helper: Handles capacity and rule validation."""
+    if len(assignments) > mentor.capacity:
+        raise ValueError(
+            f"Capacity exceeded. This mentor can only have {mentor.capacity} assignments."
+        )
+
+    if not force_override:
+        if mentor.capacity == 2 and len(assignments) == 2:
+            types = [a["practicum_type"] for a in assignments]
+            if not _is_valid_pair(tuple(types)):
+                raise ValueError(
+                    f"Invalid Pair: {types[0]} + {types[1]} is not allowed."
+                )
+
+        if _has_duplicate_subjects(assignments):
+            raise ValueError(
+                "Same subject assigned multiple times. Use 'Force Override' to allow this."
+            )
+
+
+def _update_mentor_assignments(mentor, assignments: list) -> list:
+    """Internal helper: Handles database transaction, cleanup, and creation."""
+    with transaction.atomic():
+        Assignment.objects.filter(mentor=mentor).delete()
+
+        subjects_map = {s.code: s for s in Subject.objects.all()}
+        ptypes_map = {p.code: p for p in PraktikumType.objects.all()}
+        new_assignments = []
+
+        for data in assignments:
+            p_code = data["practicum_type"]
+            ptype = ptypes_map.get(p_code)
+            if not ptype:
+                raise ValueError(f"Invalid practicum type: {p_code}")
+
+            s_code = data["subject_code"]
+            subject = subjects_map.get(s_code) if s_code != "N/A" else None
+
+            new_assignments.append(
+                Assignment.objects.create(
+                    mentor=mentor,
+                    practicum_type=ptype,
+                    subject=subject,
+                    school=mentor.school,
+                    academic_year="2025/26",
+                )
+            )
+
+    return new_assignments
