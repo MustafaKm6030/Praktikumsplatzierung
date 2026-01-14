@@ -13,18 +13,27 @@ class AssignmentAdjustmentAPITests(APITestCase):
     def setUp(self):
         """Set up a complete scenario for testing manual adjustments."""
         self.client = APIClient()
+        self.school = self._create_school()
+        self._create_subjects()
+        self._create_praktikum_types()
+        self._create_mentor()
+        self._create_initial_assignments()
 
-        # --- Create the world ---
-        school = School.objects.create(
-            name="Test School", school_type="GS", zone=1, city="Passau", opnv_code="4a"
+    def _create_school(self):
+        return School.objects.create(
+            name="Test School",
+            school_type="GS",
+            zone=1,
+            city="Passau",
+            opnv_code="4a",
         )
 
-        # Subjects
+    def _create_subjects(self):
         self.sub_d = Subject.objects.create(code="D", name="Deutsch")
         self.sub_m = Subject.objects.create(code="MA", name="Mathematik")
         self.sub_hsu = Subject.objects.create(code="HSU", name="HSU")
 
-        # Praktikum Types
+    def _create_praktikum_types(self):
         self.pt_pdp1 = PraktikumType.objects.create(
             code="PDP_I", name="PDP I", is_block_praktikum=True
         )
@@ -35,12 +44,12 @@ class AssignmentAdjustmentAPITests(APITestCase):
             code="ZSP", name="ZSP", is_block_praktikum=False
         )
 
-        # --- Create the Mentor ---
+    def _create_mentor(self):
         self.mentor = PraktikumsLehrkraft.objects.create(
             first_name="Julia",
             last_name="Fischer",
             email="julia@test.com",
-            school=school,
+            school=self.school,
             program="GS",
             anrechnungsstunden=1.0,
             preferred_praktika_raw="PDP I, SFP, ZSP",
@@ -50,24 +59,25 @@ class AssignmentAdjustmentAPITests(APITestCase):
         )
         self.mentor.available_subjects.add(self.sub_d, self.sub_m, self.sub_hsu)
 
-        # --- Create Initial Solver Assignment ---
-        self.initial_assignment_1 = Assignment.objects.create(
-            mentor=self.mentor, practicum_type=self.pt_pdp1, subject=None, school=school
+    def _create_initial_assignments(self):
+        Assignment.objects.create(
+            mentor=self.mentor,
+            practicum_type=self.pt_pdp1,
+            subject=None,
+            school=self.school,
         )
-        self.initial_assignment_2 = Assignment.objects.create(
+        Assignment.objects.create(
             mentor=self.mentor,
             practicum_type=self.pt_sfp,
             subject=self.sub_d,
-            school=school,
+            school=self.school,
         )
 
     def test_get_adjustment_data(self):
         """
         Verify GET /api/pls/{id}/adjustment-data/ returns the correct structure.
         """
-        url = reverse(
-            "pl-adjustment-data", kwargs={"pk": self.mentor.id}
-        )
+        url = reverse("pl-adjustment-data", kwargs={"pk": self.mentor.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

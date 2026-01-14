@@ -646,60 +646,57 @@ def adjust_mentor_assignments(
     except PraktikumsLehrkraft.DoesNotExist:
         raise ValueError("Mentor not found.")
 
-    # --- 1. VALIDATION ---
+    _validate_assignment_rules(mentor, proposed_assignments, force_override)
+    return _update_mentor_assignments(mentor, proposed_assignments)
 
-    # A. Capacity Check (Always enforced)
-    if len(proposed_assignments) > mentor.capacity:
+
+def _validate_assignment_rules(mentor, assignments: list, force_override: bool):
+    """Internal helper: Handles capacity and rule validation."""
+    if len(assignments) > mentor.capacity:
         raise ValueError(
             f"Capacity exceeded. This mentor can only have {mentor.capacity} assignments."
         )
 
-    # B. Rule Checks (Skipped if `force_override` is true)
     if not force_override:
-        # Valid Pairs Check (for capacity 2)
-        if mentor.capacity == 2 and len(proposed_assignments) == 2:
-            types = [a["practicum_type"] for a in proposed_assignments]
+        if mentor.capacity == 2 and len(assignments) == 2:
+            types = [a["practicum_type"] for a in assignments]
             if not _is_valid_pair(tuple(types)):
                 raise ValueError(
-                    f"Invalid Pair: The combination {types[0]} + {types[1]} is not allowed."
+                    f"Invalid Pair: {types[0]} + {types[1]} is not allowed."
                 )
 
-        # Subject Variety Check
-        if _has_duplicate_subjects(proposed_assignments):
-            # For now, we'll just raise a simple error. A real system might return a warning.
+        if _has_duplicate_subjects(assignments):
             raise ValueError(
                 "Same subject assigned multiple times. Use 'Force Override' to allow this."
             )
 
-    # --- 2. DATABASE TRANSACTION ---
+
+def _update_mentor_assignments(mentor, assignments: list) -> list:
+    """Internal helper: Handles database transaction, cleanup, and creation."""
     with transaction.atomic():
-        # A. Delete old assignments for this mentor
         Assignment.objects.filter(mentor=mentor).delete()
 
-        # B. Create new assignments
-        # Pre-fetch for efficiency
         subjects_map = {s.code: s for s in Subject.objects.all()}
         ptypes_map = {p.code: p for p in PraktikumType.objects.all()}
-
         new_assignments = []
-        for assignment_data in proposed_assignments:
-            practicum_type_code = assignment_data["practicum_type"]
-            subject_code = assignment_data["subject_code"]
 
-            practicum_type = ptypes_map.get(practicum_type_code)
-            if not practicum_type:
-                raise ValueError(f"Invalid practicum type: {practicum_type_code}")
+        for data in assignments:
+            p_code = data["practicum_type"]
+            ptype = ptypes_map.get(p_code)
+            if not ptype:
+                raise ValueError(f"Invalid practicum type: {p_code}")
 
-            subject = subjects_map.get(subject_code) if subject_code != "N/A" else None
+            s_code = data["subject_code"]
+            subject = subjects_map.get(s_code) if s_code != "N/A" else None
 
-            new_assignment = Assignment.objects.create(
-                mentor=mentor,
-                practicum_type=practicum_type,
-                subject=subject,
-                school=mentor.school,
-                academic_year="2025/26",
+            new_assignments.append(
+                Assignment.objects.create(
+                    mentor=mentor,
+                    practicum_type=ptype,
+                    subject=subject,
+                    school=mentor.school,
+                    academic_year="2025/26",
+                )
             )
-            new_assignments.append(new_assignment)
 
-    # 3. Return the newly created assignment data for the API response
     return new_assignments

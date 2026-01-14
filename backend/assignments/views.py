@@ -22,7 +22,6 @@ from .serializers import (
     AssignmentUpdateSerializer,
 )
 from .solver import run_solver
-from .models import Assignment
 
 
 class DemandAPIView(APIView):
@@ -237,7 +236,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         except ValueError as e:
             # Catch validation errors from the service
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+        except Exception:
             # Catch unexpected server errors
             return Response(
                 {"error": "An unexpected error occurred."},
