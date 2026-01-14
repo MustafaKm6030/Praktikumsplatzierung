@@ -1,20 +1,31 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
-    DemandAPIView, 
+    DemandAPIView,
     DemandPreviewAPIView,
     SolverRunAPIView,
     AssignmentListAPIView,
     ExportAssignmentsExcelAPIView,
     ExportAssignmentsPDFAPIView,
     AssignmentUpdateAPIView,
+    AssignmentViewSet,
 )
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r"assignments", AssignmentViewSet, basename="assignment")
 
 urlpatterns = [
     path("demand/", DemandAPIView.as_view(), name="demand-api"),
     path("demand-preview/", DemandPreviewAPIView.as_view(), name="demand-preview-api"),
     path("run-solver/", SolverRunAPIView.as_view(), name="solver-run-api"),
     path("", AssignmentListAPIView.as_view(), name="assignment-list-api"),
-    path("<int:assignment_id>/update/", AssignmentUpdateAPIView.as_view(), name="assignment-update"),
+    path(
+        "<int:assignment_id>/update/",
+        AssignmentUpdateAPIView.as_view(),
+        name="assignment-update",
+    ),
     path("export/excel/", ExportAssignmentsExcelAPIView.as_view(), name="export-excel"),
     path("export/pdf/", ExportAssignmentsPDFAPIView.as_view(), name="export-pdf"),
+    path("", include(router.urls)),
 ]

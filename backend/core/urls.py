@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/assignments/", include("assignments.urls")),
     path("api/dashboard/", include("dashboard.urls")),
     path("api/csrf/", views.csrf_token_view),
+    path("api/", include("assignments.urls")),  # Make sure this is linked
 ]
 
 # Serve static files in development

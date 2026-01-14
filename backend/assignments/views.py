@@ -1,7 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import viewsets, status
 from django.http import HttpResponse
+from rest_framework.decorators import action
+from .models import Assignment
+from .serializers import AssignmentSerializer
+from .services import adjust_mentor_assignments
 
 from .services import (
     aggregate_demand,
@@ -132,19 +136,20 @@ class ExportAssignmentsExcelAPIView(APIView):
         """
         try:
             excel_content = generate_assignments_excel()
-            
+
             response = HttpResponse(
-                excel_content, 
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                excel_content,
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.xlsx"'
-            
+            response["Content-Disposition"] = (
+                'attachment; filename="praktikumszuteilungen.xlsx"'
+            )
+
             return response
-            
+
         except Exception as e:
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -161,16 +166,17 @@ class ExportAssignmentsPDFAPIView(APIView):
         """
         try:
             pdf_content = generate_assignments_pdf()
-            
-            response = HttpResponse(pdf_content, content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="praktikumszuteilungen.pdf"'
-            
+
+            response = HttpResponse(pdf_content, content_type="application/pdf")
+            response["Content-Disposition"] = (
+                'attachment; filename="praktikumszuteilungen.pdf"'
+            )
+
             return response
-            
+
         except Exception as e:
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -189,9 +195,51 @@ class AssignmentUpdateAPIView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        result, status_code = update_assignment(assignment_id, serializer.validated_data)
+        result, status_code = update_assignment(
+            assignment_id, serializer.validated_data
+        )
 
         if status_code == 200:
             return Response(result, status=status.HTTP_200_OK)
         else:
             return Response(result, status=status_code)
+
+
+class AssignmentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing the final Assignment results.
+    """
+
+    queryset = Assignment.objects.all().select_related(
+        "mentor", "practicum_type", "subject", "school"
+    )
+    serializer_class = AssignmentSerializer
+
+    @action(detail=False, methods=["post"])
+    def adjust(self, request):
+        """
+        POST /api/assignments/adjust/
+        Manually overrides the assignments for a single mentor.
+        """
+        mentor_id = request.data.get("mentor_id")
+        proposed = request.data.get("proposed_assignments", [])
+        force = request.data.get("force_override", False)
+
+        if not mentor_id:
+            return Response(
+                {"error": "mentor_id is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            new_assignments = adjust_mentor_assignments(mentor_id, proposed, force)
+            serializer = self.get_serializer(new_assignments, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError as e:
+            # Catch validation errors from the service
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Catch unexpected server errors
+            return Response(
+                {"error": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

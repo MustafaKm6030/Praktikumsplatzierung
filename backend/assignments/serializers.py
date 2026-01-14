@@ -1,4 +1,30 @@
 from rest_framework import serializers
+from .models import Assignment
+
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    """Serializer for the Assignment model."""
+
+    mentor_name = serializers.CharField(source="mentor.last_name", read_only=True)
+    practicum_type_code = serializers.CharField(
+        source="practicum_type.code", read_only=True
+    )
+    subject_code = serializers.CharField(
+        source="subject.code", read_only=True, allow_null=True
+    )
+    school_name = serializers.CharField(source="school.name", read_only=True)
+
+    class Meta:
+        model = Assignment
+        fields = [
+            "id",
+            "mentor",
+            "mentor_name",
+            "practicum_type_code",
+            "subject_code",
+            "school_name",
+            "academic_year",
+        ]
 
 
 class DemandSerializer(serializers.Serializer):
@@ -16,11 +42,13 @@ class DemandSerializer(serializers.Serializer):
 
 # ==================== DEMAND PREVIEW SERIALIZERS ====================
 
+
 class DetailedBreakdownSerializer(serializers.Serializer):
     """
     Serializer for each item in the detailed_breakdown array.
     Business Logic: Represents demand vs supply for each practicum group.
     """
+
     practicum_type = serializers.CharField()
     program_type = serializers.CharField()
     subject_code = serializers.CharField()
@@ -34,6 +62,7 @@ class SummaryCardsSerializer(serializers.Serializer):
     Serializer for the summary_cards object.
     Business Logic: Aggregated metrics for allocation overview.
     """
+
     total_demand_slots = serializers.IntegerField()
     total_pl_capacity_slots = serializers.IntegerField()
     total_pdp_demand = serializers.IntegerField()
@@ -45,16 +74,19 @@ class DemandPreviewSerializer(serializers.Serializer):
     Main serializer for the Demand Preview API response.
     Business Logic: Complete demand preview with summary and breakdown.
     """
+
     summary_cards = SummaryCardsSerializer()
     detailed_breakdown = DetailedBreakdownSerializer(many=True)
 
 
 # ==================== SOLVER SERIALIZERS ====================
 
+
 class AssignmentResultSerializer(serializers.Serializer):
     """
     Serializer for individual assignment result from solver.
     """
+
     mentor_name = serializers.CharField()
     practicum_type = serializers.CharField()
     subject = serializers.CharField()
@@ -64,6 +96,7 @@ class UnassignedMentorSerializer(serializers.Serializer):
     """
     Serializer for unassigned mentor information.
     """
+
     id = serializers.IntegerField()
     name = serializers.CharField()
     email = serializers.EmailField()
@@ -75,6 +108,7 @@ class SolverResultSerializer(serializers.Serializer):
     """
     Main serializer for solver API response.
     """
+
     status = serializers.CharField()
     assignments = AssignmentResultSerializer(many=True)
     unassigned = UnassignedMentorSerializer(many=True)
@@ -86,6 +120,7 @@ class AssignmentDetailSerializer(serializers.Serializer):
     """
     Serializer for detailed assignment information for results table.
     """
+
     id = serializers.IntegerField()
     student_id = serializers.CharField(allow_null=True)
     student_name = serializers.CharField(allow_null=True)
@@ -101,6 +136,7 @@ class AssignmentUpdateSerializer(serializers.Serializer):
     Serializer for updating assignment fields.
     Business Logic: Allows editing mentor, school, subject, practicum type.
     """
+
     mentor_id = serializers.IntegerField(required=False)
     school_id = serializers.IntegerField(required=False)
     subject_id = serializers.IntegerField(required=False, allow_null=True)
