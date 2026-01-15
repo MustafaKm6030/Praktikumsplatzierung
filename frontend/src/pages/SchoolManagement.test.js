@@ -38,16 +38,16 @@ import {
 // --- THE TEST SUITE ---
 describe('SchoolManagement Page Integration', () => {
     
-    const TEST_CITY = 'Passau';
+    const testCity = 'Passau';
 
     const defaultData = {
         schools: [
-            { id: 1, name: 'Grundschule Passau', city: TEST_CITY, school_type: 'GS', district: 'Innstadt', zone: 1 },
-            { id: 2, name: 'Mittelschule Nord', city: TEST_CITY, school_type: 'MS', district: 'Hacklberg', zone: 2 }
+            { id: 1, name: 'Grundschule Passau', city: testCity, school_type: 'GS', district: 'Innstadt', zone: 1 },
+            { id: 2, name: 'Mittelschule Nord', city: testCity, school_type: 'MS', district: 'Hacklberg', zone: 2 }
         ],
         filteredSchools: [
-             { id: 1, name: 'Grundschule Passau', city: TEST_CITY, school_type: 'GS', district: 'Innstadt', zone: 1 },
-             { id: 2, name: 'Mittelschule Nord', city: TEST_CITY, school_type: 'MS', district: 'Hacklberg', zone: 2 }
+             { id: 1, name: 'Grundschule Passau', city: testCity, school_type: 'GS', district: 'Innstadt', zone: 1 },
+             { id: 2, name: 'Mittelschule Nord', city: testCity, school_type: 'MS', district: 'Hacklberg', zone: 2 }
         ],
         loading: false,
         error: null,
