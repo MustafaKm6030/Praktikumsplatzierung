@@ -77,7 +77,7 @@ unit_test_frontend:
   script:
     - cd $FRONTEND_DIR
     - npm install
-    - npm test -- --coverage --watchAll=false --coverageReporters="cobertura"
+    - npm test -- --coverage --watchAll=false --coverageReporters="text" --coverageReporters="lcov" --coverageReporters="cobertura"
   artifacts:
     reports:
       coverage_report:
