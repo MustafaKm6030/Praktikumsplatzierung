@@ -2,24 +2,22 @@ import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// --- 1. SETUP DYNAMIC MOCK FOR HOOK ---
-// We create a "spy" function so we can change the return value per test
-const mockUseSchoolData = jest.fn();
+// --- SETUP DYNAMIC MOCK FOR HOOK ---
+const MOCK_USE_SCHOOL_DATA = jest.fn();
 
-// We mock the hook to return whatever our spy says
 jest.mock('../components/school_management/useSchoolData', () => ({
     __esModule: true,
-    default: () => mockUseSchoolData(),
+    default: () => MOCK_USE_SCHOOL_DATA(),
 }));
 
-// --- 2. MOCK THE MAP COMPONENT ---
+// --- MOCK THE MAP COMPONENT ---
 jest.mock('../components/school_management/MapView', () => {
-    return function DummyMap() {
+    return function dummyMap() {
         return <div data-testid="map-view-mock">Map Component Placeholder</div>;
     };
 });
 
-// --- 3. MOCK API REQUESTS ---
+// --- MOCK API REQUESTS ---
 jest.mock('../components/school_management/SchoolsApi', () => ({
     fetchSchools: jest.fn(),
     createSchool: jest.fn(),
@@ -40,15 +38,16 @@ import {
 // --- THE TEST SUITE ---
 describe('SchoolManagement Page Integration', () => {
     
-    // Default "Success" Data
+    const TEST_CITY = 'Passau';
+
     const defaultData = {
         schools: [
-            { id: 1, name: 'Grundschule Passau', city: 'Passau', school_type: 'GS', district: 'Innstadt', zone: 1 },
-            { id: 2, name: 'Mittelschule Nord', city: 'Passau', school_type: 'MS', district: 'Hacklberg', zone: 2 }
+            { id: 1, name: 'Grundschule Passau', city: TEST_CITY, school_type: 'GS', district: 'Innstadt', zone: 1 },
+            { id: 2, name: 'Mittelschule Nord', city: TEST_CITY, school_type: 'MS', district: 'Hacklberg', zone: 2 }
         ],
         filteredSchools: [
-             { id: 1, name: 'Grundschule Passau', city: 'Passau', school_type: 'GS', district: 'Innstadt', zone: 1 },
-             { id: 2, name: 'Mittelschule Nord', city: 'Passau', school_type: 'MS', district: 'Hacklberg', zone: 2 }
+             { id: 1, name: 'Grundschule Passau', city: TEST_CITY, school_type: 'GS', district: 'Innstadt', zone: 1 },
+             { id: 2, name: 'Mittelschule Nord', city: TEST_CITY, school_type: 'MS', district: 'Hacklberg', zone: 2 }
         ],
         loading: false,
         error: null,
@@ -69,8 +68,7 @@ describe('SchoolManagement Page Integration', () => {
     // Reset mocks before every test
     beforeEach(() => {
         jest.clearAllMocks();
-        // By default, return success data
-        mockUseSchoolData.mockReturnValue(defaultData);
+        MOCK_USE_SCHOOL_DATA.mockReturnValue(defaultData);
     });
 
     test('1. Renders the school list correctly', () => {
@@ -143,9 +141,9 @@ describe('SchoolManagement Page Integration', () => {
     });
 
     test('5. Displays Error State when API fails', async () => {
-        // --- DYNAMIC MOCK MAGIC ---
+        // --- DYNAMIC MOCK ---
         // We override the default mock to return an error ONLY for this test
-        mockUseSchoolData.mockReturnValue({
+        MOCK_USE_SCHOOL_DATA.mockReturnValue({
             ...defaultData,
             loading: false,
             error: 'Backend Offline: 500 Error'
