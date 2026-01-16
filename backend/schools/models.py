@@ -51,7 +51,20 @@ class School(TimeStampedModel):
         help_text="Longitude for map display",
     )
 
-    # Status
+    GEOCODING_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("not_needed", "Not Needed"),
+    ]
+
+    geocoding_status = models.CharField(
+        max_length=20,
+        choices=GEOCODING_STATUS_CHOICES,
+        default="pending",
+        help_text="Status of geocoding attempt",
+    )
+
     is_active = models.BooleanField(default=True)
     notes = models.TextField(blank=True)
 

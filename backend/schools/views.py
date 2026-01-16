@@ -19,6 +19,7 @@ from .services import (
     get_schools_for_wednesday_praktika,
     import_schools_from_csv,
     export_schools_to_csv,
+    geocode_schools_batch,
 )
 
 
@@ -179,3 +180,114 @@ class SchoolViewSet(viewsets.ModelViewSet):
         response.write(csv_data)
 
         return response
+
+    @action(detail=False, methods=["post"])
+    def geocode_pending(self, request):
+        """
+        POST /api/schools/geocode_pending/ - Trigger geocoding for all pending schools.
+        Business Logic: Geocodes all schools with 'pending' or 'failed' status.
+
+        This endpoint should be called from a background job or admin action.
+        It will take time proportional to the number of schools (1.1s per school).
+        """
+        retry_failed = request.data.get("retry_failed", False)
+
+        statuses = ["pending"]
+        if retry_failed:
+            statuses.append("failed")
+
+        schools_to_geocode = School.objects.filter(geocoding_status__in=statuses)
+        count = schools_to_geocode.count()
+
+        if count == 0:
+            return Response(
+                {
+                    "message": "No schools need geocoding",
+                    "stats": {"total": 0, "success": 0, "failed": 0, "skipped": 0},
+                }
+            )
+
+        estimated_time = count * 1.1
+
+        stats = geocode_schools_batch(schools_to_geocode, delay_between_requests=1.1)
+
+        return Response(
+            {
+                "message": f"Geocoding complete. Processed {count} schools in ~{int(estimated_time)}s",
+                "stats": stats,
+            }
+        )
+
+    @action(detail=False, methods=["get"])
+    def geocoding_stats(self, request):
+        """
+        GET /api/schools/geocoding_stats/ - Get statistics about geocoding status.
+        Business Logic: Returns counts of schools by geocoding status.
+        """
+        from django.db.models import Count
+
+        stats = School.objects.values("geocoding_status").annotate(count=Count("id"))
+
+        result = {
+            "pending": 0,
+            "success": 0,
+            "failed": 0,
+            "not_needed": 0,
+            "total": School.objects.count(),
+        }
+
+        for stat in stats:
+            status_key = stat["geocoding_status"]
+            if status_key in result:
+                result[status_key] = stat["count"]
+
+        return Response(result)
+
+    @action(detail=False, methods=["post"])
+    def run_geocoding_task(self, request):
+        """
+        Triggers the geocoding management command SYNCHRONOUSLY and waits
+        for it to complete before returning a response.
+        """
+        # We no longer need the lock, as the HTTP request itself is the lock.
+
+        try:
+            from .services import (
+                geocode_schools_batch,
+                GeocodingConnectionError,
+            )
+
+            retry_failed = request.data.get("retry_failed", False)
+            statuses = ["pending"]
+            if retry_failed:
+                statuses.append("failed")
+
+            schools_to_process = School.objects.filter(geocoding_status__in=statuses)
+
+            stats = geocode_schools_batch(schools_to_process)
+
+            if stats.get("connection_error"):
+                return Response(
+                    {
+                        "message": "Geocoding stopped due to connection error.",
+                        "stats": stats,
+                        "error": stats["connection_error"],
+                    },
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+
+            return Response(
+                {"message": "Geocoding process complete.", "stats": stats},
+                status=status.HTTP_200_OK,
+            )
+
+        except GeocodingConnectionError as e:
+            return Response(
+                {"error": f"Connection lost during geocoding: {str(e)}"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred during geocoding: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
