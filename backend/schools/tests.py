@@ -6,7 +6,6 @@ from .services import (
     get_reachable_schools,
     geocode_school,
     geocode_schools_batch,
-    GeocodingConnectionError,
 )
 from unittest.mock import patch, MagicMock
 from decimal import Decimal
