@@ -1,5 +1,5 @@
 // API utility functions for Schools Management
-const BASE_URL = 'http://malik08.stud.fim.uni-passau.de/api';
+const BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'http://malik08.stud.fim.uni-passau.de/api' : '/api');
 
 console.log('🔗 API Base URL:', BASE_URL);
 
@@ -229,6 +229,33 @@ export const exportSchoolsCSV = async () => {
         window.URL.revokeObjectURL(url);
     } catch (error) {
         console.error('Export schools error:', error);
+        throw error;
+    }
+};
+export const runGeocodingTask = async () => {
+    try {
+        const csrftoken = getCookie('csrftoken');
+
+        // This is a POST request to a custom action
+        const response = await fetch(`${BASE_URL}/schools/run_geocoding_task/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken || '',
+            },
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            // Try to get more detailed error from backend
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Return the success message from the backend
+        return response.json();
+
+    } catch (error) {
+        console.error('Run geocoding task error:', error);
         throw error;
     }
 };

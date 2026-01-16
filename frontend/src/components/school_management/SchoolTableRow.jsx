@@ -27,6 +27,7 @@ const getStatusColor = (isActive) => {
  */
 const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
     const isActive = school.is_active;
+    const hasCoords = school.latitude && school.longitude;
     return (
         <TableRow sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
             <TableCell sx={{ fontWeight: 500 }}>{school.name || 'N/A'}</TableCell>
@@ -36,6 +37,13 @@ const SchoolTableRow = ({ school, onView, onEdit, onDelete }) => {
             <TableCell>{school.zone || 'N/A'}</TableCell>
             <TableCell>{school.opnv_code || 'N/A'}</TableCell>
             <TableCell>{school.distance_km || 'N/A'}</TableCell>
+            <TableCell>
+                <Chip
+                    label={hasCoords ? 'Ja' : 'Nein'}
+                    color={hasCoords ? 'success' : 'default'}
+                    size="small"
+                />
+            </TableCell>
             <TableCell>
                 <Chip
                     label={isActive ? 'Aktiv' : 'Inaktiv'}

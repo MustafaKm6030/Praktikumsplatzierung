@@ -9,7 +9,7 @@ import SchoolFormDialog from '../components/school_management/SchoolFormDialog';
 import SchoolViewDialog from '../components/school_management/SchoolViewDialog';
 import Loader from '../components/ui/Loader';
 import MapView from "../components/school_management/MapView";
-import { exportSchoolsCSV, importSchoolsCSV, deleteSchool } from '../components/school_management/SchoolsApi';
+import { exportSchoolsCSV, importSchoolsCSV, deleteSchool, runGeocodingTask } from '../components/school_management/SchoolsApi';
 
 /**
  * Main School Management Component
@@ -20,7 +20,7 @@ const SchoolManagement = () => {
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [openViewDialog, setOpenViewDialog] = useState(false);
     const [selectedSchool, setSelectedSchool] = useState(null);
-
+    const [isGeocoding, setIsGeocoding] = useState(false);
     // Snackbar for notifications
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -102,6 +102,7 @@ const SchoolManagement = () => {
         }
     };
 
+
     // Table action handlers
     const handleViewSchool = (school) => {
         setSelectedSchool(school);
@@ -113,6 +114,37 @@ const SchoolManagement = () => {
         setOpenEditDialog(true);
     };
 
+    const handleRunGeocoding = async () => {
+        if (window.confirm("Dieser Prozess kann mehrere Minuten dauern. Die Seite wird blockiert, bis der Vorgang abgeschlossen ist. Möchten Sie fortfahren?")) {
+            setIsGeocoding(true);
+
+            try {
+                const result = await runGeocodingTask();
+                const { success, failed, connection_error } = result.stats || {};
+                
+                if (connection_error) {
+                    showNotification(`Geocoding wurde aufgrund eines Verbindungsfehlers gestoppt. Erfolgreich: ${success || 0}, Fehlgeschlagen: ${failed || 0}.`, "warning");
+                } else {
+                    showNotification(`Geocoding abgeschlossen! Erfolgreich: ${success || 0}, Fehlgeschlagen: ${failed || 0}.`, "success");
+                }
+                await refetchSchools();
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                if (error.connectionError && error.stats) {
+                    const { success, failed } = error.stats;
+                    showNotification(`Verbindungsfehler: Geocoding gestoppt. Erfolgreich: ${success || 0}, Fehlgeschlagen: ${failed || 0}.`, "warning");
+                } else {
+                    const errorMessage = error.message.includes('Connection') || error.message.includes('Verbindung') 
+                        ? `Verbindungsfehler beim Geocoding: ${error.message}` 
+                        : `Fehler beim Geocoding: ${error.message}`;
+                    showNotification(errorMessage, 'error');
+                }
+                await refetchSchools();
+            } finally {
+                setIsGeocoding(false);
+            }
+        }
+    };
     const handleDeleteSchool = async (school) => {
         if (window.confirm(`Möchten Sie wirklich ${school.name} löschen?`)) {
             try {
@@ -162,6 +194,8 @@ const SchoolManagement = () => {
                 onAddSchool={handleAddNewSchool}
                 onImport={handleImportSchools}
                 onExport={handleExportSchoolList}
+                onGeocode={handleRunGeocoding}
+                isGeocoding={isGeocoding}
             />
 
             {/* Filter Bar */}
@@ -199,8 +233,8 @@ const SchoolManagement = () => {
             </Box>
 
             {/* Loading State */}
-            {loading ? (
-                <Loader message="Schulen werden geladen..." />
+            {loading || isGeocoding ? (
+                <Loader message={isGeocoding ? "Geocoding schools... This may take several minutes." : "Loading schools..."} />
             ) : (
                 <>
                     {/* Table View */}
