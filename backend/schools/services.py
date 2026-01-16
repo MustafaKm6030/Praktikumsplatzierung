@@ -1,5 +1,12 @@
 from .models import School
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+import time
+
+
+class GeocodingConnectionError(Exception):
+    pass
 
 
 def get_schools_by_zone(zone):
@@ -183,3 +190,122 @@ def _get_school_row(school):
         school.created_at.isoformat() if school.created_at else "",
         school.updated_at.isoformat() if school.updated_at else "",
     ]
+
+
+def geocode_school(school):
+    """
+    Attempts to find lat/lon for a single school object using geopy.
+    """
+    # 1. Check prerequisites (missing fields, already done, etc.)
+    should_stop, result = _check_geocoding_prerequisites(school)
+    if should_stop:
+        return result
+
+    try:
+        geolocator = Nominatim(user_agent="uni-passau-praktikumsamt-app/1.0")
+        query = f"{school.name}, {school.city}, Germany"
+        print(f"[GEOCODE] Querying address: {query}")
+
+        location = geolocator.geocode(query, timeout=10)
+        return _process_geocoding_result(school, location)
+
+    except Exception as e:
+        # Consolidates all error handling (Service, OS, and Generic)
+        return _handle_geocoding_exception(school, e)
+
+
+# --- Helper Methods ---
+
+
+def _check_geocoding_prerequisites(school):
+    """Returns (Should_Stop_Bool, Return_Value_Bool)"""
+    if not school or not school.name or not school.city:
+        print(f"[GEOCODE] Missing required fields: {school.name}, {school.city}")
+        return True, False
+
+    if school.geocoding_status == "success":
+        return True, True
+
+    if school.latitude and school.longitude:
+        _update_school_status(school, "not_needed")
+        return True, True
+
+    return False, None
+
+
+def _process_geocoding_result(school, location):
+    if location:
+        school.latitude = location.latitude
+        school.longitude = location.longitude
+        _update_school_status(school, "success", fields=["latitude", "longitude"])
+        return True
+
+    print("[GEOCODE] FAILED - No location found")
+    _update_school_status(school, "failed")
+    return False
+
+
+def _handle_geocoding_exception(school, e):
+    error_str = str(e).lower()
+    is_conn_keyword = any(k in error_str for k in ["connection", "network", "timeout"])
+
+    if isinstance(e, (GeocoderTimedOut, GeocoderServiceError)):
+        _update_school_status(school, "failed")
+        raise GeocodingConnectionError(f"Service error: {e}")
+
+    if isinstance(e, OSError) or is_conn_keyword:
+        _update_school_status(school, "pending")
+        raise GeocodingConnectionError(f"Connection error: {e}")
+
+    print(f"[GEOCODE] ERROR - Unexpected: {e}")
+    _update_school_status(school, "failed")
+    return False
+
+
+def _update_school_status(school, status, fields=None):
+    """Helper to update status and save specific fields."""
+    school.geocoding_status = status
+    update_fields = ["geocoding_status"] + (fields or [])
+    school.save(update_fields=update_fields)
+
+
+def geocode_schools_batch(schools_queryset=None, delay_between_requests=1):
+    """
+    Geocodes multiple schools in batch with rate limiting.
+    Stops processing if connection is lost.
+
+    Args:
+        schools_queryset: QuerySet of schools to geocode. If None, geocodes all pending schools.
+        delay_between_requests: Delay in seconds between geocoding requests
+
+    Returns:
+        dict: Statistics about the geocoding operation, including connection_error if applicable
+    """
+    if schools_queryset is None:
+        schools_queryset = School.objects.filter(
+            geocoding_status="pending", latitude__isnull=True, longitude__isnull=True
+        )
+
+    stats = {
+        "total": schools_queryset.count(),
+        "success": 0,
+        "failed": 0,
+        "skipped": 0,
+        "connection_error": None,
+    }
+
+    for school in schools_queryset:
+        try:
+            result = geocode_school(school)
+            if result:
+                stats["success"] += 1
+            else:
+                stats["failed"] += 1
+        except GeocodingConnectionError as e:
+            stats["connection_error"] = str(e)
+            print(f"[GEOCODE] Batch stopped due to connection error: {e}")
+            break
+
+        time.sleep(delay_between_requests)
+
+    return stats

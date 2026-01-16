@@ -153,6 +153,10 @@ def import_pls_from_csv(file_obj):
         with transaction.atomic():
             _process_all_rows(df, caches, stats)
 
+        print("\n--- IMPORT COMPLETE ---")
+        print("Note: Schools with missing coordinates have been marked as 'pending' for geocoding.")
+        print("Use the 'Geocode All Pending Schools' button in the admin to geocode them.")
+
         return stats
 
     except Exception as e:
@@ -200,7 +204,7 @@ def _process_all_rows(df, caches, stats):
             consecutive_empty_rows = 0
 
             # 2. Process Data
-            school = _get_or_create_school(row)
+            school = _get_or_create_school(row, stats)
             if not school:
                 continue
 
@@ -226,14 +230,15 @@ def _extract_names(row):
     }
 
 
-def _get_or_create_school(row):
-    """Extracts school data and updates the database."""
-    s_data = _extract_school_data(row)  # Assumes existing helper
-
+def _get_or_create_school(row, stats):
+    """Extracts school data and updates/creates in DB. Geocoding is done separately."""
+    s_data = _extract_school_data(row)
     if not s_data["unique_name"]:
         return None
 
-    school, _ = School.objects.update_or_create(
+    print(f"[IMPORT] Processing school: {s_data['unique_name']}")
+    
+    school, created = School.objects.update_or_create(
         name=s_data["unique_name"],
         defaults={
             "school_type": s_data["type"],
@@ -245,6 +250,9 @@ def _get_or_create_school(row):
             "is_active": True,
         },
     )
+
+    print(f"[IMPORT] School {'created' if created else 'updated'}: {school.name}")
+
     return school
 
 
