@@ -173,7 +173,7 @@ deploy_backend:
   script:
     - rsync -avz --delete --exclude='venv' --exclude='*.pyc' --exclude='__pycache__' --exclude='db.sqlite3' --exclude='.env' backend/ malik@malik08.stud.fim.uni-passau.de:/var/www/praktikumsamt/backend/
     - |
-      ssh malik@malik08.stud.fim.uni-passau.de 'cd /var/www/praktikumsamt/backend && source venv/bin/activate && pip install --upgrade pip && pip install asgiref==3.10.0 Django==4.2.25 django-cors-headers==4.9.0 djangorestframework==3.16.1 sqlparse==0.5.3 typing_extensions==4.15.0 django-filter==24.3 python-decouple==3.8 dj-database-url==2.1.0 ortools==9.14.6206 reportlab==4.0.9 openpyxl==3.1.2 && pip install "psycopg[binary]" gunicorn && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && sudo systemctl restart gunicorn && echo "Backend deployment completed!"'
+      ssh malik@malik08.stud.fim.uni-passau.de 'cd /var/www/praktikumsamt/backend && source venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt && pip install "psycopg[binary]" && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && sudo systemctl restart gunicorn && echo "Backend deployment completed!"'
   environment:
     name: production
     url: http://malik08.stud.fim.uni-passau.de
