@@ -195,68 +195,78 @@ def _get_school_row(school):
 def geocode_school(school):
     """
     Attempts to find lat/lon for a single school object using geopy.
-    Updates the object and saves it. Returns True on success.
     """
-    print(f"[GEOCODE] Starting geocoding for school: {school.name}")
-    print(f"[GEOCODE] Current status: {school.geocoding_status}")
-    print(f"[GEOCODE] Current lat/lng: {school.latitude}, {school.longitude}")
-    
-    if not school or not school.name or not school.city:
-        print(f"[GEOCODE] Missing required fields - name: {school.name}, city: {school.city}")
-        return False
-
-    if school.geocoding_status == "success":
-        print(f"[GEOCODE] Already successfully geocoded, skipping")
-        return True
-
-    if school.latitude and school.longitude:
-        print(f"[GEOCODE] Already has coordinates, updating status to not_needed")
-        school.geocoding_status = "not_needed"
-        school.save(update_fields=["geocoding_status"])
-        return True
-
-    address_query = f"{school.name}, {school.city}, Germany"
-    print(f"[GEOCODE] Querying address: {address_query}")
-    
-    geolocator = Nominatim(user_agent="uni-passau-praktikumsamt-app/1.0")
+    # 1. Check prerequisites (missing fields, already done, etc.)
+    should_stop, result = _check_geocoding_prerequisites(school)
+    if should_stop:
+        return result
 
     try:
-        location = geolocator.geocode(address_query, timeout=10)
+        geolocator = Nominatim(user_agent="uni-passau-praktikumsamt-app/1.0")
+        query = f"{school.name}, {school.city}, Germany"
+        print(f"[GEOCODE] Querying address: {query}")
 
-        if location:
-            print(f"[GEOCODE] SUCCESS - Found coordinates: {location.latitude}, {location.longitude}")
-            school.latitude = location.latitude
-            school.longitude = location.longitude
-            school.geocoding_status = "success"
-            school.save(update_fields=["latitude", "longitude", "geocoding_status"])
-            return True
-        else:
-            print(f"[GEOCODE] FAILED - No location found for address")
-            school.geocoding_status = "failed"
-            school.save(update_fields=["geocoding_status"])
-            return False
+        location = geolocator.geocode(query, timeout=10)
+        return _process_geocoding_result(school, location)
 
-    except (GeocoderTimedOut, GeocoderServiceError) as e:
-        print(f"[GEOCODE] ERROR - Geocoding service error: {e}")
-        school.geocoding_status = "failed"
-        school.save(update_fields=["geocoding_status"])
-        raise GeocodingConnectionError(f"Connection lost during geocoding: {str(e)}")
-    except (ConnectionError, OSError) as e:
-        print(f"[GEOCODE] ERROR - Network connection error: {e}")
-        school.geocoding_status = "pending"
-        school.save(update_fields=["geocoding_status"])
-        raise GeocodingConnectionError(f"Network connection lost: {str(e)}")
     except Exception as e:
-        error_str = str(e).lower()
-        if any(keyword in error_str for keyword in ['connection', 'network', 'timeout', 'unreachable', 'refused']):
-            print(f"[GEOCODE] ERROR - Connection-related error: {e}")
-            school.geocoding_status = "pending"
-            school.save(update_fields=["geocoding_status"])
-            raise GeocodingConnectionError(f"Connection error: {str(e)}")
-        print(f"[GEOCODE] ERROR - Unexpected error: {e}")
-        school.geocoding_status = "failed"
-        school.save(update_fields=["geocoding_status"])
-        return False
+        # Consolidates all error handling (Service, OS, and Generic)
+        return _handle_geocoding_exception(school, e)
+
+
+# --- Helper Methods ---
+
+
+def _check_geocoding_prerequisites(school):
+    """Returns (Should_Stop_Bool, Return_Value_Bool)"""
+    if not school or not school.name or not school.city:
+        print(f"[GEOCODE] Missing required fields: {school.name}, {school.city}")
+        return True, False
+
+    if school.geocoding_status == "success":
+        return True, True
+
+    if school.latitude and school.longitude:
+        _update_school_status(school, "not_needed")
+        return True, True
+
+    return False, None
+
+
+def _process_geocoding_result(school, location):
+    if location:
+        school.latitude = location.latitude
+        school.longitude = location.longitude
+        _update_school_status(school, "success", fields=["latitude", "longitude"])
+        return True
+
+    print("[GEOCODE] FAILED - No location found")
+    _update_school_status(school, "failed")
+    return False
+
+
+def _handle_geocoding_exception(school, e):
+    error_str = str(e).lower()
+    is_conn_keyword = any(k in error_str for k in ["connection", "network", "timeout"])
+
+    if isinstance(e, (GeocoderTimedOut, GeocoderServiceError)):
+        _update_school_status(school, "failed")
+        raise GeocodingConnectionError(f"Service error: {e}")
+
+    if isinstance(e, OSError) or is_conn_keyword:
+        _update_school_status(school, "pending")
+        raise GeocodingConnectionError(f"Connection error: {e}")
+
+    print(f"[GEOCODE] ERROR - Unexpected: {e}")
+    _update_school_status(school, "failed")
+    return False
+
+
+def _update_school_status(school, status, fields=None):
+    """Helper to update status and save specific fields."""
+    school.geocoding_status = status
+    update_fields = ["geocoding_status"] + (fields or [])
+    school.save(update_fields=update_fields)
 
 
 def geocode_schools_batch(schools_queryset=None, delay_between_requests=1):
@@ -276,7 +286,13 @@ def geocode_schools_batch(schools_queryset=None, delay_between_requests=1):
             geocoding_status="pending", latitude__isnull=True, longitude__isnull=True
         )
 
-    stats = {"total": schools_queryset.count(), "success": 0, "failed": 0, "skipped": 0, "connection_error": None}
+    stats = {
+        "total": schools_queryset.count(),
+        "success": 0,
+        "failed": 0,
+        "skipped": 0,
+        "connection_error": None,
+    }
 
     for school in schools_queryset:
         try:

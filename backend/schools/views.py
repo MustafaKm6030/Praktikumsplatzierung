@@ -246,25 +246,14 @@ class SchoolViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"])
     def run_geocoding_task(self, request):
         """
-        Triggers the geocoding management command SYNCHRONOUSLY and waits
-        for it to complete before returning a response.
+        Triggers the geocoding management command SYNCHRONOUSLY.
         """
-        # We no longer need the lock, as the HTTP request itself is the lock.
+        # Collapse imports to single line or move to top of file if possible
+        from .services import geocode_schools_batch, GeocodingConnectionError
 
         try:
-            from .services import (
-                geocode_schools_batch,
-                GeocodingConnectionError,
-            )
-
-            retry_failed = request.data.get("retry_failed", False)
-            statuses = ["pending"]
-            if retry_failed:
-                statuses.append("failed")
-
-            schools_to_process = School.objects.filter(geocoding_status__in=statuses)
-
-            stats = geocode_schools_batch(schools_to_process)
+            schools = self._get_schools_for_geocoding(request.data.get("retry_failed"))
+            stats = geocode_schools_batch(schools)
 
             if stats.get("connection_error"):
                 return Response(
@@ -288,6 +277,12 @@ class SchoolViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response(
-                {"error": f"An unexpected error occurred during geocoding: {str(e)}"},
+                {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def _get_schools_for_geocoding(self, retry_failed):
+        statuses = ["pending"]
+        if retry_failed:
+            statuses.append("failed")
+        return School.objects.filter(geocoding_status__in=statuses)

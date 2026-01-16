@@ -2,7 +2,14 @@ from django.test import TestCase
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from .models import School
-from .services import get_reachable_schools
+from .services import (
+    get_reachable_schools,
+    geocode_school,
+    geocode_schools_batch,
+    GeocodingConnectionError,
+)
+from unittest.mock import patch, MagicMock
+from decimal import Decimal
 
 
 class SchoolModelTests(TestCase):
@@ -20,6 +27,7 @@ class SchoolModelTests(TestCase):
 
     def test_school_creation(self):
         self.assertEqual(self.gs_school.name, "Grundschule Passau")
+        self.assertEqual(self.gs_school.geocoding_status, "pending")
         self.assertEqual(self.gs_school.school_type, "GS")
         self.assertEqual(self.gs_school.zone, 1)
         self.assertEqual(self.gs_school.opnv_code, "4a")
@@ -172,3 +180,143 @@ class SchoolAPITests(APITestCase):
         response = self.client.post("/api/schools/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(School.objects.count(), 2)
+
+
+class GeocodingServicesTests(TestCase):
+    """
+    Tests for the geocoding logic in schools/services.py.
+    Uses mocking to simulate external API calls.
+    """
+
+    def setUp(self):
+        # A school that needs geocoding
+        self.school_pending = School.objects.create(
+            name="Test School Pending",
+            city="Passau",
+            school_type="GS",
+            zone=1,
+            geocoding_status="pending",
+            latitude=None,  # Explicitly null
+            longitude=None,
+        )
+
+        # A school that has already been geocoded
+        self.school_success = School.objects.create(
+            name="Test School Success",
+            city="Regen",
+            school_type="GS",
+            zone=3,
+            geocoding_status="success",
+            latitude=48.97,
+            longitude=13.12,
+        )
+
+        # A school that previously failed
+        self.school_failed = School.objects.create(
+            name="Test School Failed",
+            city="Nowhere",
+            school_type="MS",
+            zone=2,
+            geocoding_status="failed",
+            latitude=None,
+            longitude=None,
+        )
+
+    @patch("schools.services.Nominatim")
+    def test_geocode_school_success(self, MockNominatim):
+        """
+        Verify that a pending school is successfully geocoded.
+        """
+        # --- 1. MOCK SETUP ---
+        # Create a mock geolocator instance
+        mock_geolocator = MockNominatim.return_value
+
+        # Create a mock location object that the geocode method will return
+        mock_location = MagicMock()
+        mock_location.latitude = 48.5714
+        mock_location.longitude = 13.4632
+
+        # Configure the mock to return our location object
+        mock_geolocator.geocode.return_value = mock_location
+
+        # --- 2. EXECUTE ---
+        result = geocode_school(self.school_pending)
+
+        # --- 3. ASSERT ---
+        self.assertTrue(result)
+
+        # Refresh the object from the DB to see the saved changes
+        self.school_pending.refresh_from_db()
+
+        self.assertEqual(self.school_pending.latitude, Decimal("48.5714"))
+        self.assertEqual(self.school_pending.longitude, Decimal("13.4632"))
+        self.assertEqual(self.school_pending.geocoding_status, "success")
+
+        # Ensure the geocode method was called with the correct address
+        mock_geolocator.geocode.assert_called_once_with(
+            "Test School Pending, Passau, Germany", timeout=10
+        )
+
+    @patch("schools.services.Nominatim")
+    def test_geocode_school_no_results(self, MockNominatim):
+        """
+        Verify that a school's status is set to 'failed' if no location is found.
+        """
+        # Configure the mock to return None (no results)
+        mock_geolocator = MockNominatim.return_value
+        mock_geolocator.geocode.return_value = None
+
+        result = geocode_school(self.school_failed)
+
+        self.assertFalse(result)
+        self.school_failed.refresh_from_db()
+        self.assertEqual(self.school_failed.geocoding_status, "failed")
+        self.assertIsNone(self.school_failed.latitude)  # Coordinates should remain null
+
+    @patch("schools.services.Nominatim")
+    def test_geocode_school_skips_already_successful(self, MockNominatim):
+        """
+        Verify that the geocoding service is not called for a school already marked as 'success'.
+        """
+        mock_geolocator = MockNominatim.return_value
+
+        result = geocode_school(self.school_success)
+
+        self.assertTrue(result)
+        # The key assertion: the external API was never called
+        mock_geolocator.geocode.assert_not_called()
+        self.school_success.refresh_from_db()
+        # Status should remain 'success'
+        self.assertEqual(self.school_success.geocoding_status, "success")
+
+    @patch("schools.services.geocode_school")
+    def test_geocode_schools_batch(self, mock_geocode_school):
+        """
+        Verify the batch processing function calls the single geocode function for pending/failed schools.
+        """
+        # We want to test the batch logic, not the actual geocoding, so we mock the inner function
+        mock_geocode_school.return_value = True  # Assume success for every call
+
+        # Create another pending school for the batch
+        School.objects.create(
+            name="Another Pending",
+            city="City",
+            school_type="GS",
+            zone=1,
+            geocoding_status="pending",
+        )
+
+        # The batch should find the 2 pending schools
+        schools_to_process = School.objects.filter(geocoding_status="pending")
+        self.assertEqual(schools_to_process.count(), 2)
+
+        stats = geocode_schools_batch(
+            schools_queryset=schools_to_process, delay_between_requests=0
+        )
+
+        self.assertEqual(stats["total"], 2)
+        self.assertEqual(stats["success"], 2)
+        self.assertEqual(stats["failed"], 0)
+
+        # Check that the mocked function was called twice
+        self.assertEqual(mock_geocode_school.call_count, 2)
