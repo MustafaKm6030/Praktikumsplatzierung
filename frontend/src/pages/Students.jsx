@@ -1,16 +1,21 @@
-import React, { useCallback } from 'react';
-import { Box } from '@mui/material';
+import React, { useCallback, useState } from 'react';
+import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton } from '@mui/material';
 import StudentsActionButtons from '../components/students/StudentsActionButtons';
 import StudentsFilterBar from '../components/students/StudentsFilterBar';
 import StudentsTable from '../components/students/StudentsTable';
+import StudentFormDialog from '../components/students/StudentFormDialog';
+import StudentViewDialog from '../components/students/StudentViewDialog';
+import StudentAssignDialog from '../components/students/StudentAssignDialog';
 import useStudentData from '../components/students/useStudentData';
 import Loader from '../components/ui/Loader';
+import studentService from '../api/studentService';
 
 export default function StudentsPage() {
   const {
     students,
     filteredStudents,
     loading,
+    refetch,
     // filters
     searchQuery, setSearchQuery,
     selectedProgram, setSelectedProgram,
@@ -20,19 +25,132 @@ export default function StudentsPage() {
     stats,
   } = useStudentData();
 
-  // Actions (wire to your real service later if you want)
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Dialog states
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openAssignDialog, setOpenAssignDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const showNotification = (message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
+  };
+
   const handleAddStudent = useCallback(() => {
-    alert('Neuen Studierenden hinzufügen — Wird noch implementiert');
+    setSelectedStudent(null);
+    setOpenAddDialog(true);
   }, []);
+
+  const handleViewStudent = useCallback((student) => {
+    setSelectedStudent(student);
+    setOpenViewDialog(true);
+  }, []);
+
+  const handleEditStudent = useCallback((student) => {
+    setSelectedStudent(student);
+    setOpenEditDialog(true);
+  }, []);
+
+  const handleAssignStudent = useCallback((student) => {
+    setSelectedStudent(student);
+    setOpenAssignDialog(true);
+  }, []);
+
+  const handleDeleteStudent = useCallback((student) => {
+    setSelectedStudent(student);
+    setOpenDeleteDialog(true);
+  }, []);
+
+  const handleSaveStudent = async () => {
+    try {
+      showNotification('Student erfolgreich gespeichert', 'success');
+      setOpenAddDialog(false);
+      setOpenEditDialog(false);
+      setSelectedStudent(null);
+      refetch();
+    } catch (error) {
+      showNotification(`Fehler: ${error.message}`, 'error');
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await studentService.delete(selectedStudent.id);
+      showNotification('Student erfolgreich gelöscht', 'success');
+      setOpenDeleteDialog(false);
+      setSelectedStudent(null);
+      refetch();
+    } catch (error) {
+      showNotification(`Fehler beim Löschen: ${error.message}`, 'error');
+    }
+  };
+
+  const handleSaveAssignment = async () => {
+    try {
+      showNotification('Student erfolgreich zugewiesen', 'success');
+      setOpenAssignDialog(false);
+      setSelectedStudent(null);
+      refetch();
+    } catch (error) {
+      showNotification(`Fehler bei der Zuweisung: ${error.message}`, 'error');
+    }
+  };
 
   const handleImport = useCallback(() => {
-    // If you already have studentService.importCSV(file) you can add a hidden file input here.
-    alert('Studierende importieren (CSV/Excel) — Wird noch implementiert');
-  }, []);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.xlsx';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-  const handleExport = useCallback(() => {
-    // If you already have studentService.exportCSV(), call it here.
-    alert('Studierende exportieren — Wird noch implementiert');
+      try {
+        const isExcel = file.name.endsWith('.xlsx');
+        const result = isExcel 
+          ? await studentService.importExcel(file)
+          : await studentService.importCSV(file);
+        
+        const data = result.data;
+        showNotification(
+          `Import erfolgreich: ${data.created} erstellt, ${data.updated} aktualisiert${data.errors?.length ? `, ${data.errors.length} Fehler` : ''}`,
+          data.errors?.length ? 'warning' : 'success'
+        );
+        refetch();
+      } catch (error) {
+        showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
+      }
+    };
+    input.click();
+  }, [refetch]);
+
+  const handleExport = useCallback(async () => {
+    try {
+      // Show menu to choose format
+      const format = window.confirm('Excel exportieren? (OK = Excel, Abbrechen = CSV)')
+        ? 'excel'
+        : 'csv';
+
+      const response = format === 'excel'
+        ? await studentService.exportExcel()
+        : await studentService.exportCSV();
+
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `students_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showNotification('Export erfolgreich', 'success');
+    } catch (error) {
+      showNotification(`Export fehlgeschlagen: ${error.message}`, 'error');
+    }
   }, []);
 
   return (
@@ -75,8 +193,74 @@ export default function StudentsPage() {
       {loading && <Loader message="Studierende werden geladen..." />}
 
       {!loading && (
-        <StudentsTable students={filteredStudents} />
+        <StudentsTable 
+          students={filteredStudents}
+          onView={handleViewStudent}
+          onEdit={handleEditStudent}
+          onAssign={handleAssignStudent}
+          onDelete={handleDeleteStudent}
+        />
       )}
+
+      {/* Add Student Dialog */}
+      <StudentFormDialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        onSave={handleSaveStudent}
+        student={null}
+      />
+
+      {/* Edit Student Dialog */}
+      <StudentFormDialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        onSave={handleSaveStudent}
+        student={selectedStudent}
+      />
+
+      {/* View Student Dialog */}
+      <StudentViewDialog
+        open={openViewDialog}
+        onClose={() => setOpenViewDialog(false)}
+        student={selectedStudent}
+      />
+
+      {/* Assign Student Dialog */}
+      <StudentAssignDialog
+        open={openAssignDialog}
+        onClose={() => setOpenAssignDialog(false)}
+        onSave={handleSaveAssignment}
+        student={selectedStudent}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Student löschen</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Möchten Sie den Studenten "{selectedStudent?.first_name} {selectedStudent?.last_name}" wirklich löschen?
+            Diese Aktion kann nicht rückgängig gemacht werden.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setOpenDeleteDialog(false)}>Abbrechen</MuiButton>
+          <MuiButton onClick={handleConfirmDelete} color="error" variant="contained">
+            Löschen
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={() => setNotification({ ...notification, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert severity={notification.severity} onClose={() => setNotification({ ...notification, open: false })}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

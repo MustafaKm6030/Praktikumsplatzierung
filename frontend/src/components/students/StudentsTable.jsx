@@ -8,9 +8,16 @@ import {
   TableCell,
   Paper,
   Chip,
+  IconButton,
 } from '@mui/material';
+import {
+  Visibility as VisibilityIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  AssignmentInd as AssignIcon,
+} from '@mui/icons-material';
 
-const StudentsTable = ({ students }) => {
+const StudentsTable = ({ students, onView, onEdit, onDelete, onAssign }) => {
   return (
     <TableContainer component={Paper} sx={{
       borderRadius: '12px',
@@ -27,6 +34,7 @@ const StudentsTable = ({ students }) => {
             <TableCell><strong>E-Mail</strong></TableCell>
             <TableCell><strong>Region</strong></TableCell>
             <TableCell><strong>Status</strong></TableCell>
+            <TableCell align="center"><strong>Aktionen</strong></TableCell>
           </TableRow>
         </TableHead>
 
@@ -56,10 +64,44 @@ const StudentsTable = ({ students }) => {
 
                 <TableCell>
                   <Chip
-                    label={s.placement_status === 'PLACED' ? 'PLATZIERT' : 'NICHT PLATZIERT'}
+                    label={s.placement_status === 'PLACED' ? 'Zugewiesen' : 'Nicht zugewiesen'}
                     size="small"
                     color={s.placement_status === 'PLACED' ? 'success' : 'default'}
                   />
+                </TableCell>
+                <TableCell align="center">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    title="Details anzeigen"
+                    onClick={() => onView && onView(s)}
+                  >
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    title="Bearbeiten"
+                    onClick={() => onEdit && onEdit(s)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="secondary"
+                    title="Zuweisen"
+                    onClick={() => onAssign && onAssign(s)}
+                  >
+                    <AssignIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    title="Löschen"
+                    onClick={() => onDelete && onDelete(s)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))
