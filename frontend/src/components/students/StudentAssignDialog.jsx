@@ -4,13 +4,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
   Grid,
   MenuItem,
   CircularProgress,
   Typography,
 } from '@mui/material';
+import Button from '../ui/Button';
+import TextField from '../ui/TextField';
+import Select from '../ui/Select';
 import plService from '../../api/plService';
 import schoolService from '../../api/schoolService';
 import studentService from '../../api/studentService';
@@ -40,21 +41,29 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [mentorsResponse, schoolsResponse] = await Promise.all([
+      const [mentorsResponse, schoolsResponse, subjectsResponse] = await Promise.all([
         plService.getAll(),
         schoolService.getAll(),
+        fetch('/api/subjects/').then(res => res.json()),
       ]);
-      setMentors(mentorsResponse.data);
-      setSchools(schoolsResponse.data);
-
-      // Get student subjects
-      if (student) {
-        const studentSubjects = [];
-        if (student.primary_subject) studentSubjects.push({ id: student.primary_subject, name: student.primary_subject_name });
-        if (student.didactic_subject_1) studentSubjects.push({ id: student.didactic_subject_1, name: student.didactic_subject_1_name });
-        if (student.didactic_subject_2) studentSubjects.push({ id: student.didactic_subject_2, name: student.didactic_subject_2_name });
-        if (student.didactic_subject_3) studentSubjects.push({ id: student.didactic_subject_3, name: student.didactic_subject_3_name });
-        setSubjects(studentSubjects);
+      
+      // Handle response format - might be data.data or just data
+      setMentors(mentorsResponse.data || mentorsResponse);
+      setSchools(schoolsResponse.data || schoolsResponse);
+      
+      // Filter subjects based on student's subjects
+      if (student && subjectsResponse) {
+        const studentSubjectIds = [
+          student.primary_subject,
+          student.didactic_subject_1,
+          student.didactic_subject_2,
+          student.didactic_subject_3,
+        ].filter(Boolean);
+        
+        const filteredSubjects = subjectsResponse.filter(subject => 
+          studentSubjectIds.includes(subject.id)
+        );
+        setSubjects(filteredSubjects);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -126,86 +135,71 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
         ) : (
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Praktikumstyp"
+              <Select
                 name="practicum_type"
-                select
+                label="Praktikumstyp *"
+                fullWidth
                 value={formData.practicum_type}
                 onChange={handleChange}
+                options={PRACTICUM_TYPES}
+                showAllOption={false}
                 error={!!errors.practicum_type}
                 helperText={errors.practicum_type}
-                required
-              >
-                {PRACTICUM_TYPES.map(type => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Mentor"
+              <Select
                 name="mentor_id"
-                select
+                label="Mentor *"
+                fullWidth
                 value={formData.mentor_id}
                 onChange={handleChange}
+                options={mentors.map(m => ({
+                  value: m.id,
+                  label: `${m.first_name} ${m.last_name} - ${m.school_name || 'Keine Schule'}`
+                }))}
+                showAllOption={false}
                 error={!!errors.mentor_id}
                 helperText={errors.mentor_id}
-                required
-              >
-                {mentors.map(mentor => (
-                  <MenuItem key={mentor.id} value={mentor.id}>
-                    {mentor.first_name} {mentor.last_name} - {mentor.school_name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Schule"
+              <Select
                 name="school_id"
-                select
+                label="Schule *"
+                fullWidth
                 value={formData.school_id}
                 onChange={handleChange}
+                options={schools.map(s => ({
+                  value: s.id,
+                  label: `${s.name} - ${s.school_type}`
+                }))}
+                showAllOption={false}
                 error={!!errors.school_id}
                 helperText={errors.school_id}
-                required
-              >
-                {schools.map(school => (
-                  <MenuItem key={school.id} value={school.id}>
-                    {school.name} - {school.school_type}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Fach"
+              <Select
                 name="subject_id"
-                select
+                label="Fach *"
+                fullWidth
                 value={formData.subject_id}
                 onChange={handleChange}
+                options={subjects.map(s => ({
+                  value: s.id,
+                  label: s.name
+                }))}
+                showAllOption={false}
                 error={!!errors.subject_id}
                 helperText={errors.subject_id}
-                required
-              >
-                {subjects.map(subject => (
-                  <MenuItem key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField
-                fullWidth
-                label="Akademisches Jahr"
                 name="academic_year"
+                label="Akademisches Jahr"
+                fullWidth
                 type="number"
                 value={formData.academic_year}
                 onChange={handleChange}
@@ -220,8 +214,10 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Abbrechen</Button>
-        <Button onClick={handleSubmit} variant="contained" color="primary" disabled={loading}>
+        <Button onClick={onClose} variant="secondary">
+          Abbrechen
+        </Button>
+        <Button onClick={handleSubmit} variant="primary" disabled={loading}>
           Zuweisen
         </Button>
       </DialogActions>

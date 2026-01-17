@@ -4,13 +4,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Grid,
   Typography,
   Chip,
   Divider,
   Box,
 } from '@mui/material';
+import Button from '../ui/Button';
 
 const StudentViewDialog = ({ open, onClose, student }) => {
   if (!student) return null;
@@ -146,7 +146,7 @@ const StudentViewDialog = ({ open, onClose, student }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Schließen</Button>
+        <Button onClick={onClose} variant="primary">Schließen</Button>
       </DialogActions>
     </Dialog>
   );
