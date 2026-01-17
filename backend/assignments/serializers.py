@@ -225,7 +225,11 @@ class StudentAssignmentCreateSerializer(serializers.ModelSerializer):
         
         if existing:
             raise serializers.ValidationError(
-                f"Student is already assigned to {existing.mentor.last_name} for {data['practicum_type'].code}"
+                {
+                    "non_field_errors": [
+                        f"Student is already assigned for this practicum type in the {data.get('academic_year', '2025/26')} academic year"
+                    ]
+                }
             )
         
         return data

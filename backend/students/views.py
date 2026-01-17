@@ -147,9 +147,16 @@ class StudentViewSet(viewsets.ModelViewSet):
             )
 
         # Update assignment fields
-        for field in ["mentor", "school", "subject", "assignment_status", "notes"]:
-            if field in request.data:
-                setattr(assignment, field + "_id" if field in ["mentor", "school", "subject"] else field, request.data[field])
+        if "mentor" in request.data:
+            assignment.mentor_id = request.data["mentor"]
+        if "school" in request.data:
+            assignment.school_id = request.data["school"]
+        if "subject" in request.data:
+            assignment.subject_id = request.data["subject"]
+        if "assignment_status" in request.data:
+            assignment.assignment_status = request.data["assignment_status"]
+        if "notes" in request.data:
+            assignment.notes = request.data["notes"]
 
         assignment.save()
         
