@@ -4,12 +4,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
   Grid,
-  MenuItem,
   Typography,
 } from '@mui/material';
+import Button from '../ui/Button';
+import TextField from '../ui/TextField';
+import Select from '../ui/Select';
 import studentService from '../../api/studentService';
 
 const StudentFormDialog = ({ open, onClose, onSave, student }) => {
@@ -125,17 +125,18 @@ const StudentFormDialog = ({ open, onClose, onSave, student }) => {
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              fullWidth
-              label="Studiengang"
+            <Select
               name="program"
-              select
+              label="Studiengang"
+              fullWidth
               value={formData.program}
               onChange={handleChange}
-            >
-              <MenuItem value="GS">Grundschule</MenuItem>
-              <MenuItem value="MS">Mittelschule</MenuItem>
-            </TextField>
+              options={[
+                { value: 'GS', label: 'Grundschule' },
+                { value: 'MS', label: 'Mittelschule' }
+              ]}
+              showAllOption={false}
+            />
           </Grid>
           <Grid item xs={6}>
             <TextField
@@ -211,17 +212,18 @@ const StudentFormDialog = ({ open, onClose, onSave, student }) => {
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              fullWidth
-              label="Platzierungsstatus"
+            <Select
               name="placement_status"
-              select
+              label="Platzierungsstatus"
+              fullWidth
               value={formData.placement_status}
               onChange={handleChange}
-            >
-              <MenuItem value="UNPLACED">Nicht zugewiesen</MenuItem>
-              <MenuItem value="PLACED">Zugewiesen</MenuItem>
-            </TextField>
+              options={[
+                { value: 'UNPLACED', label: 'Nicht zugewiesen' },
+                { value: 'PLACED', label: 'Zugewiesen' }
+              ]}
+              showAllOption={false}
+            />
           </Grid>
           <Grid item xs={12}>
             <TextField
@@ -242,8 +244,8 @@ const StudentFormDialog = ({ open, onClose, onSave, student }) => {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Abbrechen</Button>
-        <Button onClick={handleSubmit} variant="contained" color="primary">
+        <Button onClick={onClose} variant="secondary">Abbrechen</Button>
+        <Button onClick={handleSubmit} variant="primary">
           {student ? 'Aktualisieren' : 'Erstellen'}
         </Button>
       </DialogActions>
