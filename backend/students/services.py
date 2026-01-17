@@ -2,6 +2,8 @@ import csv
 import io
 from datetime import datetime
 from django.db import transaction
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font
 from .models import Student
 from subjects.models import Subject
 
@@ -188,4 +190,138 @@ def _get_student_row(student):
 def _format_date(date_obj):
     """Formats a date as ISO string or empty string if None."""
     return date_obj.isoformat() if date_obj else ""
+
+
+def import_students_from_excel(file_obj):
+    """
+    Imports students from an Excel (.xlsx) file.
+    Similar to CSV import but handles Excel-specific formats.
+    """
+    try:
+        workbook = load_workbook(file_obj, data_only=True)  # data_only=True to read formula results
+        sheet = workbook.active
+        
+        # Get headers from first row
+        headers = [cell.value for cell in sheet[1]]
+        
+        created_count = 0
+        updated_count = 0
+        errors = []
+        subjects_cache = {subject.code: subject for subject in Subject.objects.all()}
+        
+        with transaction.atomic():
+            for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                # Skip empty rows
+                if not any(row):
+                    continue
+                    
+                try:
+                    # Create a dictionary from headers and row values
+                    row_dict = dict(zip(headers, row))
+                    
+                    student_id = str(row_dict.get("student_id", "")).strip() if row_dict.get("student_id") else ""
+                    if not student_id:
+                        errors.append(f"Row {row_num}: student_id is required")
+                        continue
+                    
+                    email = str(row_dict.get("email", "")).strip() if row_dict.get("email") else ""
+                    if not email:
+                        errors.append(f"Row {row_num}: email is required")
+                        continue
+                    
+                    # Map Excel columns to Student model fields
+                    student_data = {
+                        "student_id": student_id,
+                        "first_name": str(row_dict.get("first_name", "")) if row_dict.get("first_name") else "",
+                        "last_name": str(row_dict.get("last_name", "")) if row_dict.get("last_name") else "",
+                        "email": email,
+                        "phone": str(row_dict.get("phone", "")) if row_dict.get("phone") else "",
+                        "program": str(row_dict.get("program", "GS")) if row_dict.get("program") else "GS",
+                        "major": str(row_dict.get("major", "")) if row_dict.get("major") else "",
+                        "home_address": str(row_dict.get("home_address", "")) if row_dict.get("home_address") else "",
+                        "semester_address": str(row_dict.get("semester_address", "")) if row_dict.get("semester_address") else "",
+                        "home_region": str(row_dict.get("home_region", "")) if row_dict.get("home_region") else "",
+                        "preferred_zone": str(row_dict.get("preferred_zone", "")) if row_dict.get("preferred_zone") else "",
+                        "placement_status": str(row_dict.get("placement_status", "UNPLACED")) if row_dict.get("placement_status") else "UNPLACED",
+                        "notes": str(row_dict.get("notes", "")) if row_dict.get("notes") else "",
+                    }
+                    
+                    # Handle dates - Excel dates come as datetime objects or strings
+                    for date_field in ["pdp1_completed_date", "pdp2_completed_date", "sfp_completed_date", "zsp_completed_date", "enrollment_date"]:
+                        date_value = row_dict.get(date_field)
+                        if date_value:
+                            if isinstance(date_value, datetime):
+                                student_data[date_field] = date_value.date()
+                            else:
+                                student_data[date_field] = _parse_date(str(date_value))
+                        else:
+                            student_data[date_field] = None
+                    
+                    # Handle subject foreign keys
+                    student_data["primary_subject"] = subjects_cache.get(row_dict.get("primary_subject_code"))
+                    student_data["didactic_subject_1"] = subjects_cache.get(row_dict.get("didactic_subject_1_code"))
+                    student_data["didactic_subject_2"] = subjects_cache.get(row_dict.get("didactic_subject_2_code"))
+                    student_data["didactic_subject_3"] = subjects_cache.get(row_dict.get("didactic_subject_3_code"))
+                    
+                    # Update or create student
+                    student, created = Student.objects.update_or_create(
+                        student_id=student_id,
+                        defaults=student_data
+                    )
+                    
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                        
+                except Exception as e:
+                    errors.append(f"Row {row_num}: {str(e)}")
+        
+        return {"created": created_count, "updated": updated_count, "errors": errors}
+        
+    except Exception as e:
+        raise Exception(f"Failed to process Excel file: {str(e)}")
+
+
+def export_students_to_excel():
+    """
+    Exports students to Excel (.xlsx) format.
+    Returns the Excel file as bytes.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Students"
+    
+    # Write headers
+    headers = _get_csv_headers()
+    for col_num, header in enumerate(headers, start=1):
+        cell = sheet.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True)
+    
+    # Write student data
+    students = Student.objects.all().order_by("last_name", "first_name")
+    for row_num, student in enumerate(students, start=2):
+        row_data = _get_student_row(student)
+        for col_num, value in enumerate(row_data, start=1):
+            sheet.cell(row=row_num, column=col_num, value=value)
+    
+    # Auto-adjust column widths
+    for column in sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
+        sheet.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to bytes
+    from io import BytesIO
+    excel_file = BytesIO()
+    workbook.save(excel_file)
+    excel_file.seek(0)
+    return excel_file.getvalue()
 

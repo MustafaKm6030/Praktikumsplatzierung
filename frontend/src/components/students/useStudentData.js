@@ -109,6 +109,7 @@ function useStudentBaseCore() {
     loading,
     programs,
     regions,
+    fetchStudents,
   };
 }
 
@@ -155,6 +156,7 @@ const useStudentData = () => {
     students: base.students,
     filteredStudents: filters.filteredStudents,
     loading: base.loading,
+    refetch: base.fetchStudents,
     searchQuery: filters.searchQuery,
     setSearchQuery: filters.setSearchQuery,
     selectedProgram: filters.selectedProgram,
