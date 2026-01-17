@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -37,13 +37,7 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (open && student) {
-      loadData();
-    }
-  }, [open, student]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [mentorsResponse, schoolsResponse] = await Promise.all([
@@ -67,7 +61,13 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [student]);
+
+  useEffect(() => {
+    if (open && student) {
+      loadData();
+    }
+  }, [open, student, loadData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
