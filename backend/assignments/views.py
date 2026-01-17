@@ -13,7 +13,9 @@ from .services import (
     generate_assignments_excel,
     generate_assignments_pdf,
     update_assignment,
+    get_mentor_capacity,
 )
+from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from .serializers import (
     DemandSerializer,
     DemandPreviewSerializer,
@@ -92,12 +94,14 @@ class AssignmentListAPIView(APIView):
     API endpoint to retrieve all assignments for the results table.
     Business Logic: Returns detailed assignment information including
     student assignments (when available) and mentor details.
+    Also includes unallocated slots as separate rows.
     """
 
     def get(self, request, *args, **kwargs):
         """
         Handles GET requests to retrieve all assignments.
         Returns list of assignment details for the results table.
+        Includes both assigned slots and unallocated slots.
         """
         assignments = Assignment.objects.select_related(
             "mentor", "practicum_type", "subject", "school"
@@ -113,13 +117,58 @@ class AssignmentListAPIView(APIView):
                     "practicum_type": assignment.practicum_type.get_code_display(),
                     "subject": assignment.subject.code if assignment.subject else "N/A",
                     "mentor_name": f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
+                    "mentor_id": assignment.mentor.id,
                     "school_name": assignment.school.name,
                     "status": "ok",
                 }
             )
 
+        unallocated_slots = self._get_unallocated_slots()
+        assignment_list.extend(unallocated_slots)
+
         serializer = AssignmentDetailSerializer(assignment_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def _get_unallocated_slots(self):
+        """
+        Calculates unallocated slots for all active mentors.
+        Returns a list of unallocated slot entries, one per unallocated slot.
+        Only returns unallocated slots if there are actual assignments (solver has run).
+        """
+        unallocated_list = []
+        
+        total_assignments = Assignment.objects.count()
+        if total_assignments == 0:
+            return unallocated_list
+        
+        active_mentors = PraktikumsLehrkraft.objects.filter(is_active=True).select_related("school")
+        
+        assignment_counts = {}
+        for assignment in Assignment.objects.select_related("mentor").all():
+            mentor_id = assignment.mentor.id
+            assignment_counts[mentor_id] = assignment_counts.get(mentor_id, 0) + 1
+        
+        for mentor in active_mentors:
+            capacity = get_mentor_capacity(mentor)
+            assigned_count = assignment_counts.get(mentor.id, 0)
+            unallocated_count = capacity - assigned_count
+            
+            for _ in range(unallocated_count):
+                unallocated_list.append(
+                    {
+                        "id": None,
+                        "student_id": None,
+                        "student_name": None,
+                        "practicum_type": None,
+                        "subject": None,
+                        "mentor_name": f"{mentor.last_name}, {mentor.first_name}",
+                        "mentor_id": mentor.id,
+                        "school_name": mentor.school.name if mentor.school else None,
+                        "status": "unallocated",
+                    }
+                )
+        
+        return unallocated_list
 
 
 class ExportAssignmentsExcelAPIView(APIView):

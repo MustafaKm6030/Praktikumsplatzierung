@@ -119,15 +119,17 @@ class SolverResultSerializer(serializers.Serializer):
 class AssignmentDetailSerializer(serializers.Serializer):
     """
     Serializer for detailed assignment information for results table.
+    Handles both assigned slots and unallocated slots.
     """
 
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(allow_null=True)
     student_id = serializers.CharField(allow_null=True)
     student_name = serializers.CharField(allow_null=True)
-    practicum_type = serializers.CharField()
+    practicum_type = serializers.CharField(allow_null=True)
     subject = serializers.CharField(allow_null=True)
     mentor_name = serializers.CharField()
-    school_name = serializers.CharField()
+    mentor_id = serializers.IntegerField()
+    school_name = serializers.CharField(allow_null=True)
     status = serializers.CharField()
 
 
