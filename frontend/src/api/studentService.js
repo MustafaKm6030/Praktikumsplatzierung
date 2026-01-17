@@ -49,6 +49,43 @@ export const studentService = {
       },
     });
   },
+
+  exportExcel: () => {
+    return api.get('/students/export_excel/', {
+      responseType: 'blob',
+    });
+  },
+
+  importExcel: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/students/import_excel/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Student assignment methods
+  assignStudent: (studentId, assignmentData) => {
+    return api.post(`/students/${studentId}/assign/`, assignmentData);
+  },
+
+  reassignStudent: (studentId, assignmentData) => {
+    return api.post(`/students/${studentId}/reassign/`, assignmentData);
+  },
+
+  removeAssignment: (studentId, assignmentData) => {
+    return api.post(`/students/${studentId}/remove_assignment/`, assignmentData);
+  },
+
+  getAssignment: (studentId) => {
+    return api.get(`/students/${studentId}/assignment/`);
+  },
+
+  getUnassignedStudents: (params = {}) => {
+    return api.get('/students/unassigned/', { params });
+  },
 };
 
 export default studentService;

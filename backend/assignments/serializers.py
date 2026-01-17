@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Assignment
+from .models import Assignment, StudentAssignment
 
 
 class AssignmentSerializer(serializers.ModelSerializer):
@@ -143,3 +143,93 @@ class AssignmentUpdateSerializer(serializers.Serializer):
     school_id = serializers.IntegerField(required=False)
     subject_id = serializers.IntegerField(required=False, allow_null=True)
     practicum_type_id = serializers.IntegerField(required=False)
+
+
+# ==================== STUDENT ASSIGNMENT SERIALIZERS ====================
+
+
+class StudentAssignmentSerializer(serializers.ModelSerializer):
+    """
+    Serializer for StudentAssignment model.
+    Used for listing and viewing student assignments.
+    """
+    student_name = serializers.SerializerMethodField()
+    student_id = serializers.CharField(source="student.student_id", read_only=True)
+    mentor_name = serializers.SerializerMethodField()
+    school_name = serializers.CharField(source="school.name", read_only=True)
+    practicum_type_code = serializers.CharField(source="practicum_type.code", read_only=True)
+    practicum_type_name = serializers.CharField(source="practicum_type.name", read_only=True)
+    subject_code = serializers.CharField(source="subject.code", read_only=True, allow_null=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True, allow_null=True)
+    
+    class Meta:
+        model = StudentAssignment
+        fields = [
+            "id",
+            "student",
+            "student_id",
+            "student_name",
+            "mentor",
+            "mentor_name",
+            "school",
+            "school_name",
+            "practicum_type",
+            "practicum_type_code",
+            "practicum_type_name",
+            "subject",
+            "subject_code",
+            "subject_name",
+            "assignment_status",
+            "assignment_date",
+            "academic_year",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["assignment_date", "created_at", "updated_at"]
+    
+    def get_student_name(self, obj):
+        return f"{obj.student.first_name} {obj.student.last_name}"
+    
+    def get_mentor_name(self, obj):
+        return f"{obj.mentor.first_name} {obj.mentor.last_name}"
+
+
+class StudentAssignmentCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating student assignments.
+    Includes validation for capacity and constraints.
+    """
+    
+    class Meta:
+        model = StudentAssignment
+        fields = [
+            "student",
+            "mentor",
+            "school",
+            "practicum_type",
+            "subject",
+            "assignment_status",
+            "academic_year",
+            "notes",
+        ]
+    
+    def validate(self, data):
+        """Validate assignment constraints"""
+        # Check for duplicate assignment
+        existing = StudentAssignment.objects.filter(
+            student=data["student"],
+            practicum_type=data["practicum_type"],
+            academic_year=data.get("academic_year", "2025/26")
+        ).exclude(assignment_status="CANCELLED").first()
+        
+        if existing:
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        f"Student is already assigned for this practicum type in the {data.get('academic_year', '2025/26')} academic year"
+                    ]
+                }
+            )
+        
+        return data

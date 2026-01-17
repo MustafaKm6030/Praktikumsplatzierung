@@ -117,3 +117,50 @@ class StudentAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.student1.refresh_from_db()
         self.assertEqual(str(self.student1.sfp_completed_date), "2025-09-15")
+
+    def test_excel_import(self):
+        """Test importing students from Excel file."""
+        from openpyxl import Workbook
+        from io import BytesIO
+
+        # Create a simple Excel file
+        wb = Workbook()
+        ws = wb.active
+        ws.append([
+            "student_id", "first_name", "last_name", "email", "program",
+            "primary_subject_code", "didactic_subject_3_code"
+        ])
+        ws.append([
+            "ST999", "Excel", "Test", "excel@test.com", "GS", "E", "SP"
+        ])
+
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+        excel_file.name = "test_students.xlsx"
+
+        response = self.client.post(
+            "/api/students/import_excel/",
+            {"file": excel_file},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("created", response.data)
+        self.assertTrue(Student.objects.filter(student_id="ST999").exists())
+
+    def test_excel_export(self):
+        """Test exporting students to Excel file."""
+        response = self.client.get("/api/students/export_excel/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn("students_export.xlsx", response["Content-Disposition"])
+
+    def test_get_unassigned_students(self):
+        """Test getting list of unassigned students."""
+        response = self.client.get("/api/students/unassigned/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Both test students are UNPLACED by default
+        self.assertEqual(len(response.data), 2)
