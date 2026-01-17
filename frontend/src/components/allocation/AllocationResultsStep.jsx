@@ -10,12 +10,16 @@ import {
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
 import allocationService from '../../api/allocationService';
+import AdjustAssignmentDialog from '../assignments/AdjustAssignmentDialog';
 
 const AllocationResultsStep = ({ onComplete }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // State to track which mentor is being adjusted (opens the modal)
+    const [adjustingMentorId, setAdjustingMentorId] = useState(null);
 
     useEffect(() => {
         fetchAssignments();
@@ -35,8 +39,12 @@ const AllocationResultsStep = ({ onComplete }) => {
         }
     };
 
-    const handleManualAdjust = (assignmentId) => {
-        alert(`Manuelle Anpassung für Zuweisung ${assignmentId} - Funktion kommt in Sprint 4`);
+    const handleManualAdjust = (mentorId) => {
+        if (!mentorId) {
+            console.warn("No Mentor ID found for this row");
+            return;
+        }
+        setAdjustingMentorId(mentorId);
     };
 
     const filteredAssignments = assignments.filter(assignment => {
@@ -137,7 +145,7 @@ const AllocationResultsStep = ({ onComplete }) => {
                                             <Button
                                                 variant="secondary"
                                                 size="small"
-                                                onClick={() => handleManualAdjust(assignment.id)}
+                                                onClick={() => handleManualAdjust(assignment.mentor_id)}
                                                 startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                                             >
                                                 Anpassen
@@ -161,6 +169,17 @@ const AllocationResultsStep = ({ onComplete }) => {
                     Abschließen & Berichte generieren
                 </Button>
             </Box>
+
+            {/* The Adjust Assignment Dialog */}
+            <AdjustAssignmentDialog
+                open={!!adjustingMentorId}
+                mentorId={adjustingMentorId}
+                onClose={() => setAdjustingMentorId(null)}
+                onSaveSuccess={(updatedAssignments) => {
+                    setAdjustingMentorId(null);
+                    fetchAssignments(); 
+                }}
+            />
         </Box>
     );
 };
