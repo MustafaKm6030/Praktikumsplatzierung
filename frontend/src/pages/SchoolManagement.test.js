@@ -23,8 +23,9 @@ jest.mock('../components/school_management/SchoolsApi', () => ({
     createSchool: jest.fn(),
     updateSchool: jest.fn(),
     deleteSchool: jest.fn(),
-    exportSchoolsCSV: jest.fn(),
+    exportSchoolsExcel: jest.fn(),
     importSchoolsCSV: jest.fn(),
+    runGeocodingTask: jest.fn()
 }));
 
 // --- IMPORTS ---
@@ -32,7 +33,7 @@ import SchoolManagement from './SchoolManagement';
 import { 
     createSchool, 
     deleteSchool, 
-    exportSchoolsCSV 
+    exportSchoolsExcel 
 } from '../components/school_management/SchoolsApi';
 
 // --- THE TEST SUITE ---
@@ -127,15 +128,15 @@ describe('SchoolManagement Page Integration', () => {
         });
     });
 
-    test('4. Triggers CSV Export', async () => {
+    test('4. Triggers Excel Export', async () => { 
         render(<SchoolManagement />);
-        exportSchoolsCSV.mockResolvedValue({});
+        exportSchoolsExcel.mockResolvedValue({}); 
 
-        const exportBtn = screen.getByText(/Exportieren/i);
+        const exportBtn = screen.getByText(/Schulliste exportieren/i);
         userEvent.click(exportBtn);
 
         await waitFor(() => {
-            expect(exportSchoolsCSV).toHaveBeenCalledTimes(1);
+            expect(exportSchoolsExcel).toHaveBeenCalledTimes(1); 
         });
     });
 

@@ -7,7 +7,7 @@ import {
     Grid,
     FormControlLabel,
     Checkbox,
-    Typography,
+    Alert
 } from '@mui/material';
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
@@ -39,6 +39,7 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
 
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
+    const [submitError, setSubmitError] = useState(null);
 
     // Initialize form data when school prop changes
     useEffect(() => {
@@ -73,6 +74,7 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
             });
         }
         setErrors({});
+        setSubmitError(null);
     }, [school, open]);
 
     const handleChange = (e) => {
@@ -113,6 +115,8 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
         }
 
         setSaving(true);
+        setSubmitError(null);
+        
         try {
             // Prepare data for API
             const dataToSend = {
@@ -131,10 +135,10 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
                 await createSchool(dataToSend);
             }
 
-            onSave();
+            onSave(); // Close and refresh parent
         } catch (error) {
             console.error('Save error:', error);
-            setErrors({ submit: error.message });
+            setSubmitError(error.message || "Fehler beim Speichern der Schule.");
         } finally {
             setSaving(false);
         }
@@ -142,9 +146,15 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
+            <DialogTitle>{title || (school ? "Schule bearbeiten" : "Neue Schule anlegen")}</DialogTitle>
+            <DialogContent dividers>
+                {submitError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {submitError}
+                    </Alert>
+                )}
+
+                <Grid container spacing={2} sx={{ mt: 0 }}>
                     <Grid item xs={12} sm={6}>
                         <TextField
                             name="name"
@@ -199,7 +209,7 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
                             onChange={handleChange}
                             error={!!errors.zone}
                             helperText={errors.zone}
-                            step="1"
+                            inputProps={{ min: 1 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={4}>
@@ -219,29 +229,29 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
                             type="number"
                             value={formData.distance_km}
                             onChange={handleChange}
-                            step="0.1"
+                            inputProps={{ step: 0.1, min: 0 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField
                             name="latitude"
-                            label="Breitengrad"
+                            label="Breitengrad (Lat)"
                             fullWidth
                             type="number"
                             value={formData.latitude || ''}
                             onChange={handleChange}
-                            step="0.0001"
+                            inputProps={{ step: "any" }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField
                             name="longitude"
-                            label="Längengrad"
+                            label="Längengrad (Lng)"
                             fullWidth
                             type="number"
                             value={formData.longitude || ''}
                             onChange={handleChange}
-                            step="0.0001"
+                            inputProps={{ step: "any" }}
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -262,23 +272,20 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
                                     name="is_active"
                                     checked={formData.is_active}
                                     onChange={handleChange}
+                                    color="primary"
                                 />
                             }
-                            label="Aktiv"
+                            label="Schule ist aktiv (für Zuteilung verfügbar)"
                         />
                     </Grid>
-                    {errors.submit && (
-                        <Grid item xs={12}>
-                            <Typography color="error">{errors.submit}</Typography>
-                        </Grid>
-                    )}
                 </Grid>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} variant="secondary">
+                <Button onClick={onClose} variant="outlined" color="inherit">
                     Abbrechen
                 </Button>
-                <Button onClick={handleSubmit} variant="primary" disabled={saving}>
+                {/* Fixed: Use variant="contained" to ensure it's visible */}
+                <Button onClick={handleSubmit} variant="contained" color="primary" disabled={saving}>
                     {saving ? 'Speichern...' : 'Speichern'}
                 </Button>
             </DialogActions>
