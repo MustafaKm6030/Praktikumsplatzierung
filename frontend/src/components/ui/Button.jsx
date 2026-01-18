@@ -17,7 +17,7 @@ import { Button as MuiButton } from '@mui/material';
  * @param {string} [props.className] - Additional CSS classes
  */
 
-// Define styles OUTSIDE the component to prevent re-creation on every render
+// Define styles OUTSIDE the component
 const SIZE_CONFIG = {
     small: { padding: '6px 16px', fontSize: '13px' },
     medium: { padding: '10px 24px', fontSize: '15px' },
@@ -25,25 +25,33 @@ const SIZE_CONFIG = {
 };
 
 // Variant configurations
+const PRIMARY_STYLE = {
+    background: 'linear-gradient(135deg, #F8971C 0%, #fbbd61 100%)',
+    color: '#2d2f38',
+    '&:hover': {
+        background: 'linear-gradient(135deg, #e88716 0%, #f5a842 100%)',
+        transform: 'translateY(-1px)',
+        color: 'white',
+    },
+};
+
+const SECONDARY_STYLE = {
+    background: 'white',
+    color: '#FAB95A',
+    border: '2px solid #FAB95A',
+    '&:hover': {
+        background: 'rgba(248, 151, 28, 0.1)',
+        borderColor: '#FAB95A',
+    },
+};
+
 const VARIANT_STYLES = {
-    primary: {
-        background: 'linear-gradient(135deg, #F8971C 0%, #fbbd61 100%)',
-        color: '#2d2f38',
-        '&:hover': {
-            background: 'linear-gradient(135deg, #e88716 0%, #f5a842 100%)',
-            transform: 'translateY(-1px)',
-            color: 'white',
-        },
-    },
-    secondary: {
-        background: 'white',
-        color: '#FAB95A',
-        border: '2px solid #FAB95A',
-        '&:hover': {
-            background: 'rgba(248, 151, 28, 0.1)',
-            borderColor: '#FAB95A',
-        },
-    },
+    primary: PRIMARY_STYLE,
+    secondary: SECONDARY_STYLE,
+    // Add Mappings for standard MUI names to prevent crashes
+    contained: PRIMARY_STYLE, 
+    outlined: SECONDARY_STYLE,
+    
     error: {
         background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
         color: 'white',
@@ -85,6 +93,9 @@ const Button = ({
                     ...rest
                 }) => {
 
+    // SAFE ACCESS: If variant doesn't exist, fall back to 'primary'
+    const activeVariantStyle = VARIANT_STYLES[variant] || VARIANT_STYLES.primary;
+
     // Combine base styles with dynamic props
     const buttonStyle = {
         borderRadius: '12px',
@@ -97,11 +108,12 @@ const Button = ({
         boxShadow: disabled ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.12)',
 
         ...SIZE_CONFIG[size],
-        ...VARIANT_STYLES[variant],
+        ...activeVariantStyle,
 
         '&:hover': {
             transform: 'scale(1.03) translateY(-1px)',
-            ...VARIANT_STYLES[variant]['&:hover'],
+            // Safety check for hover styles
+            ...(activeVariantStyle['&:hover'] || {}),
         },
 
         '&:active': {
@@ -127,7 +139,7 @@ const Button = ({
 
     return (
         <MuiButton
-            variant="contained"
+            variant="contained" // We force MUI to use contained so our custom backgrounds work
             onClick={onClick}
             startIcon={startIcon}
             endIcon={endIcon}

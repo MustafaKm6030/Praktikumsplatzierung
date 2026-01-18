@@ -27,7 +27,7 @@ const ActionButtons = ({ onAddSchool, onImport, onExport, onGeocode, isGeocoding
                 size="medium"
                 disabled={isGeocoding}
             >
-                Schulen importieren (CSV/Excel)
+                Schulen importieren
             </Button>
             <Button
                 startIcon={isGeocoding ? <CircularProgress size={20} color="inherit" /> : <GeocodeIcon />}

@@ -11,14 +11,13 @@ from .serializers import (
     SchoolCreateUpdateSerializer,
 )
 
-# Import the refactored services
 from .services import (
     get_schools_by_zone,
     get_schools_by_type,
     get_school_capacity,
     get_schools_for_wednesday_praktika,
     import_schools_from_csv,
-    export_schools_to_csv,
+    export_schools_to_excel,
     geocode_schools_batch,
 )
 
@@ -26,7 +25,6 @@ from .services import (
 class SchoolViewSet(viewsets.ModelViewSet):
     """
     API endpoint for managing Schools.
-    Refactored to align with the CSV data source.
     """
 
     queryset = School.objects.all().order_by("name")
@@ -100,7 +98,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         POST /api/schools/ - Create new school.
-        Business Logic: Creates new school with validation.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -113,7 +110,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         """
         PUT /api/schools/{id}/ - Full update of school.
-        Business Logic: Updates all fields of existing school.
         """
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
@@ -125,7 +121,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         """
         PATCH /api/schools/{id}/ - Partial update of school.
-        Business Logic: Updates only specified fields.
         """
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
@@ -133,7 +128,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """
         DELETE /api/schools/{id}/ - Delete school.
-        Business Logic: Permanently removes school from database.
         """
         instance = self.get_object()
         instance.delete()
@@ -148,7 +142,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def import_csv(self, request):
         """
         POST /api/schools/import_csv/ - Import schools from CSV.
-        Business Logic: Bulk creates/updates schools from uploaded CSV file.
         """
         file_obj = request.FILES.get("file")
         if not file_obj:
@@ -170,14 +163,16 @@ class SchoolViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def export(self, request):
         """
-        GET /api/schools/export/ - Export schools to CSV.
-        Business Logic: Generates CSV file with all schools data.
+        GET /api/schools/export/ - Export schools to EXCEL.
+        Business Logic: Generates Excel file with all schools data.
         """
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="schools_export.csv"'
-
-        csv_data = export_schools_to_csv()
-        response.write(csv_data)
+        excel_file = export_schools_to_excel()
+        
+        response = HttpResponse(
+            excel_file,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="schools_export.xlsx"'
 
         return response
 
@@ -185,10 +180,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def geocode_pending(self, request):
         """
         POST /api/schools/geocode_pending/ - Trigger geocoding for all pending schools.
-        Business Logic: Geocodes all schools with 'pending' or 'failed' status.
-
-        This endpoint should be called from a background job or admin action.
-        It will take time proportional to the number of schools (1.1s per school).
         """
         retry_failed = request.data.get("retry_failed", False)
 
@@ -208,7 +199,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
             )
 
         estimated_time = count * 1.1
-
         stats = geocode_schools_batch(schools_to_geocode, delay_between_requests=1.1)
 
         return Response(
@@ -222,7 +212,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def geocoding_stats(self, request):
         """
         GET /api/schools/geocoding_stats/ - Get statistics about geocoding status.
-        Business Logic: Returns counts of schools by geocoding status.
         """
         from django.db.models import Count
 
@@ -248,7 +237,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
         """
         Triggers the geocoding management command SYNCHRONOUSLY.
         """
-        # Collapse imports to single line or move to top of file if possible
         from .services import geocode_schools_batch, GeocodingConnectionError
 
         try:
