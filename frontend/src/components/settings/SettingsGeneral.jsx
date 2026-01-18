@@ -98,6 +98,11 @@ function SettingsGeneral() {
     // 5. Action Handlers
     const handleSave = async (e) => {
         e.preventDefault();
+        const totalPercent = Number(settings.gsPercentage) + Number(settings.msPercentage);
+        if (Math.abs(totalPercent - 100) > 0.1) {
+            showSnackbar(`Warnung: Die Budget-Prozentsätze ergeben zusammen ${totalPercent}%. Sie sollten idealerweise 100% ergeben.`, 'warning');
+            return;
+        }
         setIsSaving(true);
 
         try {
