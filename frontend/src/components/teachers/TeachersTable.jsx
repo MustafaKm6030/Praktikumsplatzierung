@@ -49,7 +49,7 @@ const TeachersTable = ({ teachers, onView, onEdit, onDelete }) => {
             ) : (
                 teachers.map((pl) => (
                     <TableRow key={pl.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
-                      <TableCell>{`PL-${String(pl.id).padStart(3, '0')}`}</TableCell>
+                      <TableCell>{`PL-${String(pl.pl_id ?? pl.teacher_id ?? pl.praktikumslehrkraft_id ?? pl.id).padStart(3, '0')}`}</TableCell>
                       <TableCell sx={{ fontWeight: 500 }}>{`${pl.first_name} ${pl.last_name}`}</TableCell>
                       <TableCell>{pl.school_name || '—'}</TableCell>
                       <TableCell>
