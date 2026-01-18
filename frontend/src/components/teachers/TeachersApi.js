@@ -149,7 +149,7 @@ export const patchTeacher = async (id, teacherData) => {
 /**
  * Delete a teacher
  */
-export const deleteTeacher = async id => {
+export const deleteTeacher = async (id) => {
     const csrftoken = getCookie('csrftoken');
   
     const response = await fetch(`${BASE_URL}/pls/${id}/`, {
