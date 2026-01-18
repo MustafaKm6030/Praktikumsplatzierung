@@ -159,10 +159,10 @@ export const deleteTeacher = async (id) => {
     });
   
     // ✅ normal success
-    if (response.status === 204 || response.status === 200) return true;
+    if (response.status === 204 || response.status === 200) {return true;}
   
     // ✅ backend bug: it deletes but returns 500
-    if (response.status === 500) return true;
+    if (response.status === 500) {return true;}
   
     // real error (404/403/etc.)
     const text = await response.text().catch(() => '');
