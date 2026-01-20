@@ -1,7 +1,10 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Subject, PraktikumType
 from .serializers import SubjectSerializer, PraktikumTypeSerializer
+from .services import get_filtered_subjects_for_assignment
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
@@ -17,6 +20,37 @@ class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
     # permission_classes = [IsAuthenticated]  # Uncomment when auth is ready
+
+    @action(detail=False, methods=['get'])
+    def filtered(self, request):
+        """
+        Get subjects filtered by praktikum type and school type.
+        
+        Query params:
+        - praktikum_type: ZSP, SFP, PDP1, PDP2
+        - school_type: GS, MS, GMS
+        """
+        praktikum_type = request.query_params.get('praktikum_type')
+        school_type = request.query_params.get('school_type')
+        
+        if not praktikum_type:
+            return Response(
+                {'error': 'praktikum_type is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not school_type:
+            return Response(
+                {'error': 'school_type is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        subjects = get_filtered_subjects_for_assignment(
+            praktikum_type=praktikum_type,
+            school_type=school_type
+        )
+        
+        return Response(subjects)
 
 
 class PraktikumTypeViewSet(viewsets.ModelViewSet):

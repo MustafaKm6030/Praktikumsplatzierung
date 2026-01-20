@@ -137,3 +137,100 @@ def get_allowed_subject_codes(program_type: str, practicum_type: str) -> set:
             allowed_codes.add(rule["code"])
 
     return allowed_codes
+
+
+def get_filtered_subjects_for_assignment(
+    praktikum_type: str, school_type: str
+) -> list:
+    """
+    Get filtered subjects based on praktikum type and school type.
+    
+    Business Logic:
+    - For ZSP/SFP: filter by both praktikum type AND school type
+    - For PDP (PDP1/PDP2): filter only by school type
+    
+    Args:
+        praktikum_type: One of 'ZSP', 'SFP', 'PDP1', 'PDP2', 'PDP_I', 'PDP_II'
+        school_type: One of 'GS', 'MS', 'GMS'
+    
+    Returns:
+        List of dicts with subject id, code, name and display name
+    """
+    # Normalize praktikum_type codes (handle both frontend and backend formats)
+    code_mapping = {
+        'PDP1': 'PDP_I',
+        'PDP2': 'PDP_II',
+        'PDP_I': 'PDP_I',
+        'PDP_II': 'PDP_II',
+        'SFP': 'SFP',
+        'ZSP': 'ZSP'
+    }
+    normalized_type = code_mapping.get(praktikum_type, praktikum_type)
+    
+    # Normalize praktikum_type for PDP variants
+    if normalized_type in ['PDP_I', 'PDP_II']:
+        # For PDP, we only filter by school type, no praktikum-specific rules
+        praktikum_key = None
+    else:
+        praktikum_key = normalized_type
+    
+    # For GMS schools, include both GS and MS subjects
+    if school_type == 'GMS':
+        school_types_to_check = ['GS', 'MS']
+    else:
+        school_types_to_check = [school_type]
+    
+    # Collect unique subjects
+    subjects_dict = {}
+    
+    for st in school_types_to_check:
+        if st in _rules:
+            if praktikum_key:
+                # ZSP/SFP: use specific praktikum rules
+                type_rules = _rules.get(st, {}).get(praktikum_key, {})
+                for subject_name, rule in type_rules.items():
+                    code = rule.get('code')
+                    display_name = rule.get('display_name')
+                    if code and display_name:
+                        # Use code as key to avoid duplicates
+                        subjects_dict[code] = {
+                            'name': subject_name,
+                            'code': code,
+                            'display_name': display_name
+                        }
+            else:
+                # PDP: collect all subjects from both ZSP and SFP for the school type
+                for pt in ['ZSP', 'SFP']:
+                    type_rules = _rules.get(st, {}).get(pt, {})
+                    for subject_name, rule in type_rules.items():
+                        code = rule.get('code')
+                        display_name = rule.get('display_name')
+                        if code and display_name:
+                            subjects_dict[code] = {
+                                'name': subject_name,
+                                'code': code,
+                                'display_name': display_name
+                            }
+    
+    # Now match with actual Subject models to get IDs
+    subject_codes = list(subjects_dict.keys())
+    db_subjects = Subject.objects.filter(code__in=subject_codes, is_active=True)
+    
+    # Map codes to IDs
+    code_to_id = {s.code: s.id for s in db_subjects}
+    
+    # Build final list with IDs
+    subjects_list = []
+    for code, info in subjects_dict.items():
+        if code in code_to_id:
+            subjects_list.append({
+                'id': code_to_id[code],
+                'name': info['name'],
+                'code': code,
+                'display_name': info['display_name']
+            })
+    
+    # Sort by display name
+    subjects_list.sort(key=lambda x: x['display_name'])
+    
+    return subjects_list
