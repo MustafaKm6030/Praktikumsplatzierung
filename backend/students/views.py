@@ -103,10 +103,32 @@ class StudentViewSet(viewsets.ModelViewSet):
         student = self.get_object()
         from assignments.models import StudentAssignment
         from assignments.serializers import StudentAssignmentCreateSerializer
+        from subjects.models import PraktikumType
 
         # Add student to the request data
         data = request.data.copy()
         data["student"] = student.id
+        
+        # Convert practicum_type code to ID if needed
+        practicum_type_value = data.get("practicum_type")
+        if practicum_type_value and isinstance(practicum_type_value, str):
+            # Map frontend codes to database codes
+            code_mapping = {
+                'PDP1': 'PDP_I',
+                'PDP2': 'PDP_II',
+                'SFP': 'SFP',
+                'ZSP': 'ZSP'
+            }
+            db_code = code_mapping.get(practicum_type_value, practicum_type_value)
+            
+            try:
+                praktikum_type = PraktikumType.objects.get(code=db_code)
+                data["practicum_type"] = praktikum_type.id
+            except PraktikumType.DoesNotExist:
+                return Response(
+                    {"error": f"Invalid practicum type: {practicum_type_value}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         serializer = StudentAssignmentCreateSerializer(data=data)
         if serializer.is_valid():

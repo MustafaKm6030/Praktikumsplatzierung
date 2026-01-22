@@ -7,6 +7,8 @@ import {
   Grid,
   CircularProgress,
   Typography,
+  Autocomplete,
+  TextField as MuiTextField,
 } from '@mui/material';
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
@@ -31,51 +33,74 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
     academic_year: new Date().getFullYear(),
   });
 
-  const [mentors, setMentors] = useState([]);
-  const [schools, setSchools] = useState([]);
+  const [allMentors, setAllMentors] = useState([]);
+  const [allSchools, setAllSchools] = useState([]);
+  const [filteredMentors, setFilteredMentors] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [selectedSchool, setSelectedSchool] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const loadData = useCallback(async () => {
+  const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
-      const [mentorsResponse, schoolsResponse, subjectsResponse] = await Promise.all([
+      const [mentorsResponse, schoolsResponse] = await Promise.all([
         plService.getAll(),
         schoolService.getAll(),
-        fetch('/api/subjects/').then(res => res.json()),
       ]);
       
       // Handle response format - might be data.data or just data
-      setMentors(mentorsResponse.data || mentorsResponse);
-      setSchools(schoolsResponse.data || schoolsResponse);
+      const mentorsData = mentorsResponse.data || mentorsResponse;
+      const schoolsData = schoolsResponse.data || schoolsResponse;
       
-      // Filter subjects based on student's subjects
-      if (student && subjectsResponse) {
-        const studentSubjectIds = [
-          student.primary_subject,
-          student.didactic_subject_1,
-          student.didactic_subject_2,
-          student.didactic_subject_3,
-        ].filter(Boolean);
-        
-        const filteredSubjects = subjectsResponse.filter(subject => 
-          studentSubjectIds.includes(subject.id)
-        );
-        setSubjects(filteredSubjects);
-      }
+      setAllMentors(mentorsData);
+      setAllSchools(schoolsData);
+      setFilteredMentors(mentorsData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [student]);
+  }, []);
+
+  const loadFilteredSubjects = useCallback(async (praktikumType, schoolType) => {
+    if (!praktikumType || !schoolType) {
+      setSubjects([]);
+      return;
+    }
+
+    setLoadingSubjects(true);
+    try {
+      const response = await fetch(
+        `/api/subjects/filtered/?praktikum_type=${praktikumType}&school_type=${schoolType}`
+      );
+      const data = await response.json();
+      setSubjects(data);
+    } catch (error) {
+      console.error('Error loading filtered subjects:', error);
+      setSubjects([]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (open && student) {
-      loadData();
+      loadInitialData();
+      // Reset form when dialog opens
+      setFormData({
+        practicum_type: '',
+        mentor_id: '',
+        school_id: '',
+        subject_id: '',
+        academic_year: new Date().getFullYear(),
+      });
+      setSelectedSchool(null);
+      setSubjects([]);
+      setErrors({});
     }
-  }, [open, student, loadData]);
+  }, [open, student, loadInitialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -89,6 +114,51 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
         ...prev,
         [name]: null
       }));
+    }
+
+    // Load subjects when both practicum_type and school are selected
+    if (name === 'practicum_type' && selectedSchool) {
+      loadFilteredSubjects(value, selectedSchool.school_type);
+      // Reset subject selection
+      setFormData(prev => ({ ...prev, subject_id: '' }));
+    }
+  };
+
+  const handleSchoolChange = (event, newValue) => {
+    setSelectedSchool(newValue);
+    
+    if (newValue) {
+      setFormData(prev => ({
+        ...prev,
+        school_id: newValue.id,
+        mentor_id: '', // Reset mentor when school changes
+        subject_id: '', // Reset subject when school changes
+      }));
+
+      // Filter mentors by selected school
+      const schoolMentors = allMentors.filter(
+        mentor => mentor.school === newValue.id
+      );
+      setFilteredMentors(schoolMentors);
+
+      // Load subjects if practicum_type is already selected
+      if (formData.practicum_type) {
+        loadFilteredSubjects(formData.practicum_type, newValue.school_type);
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        school_id: '',
+        mentor_id: '',
+        subject_id: '',
+      }));
+      setFilteredMentors(allMentors);
+      setSubjects([]);
+    }
+
+    // Clear errors
+    if (errors.school_id) {
+      setErrors(prev => ({ ...prev, school_id: null }));
     }
   };
 
@@ -147,35 +217,37 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
               />
             </Grid>
             <Grid item xs={12}>
+              <Autocomplete
+                options={allSchools}
+                getOptionLabel={(option) => `${option.name} - ${option.school_type}`}
+                value={selectedSchool}
+                onChange={handleSchoolChange}
+                renderInput={(params) => (
+                  <MuiTextField
+                    {...params}
+                    label="Schule *"
+                    error={!!errors.school_id}
+                    helperText={errors.school_id}
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
+            </Grid>
+            <Grid item xs={12}>
               <Select
                 name="mentor_id"
                 label="Mentor *"
                 fullWidth
                 value={formData.mentor_id}
                 onChange={handleChange}
-                options={mentors.map(m => ({
+                options={filteredMentors.map(m => ({
                   value: m.id,
-                  label: `${m.first_name} ${m.last_name} - ${m.school_name || 'Keine Schule'}`
+                  label: `${m.first_name} ${m.last_name}`
                 }))}
                 showAllOption={false}
                 error={!!errors.mentor_id}
-                helperText={errors.mentor_id}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Select
-                name="school_id"
-                label="Schule *"
-                fullWidth
-                value={formData.school_id}
-                onChange={handleChange}
-                options={schools.map(s => ({
-                  value: s.id,
-                  label: `${s.name} - ${s.school_type}`
-                }))}
-                showAllOption={false}
-                error={!!errors.school_id}
-                helperText={errors.school_id}
+                helperText={errors.mentor_id || (selectedSchool && filteredMentors.length === 0 ? 'Keine Mentoren für diese Schule verfügbar' : '')}
+                disabled={!selectedSchool}
               />
             </Grid>
             <Grid item xs={12}>
@@ -187,11 +259,12 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
                 onChange={handleChange}
                 options={subjects.map(s => ({
                   value: s.id,
-                  label: s.name
+                  label: s.display_name
                 }))}
                 showAllOption={false}
                 error={!!errors.subject_id}
-                helperText={errors.subject_id}
+                helperText={errors.subject_id || (loadingSubjects ? 'Fächer werden geladen...' : (!formData.practicum_type || !selectedSchool ? 'Bitte wählen Sie zuerst Praktikumstyp und Schule' : subjects.length === 0 ? 'Keine Fächer verfügbar für diese Kombination' : ''))}
+                disabled={!formData.practicum_type || !selectedSchool || loadingSubjects}
               />
             </Grid>
             <Grid item xs={12}>

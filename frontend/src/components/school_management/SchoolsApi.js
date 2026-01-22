@@ -113,10 +113,31 @@ export const patchSchool = (id, schoolData) => {
 };
 
 /**
- * Delete a school
+ * Delete a school (soft delete - sets is_active=False)
  */
-export const deleteSchool = (id) => {
-    return sendRequest(`/schools/${id}/`, 'DELETE');
+export const deleteSchool = async (id) => {
+    try {
+        const csrftoken = getCookie('csrftoken');
+
+        const response = await fetch(`${BASE_URL}/schools/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrftoken || '',
+            },
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to delete school');
+        }
+
+        // Backend returns 200 with message for soft delete
+        return response.json();
+    } catch (error) {
+        console.error('Delete school error:', error);
+        throw error;
+    }
 };
 
 /**

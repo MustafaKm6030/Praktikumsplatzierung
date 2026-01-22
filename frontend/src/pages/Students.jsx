@@ -8,6 +8,7 @@ import StudentViewDialog from '../components/students/StudentViewDialog';
 import StudentAssignDialog from '../components/students/StudentAssignDialog';
 import useStudentData from '../components/students/useStudentData';
 import Loader from '../components/ui/Loader';
+import Button from '../components/ui/Button';
 import studentService from '../api/studentService';
 
 export default function StudentsPage() {
@@ -33,6 +34,7 @@ export default function StudentsPage() {
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openExportDialog, setOpenExportDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const showNotification = (message, severity = 'success') => {
@@ -126,22 +128,21 @@ export default function StudentsPage() {
     input.click();
   }, [refetch]);
 
-  const handleExport = useCallback(async () => {
-    try {
-      // Show menu to choose format
-      const format = window.confirm('Excel exportieren? (OK = Excel, Abbrechen = CSV)')
-        ? 'excel'
-        : 'csv';
+  const handleExport = useCallback(() => {
+    setOpenExportDialog(true);
+  }, []);
 
-      const response = format === 'excel'
-        ? await studentService.exportExcel()
-        : await studentService.exportCSV();
+  const handleConfirmExport = async () => {
+    setOpenExportDialog(false);
+    
+    try {
+      const response = await studentService.exportExcel();
 
       const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `students_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+      link.download = 'students_export.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -151,7 +152,7 @@ export default function StudentsPage() {
     } catch (error) {
       showNotification(`Export fehlgeschlagen: ${error.message}`, 'error');
     }
-  }, []);
+  };
 
   return (
     <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
@@ -247,6 +248,24 @@ export default function StudentsPage() {
           <MuiButton onClick={handleConfirmDelete} color="error" variant="contained">
             Löschen
           </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Export Confirmation Dialog */}
+      <Dialog open={openExportDialog} onClose={() => setOpenExportDialog(false)}>
+        <DialogTitle>Studentenliste exportieren</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Möchten Sie die Studentenliste als Excel-Datei exportieren?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenExportDialog(false)} variant="secondary">
+            Abbrechen
+          </Button>
+          <Button onClick={handleConfirmExport} variant="primary">
+            Bestätigen
+          </Button>
         </DialogActions>
       </Dialog>
 
