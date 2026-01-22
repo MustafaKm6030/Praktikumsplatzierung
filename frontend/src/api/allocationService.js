@@ -14,7 +14,9 @@ const allocationService = {
      * Endpoint: POST /api/assignments/run-solver/
      */
     runAutoAllocation: (payload = {}) => {
-        return api.post('/assignments/run-solver/', payload);
+        return api.post('/assignments/run-solver/', payload, {
+            timeout: 300000
+        });
     },
 
     /**
