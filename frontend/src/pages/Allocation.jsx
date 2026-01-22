@@ -78,7 +78,10 @@ export default function Allocation() {
 
                     {/* STEP 3: REVIEW RESULTS */}
                     {activeStep === 2 && (
-                        <AllocationResultsStep onComplete={handleStepComplete} />
+                        <AllocationResultsStep 
+                            onComplete={handleStepComplete}
+                            onReset={() => setActiveStep(0)}
+                        />
                     )}
 
                     {/* STEP 4: FINALIZE */}

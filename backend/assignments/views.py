@@ -14,6 +14,7 @@ from .services import (
     generate_assignments_pdf,
     update_assignment,
     get_mentor_capacity,
+    reset_all_assignments,
 )
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from .serializers import (
@@ -251,6 +252,28 @@ class AssignmentUpdateAPIView(APIView):
             return Response(result, status=status.HTTP_200_OK)
         else:
             return Response(result, status=status_code)
+
+
+class ResetAssignmentsAPIView(APIView):
+    """
+    API endpoint to reset (delete) all assignments.
+    Business Logic: Provides ability to clear all allocation results
+    and start fresh allocation cycle.
+    """
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Handles DELETE requests to remove all assignments.
+        Returns success message with count of deleted records.
+        """
+        try:
+            result = reset_all_assignments()
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e), "success": False},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class AssignmentViewSet(viewsets.ModelViewSet):

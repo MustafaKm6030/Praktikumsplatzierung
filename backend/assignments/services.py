@@ -700,3 +700,22 @@ def _update_mentor_assignments(mentor, assignments: list) -> list:
             )
 
     return new_assignments
+
+
+def reset_all_assignments():
+    """
+    Deletes all Assignment records from the database.
+    Business Logic: Allows complete reset of allocation results.
+    Used when starting a new allocation cycle.
+    
+    Returns:
+        dict: Success message with count of deleted records
+    """
+    deleted_count = Assignment.objects.count()
+    Assignment.objects.all().delete()
+    
+    return {
+        "success": True,
+        "deleted_count": deleted_count,
+        "message": f"Successfully deleted {deleted_count} assignment(s)."
+    }

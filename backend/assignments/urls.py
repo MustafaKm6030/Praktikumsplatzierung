@@ -8,6 +8,7 @@ from .views import (
     ExportAssignmentsPDFAPIView,
     AssignmentUpdateAPIView,
     AssignmentViewSet,
+    ResetAssignmentsAPIView,
 )
 from rest_framework.routers import DefaultRouter
 
@@ -27,5 +28,6 @@ urlpatterns = [
     ),
     path("export/excel/", ExportAssignmentsExcelAPIView.as_view(), name="export-excel"),
     path("export/pdf/", ExportAssignmentsPDFAPIView.as_view(), name="export-pdf"),
+    path("reset/", ResetAssignmentsAPIView.as_view(), name="reset-assignments"),
     path("", include(router.urls)),
 ]
