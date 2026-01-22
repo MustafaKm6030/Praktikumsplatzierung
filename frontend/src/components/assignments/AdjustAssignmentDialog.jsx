@@ -18,7 +18,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
             setLoading(true);
             setError(null);
             // Fetch the eligibility data for this specific mentor
-            fetch(`/api/pls/${mentorId}/adjustment_data/`)
+            fetch(`/api/pls/${mentorId}/adjustment-data/`)
                 .then(res => {
                     if (!res.ok) throw new Error("Failed to load data");
                     return res.json();
