@@ -29,7 +29,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
     Refactored to align with the CSV data source.
     """
 
-    queryset = School.objects.all().order_by("name")
+    queryset = School.objects.filter(is_active=True).order_by("name")
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -132,14 +132,16 @@ class SchoolViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """
-        DELETE /api/schools/{id}/ - Delete school.
-        Business Logic: Permanently removes school from database.
+        DELETE /api/schools/{id}/ - Soft delete school.
+        Business Logic: Sets is_active=False instead of hard delete.
+        This preserves data integrity for existing assignments.
         """
         instance = self.get_object()
-        instance.delete()
+        instance.is_active = False
+        instance.save()
         return Response(
             {"message": "School deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT,
+            status=status.HTTP_200_OK,
         )
 
     @action(
