@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, Stack, CircularProgress, Alert,
-    Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Select, MenuItem, FormControl, Grid
+    Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Select, MenuItem, FormControl, Grid, Autocomplete
 } from '@mui/material';
 import {
     CheckCircle, Warning, Edit as EditIcon,
@@ -31,6 +31,17 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
     const [resetting, setResetting] = useState(false);
 
+    // Filter dialog state
+    const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+    
+    // Filter state
+    const [filters, setFilters] = useState({
+        subject: '',
+        school: '',
+        practicumType: '',
+        status: ''
+    });
+
     // Statistics state
     const [stats, setStats] = useState({
         matchRate: '0%',
@@ -38,11 +49,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         unmatchedCount: 0
     });
 
-    useEffect(() => {
-        fetchAssignments();
-    }, [solverResults]);
-
-    const fetchAssignments = async () => {
+    const fetchAssignments = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -57,17 +64,33 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             if (solverResults) {
                 totalAssigned = solverResults.total_assignments || 0;
                 totalUnassigned = solverResults.total_unassigned || 0;
-                const totalMentors = totalAssigned + totalUnassigned;
-                matchRate = totalMentors > 0
-                    ? Math.round((totalAssigned / totalMentors) * 100)
-                    : 0;
+                
+                // Calculate match rate using total unallocated slots from actual data
+                const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
+                const total = totalAssigned + totalUnallocatedSlots;
+                matchRate = total > 0
+                    ? ((totalAssigned / total) * 100).toFixed(1)
+                    : '0.0';
             } else {
+                // Count all assignments with status = 'ok'
                 totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
-                totalUnassigned = assignmentData.filter(a => a.status === 'unallocated').length;
-                const totalMentors = totalAssigned + totalUnassigned;
-                matchRate = totalMentors > 0
-                    ? Math.round((totalAssigned / totalMentors) * 100)
-                    : 0;
+                
+                // Count all unallocated slots for percentage calculation
+                const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
+                
+                // Count unique unassigned mentors for display
+                const unallocatedMentorIds = new Set(
+                    assignmentData
+                        .filter(a => a.status === 'unallocated')
+                        .map(a => a.mentor_id)
+                );
+                totalUnassigned = unallocatedMentorIds.size;
+                
+                // Calculate match rate: assigned / (assigned + unallocated_slots) * 100
+                const total = totalAssigned + totalUnallocatedSlots;
+                matchRate = total > 0
+                    ? ((totalAssigned / total) * 100).toFixed(1)
+                    : '0.0';
             }
             
             setStats({
@@ -81,7 +104,11 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [solverResults]);
+
+    useEffect(() => {
+        fetchAssignments();
+    }, [fetchAssignments]);
 
     const handleManualAdjust = (mentorId) => {
         if (!mentorId) {
@@ -126,16 +153,58 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         setResetDialogOpen(false);
     };
 
+    // Handle filter changes
+    const handleFilterChange = (filterName, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterName]: value
+        }));
+        setPage(0); // Reset to first page when filters change
+    };
+
+    // Clear all filters
+    const handleClearFilters = () => {
+        setFilters({
+            subject: '',
+            school: '',
+            practicumType: '',
+            status: ''
+        });
+        setPage(0);
+    };
+
+    // Get unique values for filter dropdowns
+    const getUniqueValues = (field) => {
+        const values = assignments
+            .map(a => a[field])
+            .filter(v => v && v !== 'N/A');
+        return [...new Set(values)].sort();
+    };
+
+    // Check if any filter is active
+    const hasActiveFilters = () => {
+        return Object.values(filters).some(value => value !== '');
+    };
+
     // Filter and sort assignments (unallocated first)
     const filteredAssignments = assignments
         .filter(assignment => {
+            // Apply search term filter
             const searchLower = searchTerm.toLowerCase();
-            return (
+            const matchesSearch = !searchTerm || (
                 (assignment.mentor_name && assignment.mentor_name.toLowerCase().includes(searchLower)) ||
                 (assignment.practicum_type && assignment.practicum_type.toLowerCase().includes(searchLower)) ||
                 (assignment.subject && assignment.subject.toLowerCase().includes(searchLower)) ||
                 (assignment.school_name && assignment.school_name.toLowerCase().includes(searchLower))
             );
+
+            // Apply specific filters
+            const matchesSubject = !filters.subject || assignment.subject === filters.subject;
+            const matchesSchool = !filters.school || assignment.school_name === filters.school;
+            const matchesPracticumType = !filters.practicumType || assignment.practicum_type === filters.practicumType;
+            const matchesStatus = !filters.status || assignment.status === filters.status;
+
+            return matchesSearch && matchesSubject && matchesSchool && matchesPracticumType && matchesStatus;
         })
         .sort((a, b) => {
             // Sort: unallocated first, then allocated
@@ -225,7 +294,21 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                     >
                         Zurücksetzen
                     </Button>
-                    <Button variant="secondary" startIcon={<FilterList />}>Filter</Button>
+                    <Button 
+                        variant="secondary" 
+                        startIcon={<FilterList />}
+                        onClick={() => setFilterDialogOpen(true)}
+                        sx={hasActiveFilters() ? {
+                            bgcolor: '#fef3c7',
+                            borderColor: '#F8971C',
+                            color: '#F8971C',
+                            '&:hover': {
+                                bgcolor: '#fde68a'
+                            }
+                        } : {}}
+                    >
+                        Filter {hasActiveFilters() && `(${Object.values(filters).filter(v => v).length})`}
+                    </Button>
                     <TextField
                         placeholder="Suchen..."
                         value={searchTerm}
@@ -435,6 +518,120 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                         }}
                     >
                         {resetting ? 'Wird zurückgesetzt...' : 'Ja, alle löschen'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Filter Dialog */}
+            <Dialog 
+                open={filterDialogOpen} 
+                onClose={() => setFilterDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ fontWeight: 700, color: '#1f2937' }}>
+                    Zuweisungen filtern
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Stack spacing={3} sx={{ pt: 2 }}>
+                        {/* Subject Filter */}
+                        <FormControl fullWidth>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#374151' }}>
+                                Fach
+                            </Typography>
+                            <Select
+                                value={filters.subject}
+                                onChange={(e) => handleFilterChange('subject', e.target.value)}
+                                displayEmpty
+                                size="small"
+                            >
+                                <MenuItem value="">
+                                    <em>Alle Fächer</em>
+                                </MenuItem>
+                                {getUniqueValues('subject').map(subject => (
+                                    <MenuItem key={subject} value={subject}>
+                                        {subject}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* School Filter with Searchable Dropdown */}
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#374151' }}>
+                                Schule
+                            </Typography>
+                            <Autocomplete
+                                value={filters.school || null}
+                                onChange={(event, newValue) => handleFilterChange('school', newValue || '')}
+                                options={getUniqueValues('school_name')}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        placeholder="Alle Schulen"
+                                        size="small"
+                                    />
+                                )}
+                                size="small"
+                                fullWidth
+                                clearOnEscape
+                            />
+                        </Box>
+
+                        {/* Practicum Type Filter */}
+                        <FormControl fullWidth>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#374151' }}>
+                                Praktikumstyp
+                            </Typography>
+                            <Select
+                                value={filters.practicumType}
+                                onChange={(e) => handleFilterChange('practicumType', e.target.value)}
+                                displayEmpty
+                                size="small"
+                            >
+                                <MenuItem value="">
+                                    <em>Alle Typen</em>
+                                </MenuItem>
+                                {getUniqueValues('practicum_type').map(type => (
+                                    <MenuItem key={type} value={type}>
+                                        {type}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* Status Filter */}
+                        <FormControl fullWidth>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#374151' }}>
+                                Status
+                            </Typography>
+                            <Select
+                                value={filters.status}
+                                onChange={(e) => handleFilterChange('status', e.target.value)}
+                                displayEmpty
+                                size="small"
+                            >
+                                <MenuItem value="">
+                                    <em>Alle Status</em>
+                                </MenuItem>
+                                <MenuItem value="ok">Zugewiesen</MenuItem>
+                                <MenuItem value="unallocated">Nicht zugewiesen</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
+                    <Button 
+                        onClick={handleClearFilters} 
+                        variant="secondary"
+                        disabled={!hasActiveFilters()}
+                    >
+                        Filter löschen
+                    </Button>
+                    <Button 
+                        onClick={() => setFilterDialogOpen(false)}
+                    >
+                        Anwenden
                     </Button>
                 </DialogActions>
             </Dialog>

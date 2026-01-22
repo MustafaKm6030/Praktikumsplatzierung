@@ -14,6 +14,7 @@ from .services import (
     generate_assignments_pdf,
     update_assignment,
     get_mentor_capacity,
+    get_mentor_capacity,
     reset_all_assignments,
 )
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
@@ -71,13 +72,16 @@ class SolverRunAPIView(APIView):
         """
         try:
             result = run_solver()
+            
+            # Count unique unassigned mentors (not total slots)
+            unique_unassigned_mentors = len(result["unassigned"])
 
             response_data = {
                 "status": result["status"],
                 "assignments": result["assignments"],
                 "unassigned": result["unassigned"],
                 "total_assignments": len(result["assignments"]),
-                "total_unassigned": len(result["unassigned"]),
+                "total_unassigned": unique_unassigned_mentors,
             }
 
             serializer = SolverResultSerializer(response_data)
@@ -88,6 +92,29 @@ class SolverRunAPIView(APIView):
                 {"error": str(e), "status": "FAILURE"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+    
+    def _calculate_unallocated_slots(self):
+        """
+        Calculates the total number of unallocated slots across all active mentors.
+        Returns the count of unallocated slots (not unique mentors).
+        """
+        from praktikums_lehrkraft.models import PraktikumsLehrkraft
+        
+        active_mentors = PraktikumsLehrkraft.objects.filter(is_active=True)
+        assignment_counts = {}
+        
+        for assignment in Assignment.objects.select_related("mentor").all():
+            mentor_id = assignment.mentor.id
+            assignment_counts[mentor_id] = assignment_counts.get(mentor_id, 0) + 1
+        
+        total_unallocated = 0
+        for mentor in active_mentors:
+            capacity = get_mentor_capacity(mentor)
+            assigned_count = assignment_counts.get(mentor.id, 0)
+            unallocated_count = capacity - assigned_count
+            total_unallocated += unallocated_count
+        
+        return total_unallocated
 
 
 class AssignmentListAPIView(APIView):
