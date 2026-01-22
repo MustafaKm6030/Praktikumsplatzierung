@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Snackbar, Alert } from '@mui/material';
+import React, { useCallback, useState } from 'react';
+import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton } from '@mui/material';
 import TeachersActionButtons from '../components/teachers/TeachersActionButtons';
 import TeachersFilterBar from '../components/teachers/TeachersFilterBar';
 import TeachersTable from '../components/teachers/TeachersTable';
@@ -27,6 +27,10 @@ export default function Teachers() {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState(null);  
+
+
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -104,19 +108,44 @@ export default function Teachers() {
     setSelectedTeacher(teacher);
     setOpenEditDialog(true);
   };
+  
 
-  const handleDeleteTeacher = async (teacher) => {
-    if (window.confirm(`Möchten Sie wirklich ${teacher.first_name} ${teacher.last_name} löschen?`)) {
-      try {
-        await deleteTeacher(teacher.id);
-        showNotification(`${teacher.first_name} ${teacher.last_name} wurde erfolgreich gelöscht`, 'success');
-        await refetchTeachers();
-      } catch (error) {
-        console.error('Delete error:', error);
-        showNotification(`Löschen fehlgeschlagen: ${error.message}`, 'error');
-      }
-    }
-  };
+// 1) Click trash icon -> open dialog
+const handleDeleteTeacher = useCallback((teacher) => {
+  setTeacherToDelete(teacher);
+  setOpenDeleteDialog(true);
+}, []);
+
+// 2) Click "Löschen" in dialog -> call API
+const handleConfirmDeleteTeacher = async () => {
+  if (!teacherToDelete) return;
+
+  try {
+    await deleteTeacher(teacherToDelete.id);
+
+    showNotification(
+      `${teacherToDelete.first_name} ${teacherToDelete.last_name} wurde erfolgreich gelöscht`,
+      'success'
+    );
+  } catch (error) {
+    // show warning but still refresh (because it may be deleted anyway)
+    console.error('Delete error:', error);
+    showNotification(`Löschen: Backend meldet Fehler, ich lade neu...`, 'warning');
+  } finally {
+    setOpenDeleteDialog(false);
+    setTeacherToDelete(null);
+    await refetchTeachers();   // ✅ this is what removes it from the table
+  }
+};
+
+
+
+
+  
+  
+  
+  
+  
 
   const handleTeacherSaved = async () => {
     setOpenAddDialog(false);
@@ -207,6 +236,23 @@ export default function Teachers() {
             onClose={handleDialogClose}
             teacher={selectedTeacher}
         />
+        <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+          <DialogTitle>Praktikumslehrkraft löschen</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Möchten Sie "{teacherToDelete?.first_name} {teacherToDelete?.last_name}" wirklich löschen?
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <MuiButton onClick={() => { setOpenDeleteDialog(false); setTeacherToDelete(null); }}>
+              Abbrechen
+            </MuiButton>
+            <MuiButton onClick={handleConfirmDeleteTeacher} color="error" variant="contained">
+              Löschen
+            </MuiButton>
+          </DialogActions>
+        </Dialog>
 
         <Snackbar
             open={snackbar.open}
