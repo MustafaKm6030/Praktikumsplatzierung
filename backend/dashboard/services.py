@@ -10,16 +10,29 @@ from assignments.models import Assignment
 def get_dashboard_summary_data():
     """
     Aggregates all data needed for the main dashboard overview.
-    Returns a dictionary with student summary, budget summary, and entity counts.
+    Returns a dictionary with assignment status, budget summary, and entity counts.
     """
-    student_summary = get_student_summary()
+    assignment_status = get_assignment_status()
     budget_summary = get_budget_summary()
     entity_counts = get_entity_counts()
+    student_summary = _build_student_summary(entity_counts)
 
     return {
+        "assignment_status": assignment_status,
         "student_summary": student_summary,
         "budget_summary": budget_summary,
         "entity_counts": entity_counts,
+    }
+
+
+def _build_student_summary(entity_counts):
+    """
+    Builds student summary from entity counts for frontend compatibility.
+    """
+    return {
+        "total_students": entity_counts.get("total_students", 0),
+        "assigned_students": entity_counts.get("placed_students", 0),
+        "unassigned_students": entity_counts.get("unplaced_students", 0),
     }
 
 
@@ -106,3 +119,62 @@ def get_entity_counts():
     )
 
     return {**student_stats, **pl_stats}
+
+
+def get_assignment_status():
+    """
+    Calculates assignment status for all practicum types.
+    Returns a list of dictionaries with demand, assigned, and unassigned slots.
+    """
+    demand_list = aggregate_demand()
+    practicum_totals = _convert_demand_to_totals(demand_list)
+    return build_assignment_status_list(practicum_totals)
+
+
+def _convert_demand_to_totals(demand_list):
+    """
+    Converts demand list from aggregate_demand() to dict of totals by practicum type.
+    """
+    totals = {}
+    for item in demand_list:
+        ptype = item.get("practicum_type", "")
+        count = item.get("required_slots", 0)
+        totals[ptype] = totals.get(ptype, 0) + count
+    return totals
+
+
+def build_assignment_status_list(practicum_totals):
+    """
+    Builds assignment status list from practicum totals.
+    Applies real assignment data from database.
+    """
+    practicum_types = {
+        "PDP_I": "PDP I",
+        "PDP_II": "PDP II",
+        "SFP": "SFP",
+        "ZSP": "ZSP",
+    }
+
+    result = []
+    for code, display_name in practicum_types.items():
+        demand_slots = practicum_totals.get(code, 0)
+        assigned_slots = _get_assigned_slots(code)
+        unassigned_slots = max(0, demand_slots - assigned_slots)
+
+        result.append(
+            {
+                "practicum_type": display_name,
+                "demand_slots": demand_slots,
+                "assigned_slots": assigned_slots,
+                "unassigned_slots": unassigned_slots,
+            }
+        )
+
+    return result
+
+
+def _get_assigned_slots(practicum_type_code):
+    """
+    Helper: Gets count of assigned slots for a practicum type.
+    """
+    return Assignment.objects.filter(practicum_type__code=practicum_type_code).count()
