@@ -36,13 +36,13 @@ function Dashboard() {
 
                 {/* Widget 1: Praktika Status */}
                 <Grid item xs={12} lg={8}>
-                    <PraktikaStatusWidget data={data?.assignment_status || []} />
+                    <PraktikaStatusWidget data={data?.student_summary || {}} />
                 </Grid>
 
                 {/* Widget 4: System Alerts */}
                 <Grid item xs={12} lg={4}>
                     <SystemAlertsWidget
-                        assignmentStatus={data?.assignment_status || []}
+                        studentSummary={data?.student_summary || {}}
                         budgetSummary={data?.budget_summary || {}}
                         entityCounts={data?.entity_counts || {}}
                     />

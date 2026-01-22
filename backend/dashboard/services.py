@@ -15,66 +15,41 @@ def get_dashboard_summary_data():
     assignment_status = get_assignment_status()
     budget_summary = get_budget_summary()
     entity_counts = get_entity_counts()
+    student_summary = _build_student_summary(entity_counts)
 
     return {
         "assignment_status": assignment_status,
+        "student_summary": student_summary,
         "budget_summary": budget_summary,
         "entity_counts": entity_counts,
     }
 
 
-def get_assignment_status():
+def _build_student_summary(entity_counts):
     """
-    Calculates assignment status by practicum type.
-    Uses aggregate_demand service for demand calculation.
-    Assigned/unassigned slots are calculated from actual Assignment records.
+    Builds student summary from entity counts for frontend compatibility.
     """
-    demand_data = aggregate_demand()
-
-    # Aggregate demand by practicum type (sum across all programs and subjects)
-    practicum_totals = {}
-    for entry in demand_data:
-        ptype = entry["practicum_type"]
-        required = entry["required_slots"]
-
-        if ptype not in practicum_totals:
-            practicum_totals[ptype] = 0
-        practicum_totals[ptype] += required
-
-    # Build assignment status with real assignment data
-    return build_assignment_status_list(practicum_totals)
+    return {
+        "total_students": entity_counts.get("total_students", 0),
+        "assigned_students": entity_counts.get("placed_students", 0),
+        "unassigned_students": entity_counts.get("unplaced_students", 0),
+    }
 
 
-def build_assignment_status_list(practicum_totals):
+def get_student_summary():
     """
-    Builds the assignment status list using real assignment data.
+    Calculates total students, assigned students, and unassigned students.
+    Returns a dictionary with student assignment statistics.
     """
-    assignment_status = []
+    total_students = Student.objects.count()
+    assigned_students = Student.objects.filter(placement_status="PLACED").count()
+    unassigned_students = Student.objects.filter(placement_status="UNPLACED").count()
 
-    assignment_counts = Assignment.objects.values("practicum_type__code").annotate(
-        count=Count("id")
-    )
-
-    assigned_by_type = {}
-    for item in assignment_counts:
-        ptype_code = item["practicum_type__code"]
-        assigned_by_type[ptype_code] = item["count"]
-
-    for ptype in ["PDP_I", "PDP_II", "SFP", "ZSP"]:
-        demand = practicum_totals.get(ptype, 0)
-        assigned = assigned_by_type.get(ptype, 0)
-        unassigned = max(0, demand - assigned)
-
-        assignment_status.append(
-            {
-                "practicum_type": ptype.replace("_", " "),
-                "demand_slots": demand,
-                "assigned_slots": assigned,
-                "unassigned_slots": unassigned,
-            }
-        )
-
-    return assignment_status
+    return {
+        "total_students": total_students,
+        "assigned_students": assigned_students,
+        "unassigned_students": unassigned_students,
+    }
 
 
 def get_budget_summary():
@@ -144,3 +119,62 @@ def get_entity_counts():
     )
 
     return {**student_stats, **pl_stats}
+
+
+def get_assignment_status():
+    """
+    Calculates assignment status for all practicum types.
+    Returns a list of dictionaries with demand, assigned, and unassigned slots.
+    """
+    demand_list = aggregate_demand()
+    practicum_totals = _convert_demand_to_totals(demand_list)
+    return build_assignment_status_list(practicum_totals)
+
+
+def _convert_demand_to_totals(demand_list):
+    """
+    Converts demand list from aggregate_demand() to dict of totals by practicum type.
+    """
+    totals = {}
+    for item in demand_list:
+        ptype = item.get("practicum_type", "")
+        count = item.get("required_slots", 0)
+        totals[ptype] = totals.get(ptype, 0) + count
+    return totals
+
+
+def build_assignment_status_list(practicum_totals):
+    """
+    Builds assignment status list from practicum totals.
+    Applies real assignment data from database.
+    """
+    practicum_types = {
+        "PDP_I": "PDP I",
+        "PDP_II": "PDP II",
+        "SFP": "SFP",
+        "ZSP": "ZSP",
+    }
+
+    result = []
+    for code, display_name in practicum_types.items():
+        demand_slots = practicum_totals.get(code, 0)
+        assigned_slots = _get_assigned_slots(code)
+        unassigned_slots = max(0, demand_slots - assigned_slots)
+
+        result.append(
+            {
+                "practicum_type": display_name,
+                "demand_slots": demand_slots,
+                "assigned_slots": assigned_slots,
+                "unassigned_slots": unassigned_slots,
+            }
+        )
+
+    return result
+
+
+def _get_assigned_slots(practicum_type_code):
+    """
+    Helper: Gets count of assigned slots for a practicum type.
+    """
+    return Assignment.objects.filter(practicum_type__code=practicum_type_code).count()

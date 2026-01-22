@@ -607,10 +607,11 @@ class DashboardServicesEdgeCasesTestCase(TestCase):
 
         # Verify structure
         self.assertIsInstance(summary, dict)
-        self.assertEqual(len(summary.keys()), 3)
+        self.assertEqual(len(summary.keys()), 4)
 
         # Verify all sections have data
         self.assertIsInstance(summary["assignment_status"], list)
+        self.assertIsInstance(summary["student_summary"], dict)
         self.assertIsInstance(summary["budget_summary"], dict)
         self.assertIsInstance(summary["entity_counts"], dict)
 
@@ -1099,6 +1100,11 @@ class SerializerTestCase(TestCase):
                     "unassigned_slots": 0,
                 }
             ],
+            "student_summary": {
+                "total_students": 1000,
+                "assigned_students": 950,
+                "unassigned_students": 50,
+            },
             "budget_summary": {
                 "total_budget": 210,
                 "distributed_gs": 100,
@@ -1138,6 +1144,11 @@ class SerializerTestCase(TestCase):
                     "unassigned_slots": 2,
                 },
             ],
+            "student_summary": {
+                "total_students": 1000,
+                "assigned_students": 950,
+                "unassigned_students": 50,
+            },
             "budget_summary": {
                 "total_budget": 210,
                 "distributed_gs": 100,
@@ -1168,6 +1179,11 @@ class SerializerTestCase(TestCase):
         """
         data = {
             "assignment_status": [],
+            "student_summary": {
+                "total_students": 0,
+                "assigned_students": 0,
+                "unassigned_students": 0,
+            },
             "budget_summary": {
                 "total_budget": 210,
                 "distributed_gs": 0,

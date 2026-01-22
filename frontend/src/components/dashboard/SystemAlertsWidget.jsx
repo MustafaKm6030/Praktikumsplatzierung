@@ -7,22 +7,24 @@ import WidgetContainer from './WidgetContainer';
  * Widget 3: System Alerts
  * Shows actionable alerts only
  */
-const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityCounts = {} }) => {
+const SystemAlertsWidget = ({ studentSummary = {}, budgetSummary = {}, entityCounts = {} }) => {
     const alerts = [];
 
-    // Check for unplaced students
-    const unplacedStudents = entityCounts.unplaced_students || 0;
-    if (unplacedStudents > 0) {
+    // Check for unassigned students
+    const unassignedStudents = studentSummary.unassigned_students || 0;
+    const totalStudents = studentSummary.total_students || 0;
+    
+    if (unassignedStudents > 0) {
         alerts.push({
             severity: 'error',
             icon: <ErrorIcon />,
-            message: `${unplacedStudents} nicht platzierte Studierende benötigen Aufmerksamkeit`,
+            message: `${unassignedStudents} nicht zugewiesene Studierende benötigen Aufmerksamkeit`,
         });
-    } else if (unplacedStudents === 0 && entityCounts.total_students > 0) {
+    } else if (unassignedStudents === 0 && totalStudents > 0) {
         alerts.push({
             severity: 'success',
             icon: <SuccessIcon />,
-            message: 'Alle Studierenden erfolgreich platziert',
+            message: 'Alle Studierenden erfolgreich zugewiesen',
         });
     }
 
@@ -42,24 +44,8 @@ const SystemAlertsWidget = ({ assignmentStatus = [], budgetSummary = {}, entityC
         });
     }
 
-    // Check for unassigned slots
-    const totalUnassigned = assignmentStatus.reduce((sum, item) => sum + (item.unassigned_slots || 0), 0);
-    if (totalUnassigned === 0 && assignmentStatus.length > 0) {
-        alerts.push({
-            severity: 'success',
-            icon: <SuccessIcon />,
-            message: 'Alle Praktika vollständig zugewiesen',
-        });
-    } else if (totalUnassigned > 0) {
-        alerts.push({
-            severity: 'warning',
-            icon: <WarningIcon />,
-            message: `${totalUnassigned} Plätze nicht zugewiesen über alle Praktikumstypen`,
-        });
-    }
-
     // Check overall allocation success
-    if (unplacedStudents === 0 && totalUnassigned === 0 && remainingBudget >= 0 && assignmentStatus.length > 0) {
+    if (unassignedStudents === 0 && remainingBudget >= 0 && totalStudents > 0) {
         alerts.push({
             severity: 'success',
             icon: <SuccessIcon />,

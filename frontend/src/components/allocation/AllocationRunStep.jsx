@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, LinearProgress, Grid, Alert } from '@mui/material';
-import { PlayArrow, CheckCircle, Warning } from '@mui/icons-material';
+import { Box, Typography, Paper, LinearProgress, Alert } from '@mui/material';
+import { PlayArrow } from '@mui/icons-material';
 import Button from '../ui/Button';
-import KPICard from '../dashboard/KPICard';
 import allocationService from '../../api/allocationService';
 
 const AllocationRunStep = ({ onComplete }) => {
     const [status, setStatus] = useState('idle');
     const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState([]);
-    const [results, setResults] = useState(null);
 
     const updateProgress = (step, message) => {
         setLogs(prev => [...prev, message]);
@@ -28,25 +26,14 @@ const AllocationRunStep = ({ onComplete }) => {
             updateProgress(4, "Optimierungsalgorithmus läuft...");
 
             const response = await allocationService.runAutoAllocation({});
-            const solverResult = response.data;
 
             updateProgress(5, "Zuordnungen werden finalisiert...");
 
-            const totalAssignments = solverResult.total_assignments || 0;
-            const totalUnassigned = solverResult.total_unassigned || 0;
-            const totalMentors = totalAssignments + totalUnassigned;
-            const matchRate = totalMentors > 0
-                ? Math.round((totalAssignments / totalMentors) * 100)
-                : 0;
-
-            setResults({
-                matchRate: `${matchRate}%`,
-                unmatchedCount: totalUnassigned,
-                totalAssignments: totalAssignments,
-                status: solverResult.status
-            });
             setStatus('complete');
             setProgress(100);
+
+            // Automatically navigate to results page with solver data
+            onComplete(response.data);
 
         } catch (err) {
             console.error('Allocation error:', err);
@@ -125,51 +112,9 @@ const AllocationRunStep = ({ onComplete }) => {
         );
     }
 
-    // --- RENDER: 3. COMPLETE STATE (Results Summary) ---
-    return (
-        <Box>
-            <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
-                Zuteilungsergebnisse - Zusammenfassung
-            </Typography>
-
-            <Grid container spacing={3} sx={{ mb: 6 }}>
-                <Grid item xs={12} md={4}>
-                    <KPICard
-                        label="Erfolgsquote"
-                        value={results.matchRate}
-                        icon={<CheckCircle />}
-                        color="#10b981"
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <KPICard
-                        label="Gesamtzuweisungen"
-                        value={results.totalAssignments || 0}
-                        icon={<CheckCircle />}
-                        color="#3b82f6"
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <KPICard
-                        label="Nicht zugewiesene Lehrkräfte"
-                        value={results.unmatchedCount || 0}
-                        icon={<Warning />}
-                        color="#dc2626"
-                    />
-                </Grid>
-            </Grid>
-
-            <Box sx={{ textAlign: 'center' }}>
-                <Button
-                    onClick={onComplete} // Moves to Step 3 (Review)
-                    size="large"
-                    variant="primary"
-                >
-                    Entwurfszuteilung überprüfen
-                </Button>
-            </Box>
-        </Box>
-    );
+    // --- RENDER: 3. COMPLETE STATE (Auto-navigate, no UI) ---
+    // Status complete triggers automatic navigation via onComplete() call above
+    return null;
 };
 
 export default AllocationRunStep;

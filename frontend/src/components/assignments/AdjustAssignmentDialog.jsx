@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, 
-    Button, Select, MenuItem, FormControl, InputLabel, 
+    Select, MenuItem, FormControl, InputLabel, 
     Checkbox, FormControlLabel, Typography, Alert, Box 
 } from '@mui/material';
+import Button from '../ui/Button';
 
 const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -80,30 +81,71 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
     if (!open) return null;
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>
-                Adjust Assignments for {data ? data.mentor_name : 'Loading...'}
+        <Dialog 
+            open={open} 
+            onClose={onClose} 
+            fullWidth 
+            maxWidth="sm"
+            PaperProps={{
+                sx: {
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+                }
+            }}
+        >
+            <DialogTitle sx={{ 
+                fontWeight: 700, 
+                color: '#1f2937',
+                borderBottom: '1px solid #e5e7eb',
+                pb: 2
+            }}>
+                Zuweisungen anpassen für {data ? data.mentor_name : 'Lädt...'}
             </DialogTitle>
             
-            <DialogContent dividers>
-                {loading && <Typography>Loading data...</Typography>}
+            <DialogContent dividers sx={{ 
+                borderTop: 'none',
+                borderBottom: '1px solid #e5e7eb',
+                bgcolor: '#fafafa',
+                py: 3
+            }}>
+                {loading && (
+                    <Typography sx={{ color: '#6b7280', textAlign: 'center', py: 2 }}>
+                        Daten werden geladen...
+                    </Typography>
+                )}
                 
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                 {!loading && data && selections.map((selection, index) => (
                     <Box key={index} sx={{ mb: 3 }}>
-                        <Typography variant="subtitle2" gutterBottom>Slot {index + 1}</Typography>
-                        <FormControl fullWidth size="small">
-                            <InputLabel id={`slot-label-${index}`}>Assignment</InputLabel>
+                        <Typography 
+                            variant="subtitle2" 
+                            gutterBottom 
+                            sx={{ fontWeight: 600, color: '#374151', mb: 1 }}
+                        >
+                            Slot {index + 1}
+                        </Typography>
+                        <FormControl 
+                            fullWidth 
+                            size="small"
+                            sx={{
+                                bgcolor: 'white',
+                                borderRadius: '8px',
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '8px'
+                                }
+                            }}
+                        >
+                            <InputLabel id={`slot-label-${index}`}>Zuweisung</InputLabel>
                             <Select
                                 labelId={`slot-label-${index}`}
-                                label="Assignment"
+                                label="Zuweisung"
                                 value={JSON.stringify(selection)}
                                 onChange={(e) => handleSelectionChange(index, e.target.value)}
                             >
                                 {/* Option to clear the slot */}
                                 <MenuItem value={JSON.stringify({ practicum_type: '', subject_code: '' })}>
-                                    <em>(Empty / Unassigned)</em>
+                                    <em>(Leer / Nicht zugewiesen)</em>
                                 </MenuItem>
                                 
                                 {/* Legal options from backend */}
@@ -121,28 +163,55 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
                 ))}
 
                 {!loading && data && (
-                    <FormControlLabel
-                        control={
-                            <Checkbox 
-                                checked={forceOverride} 
-                                onChange={(e) => setForceOverride(e.target.checked)} 
-                                color="error" 
-                            />
-                        }
-                        label={
-                            <Typography variant="body2" color="error">
-                                Force Override (Ignore warnings like duplicate subjects)
-                            </Typography>
-                        }
-                        sx={{ mt: 2 }}
-                    />
+                    <Box sx={{ 
+                        mt: 3, 
+                        p: 2, 
+                        bgcolor: '#fef2f2', 
+                        borderRadius: '8px',
+                        border: '1px solid #fecaca'
+                    }}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox 
+                                    checked={forceOverride} 
+                                    onChange={(e) => setForceOverride(e.target.checked)} 
+                                    sx={{
+                                        color: '#dc2626',
+                                        '&.Mui-checked': {
+                                            color: '#dc2626'
+                                        }
+                                    }}
+                                />
+                            }
+                            label={
+                                <Typography variant="body2" sx={{ color: '#991b1b', fontWeight: 500 }}>
+                                    Überschreibung erzwingen (Warnungen wie doppelte Fächer ignorieren)
+                                </Typography>
+                            }
+                        />
+                    </Box>
                 )}
             </DialogContent>
 
-            <DialogActions>
-                <Button onClick={onClose} color="inherit">Cancel</Button>
-                <Button onClick={handleSave} variant="contained" color="primary">
-                    Save Changes
+            <DialogActions sx={{ 
+                px: 3, 
+                py: 2,
+                borderTop: '1px solid #e5e7eb',
+                bgcolor: 'white'
+            }}>
+                <Button 
+                    onClick={onClose} 
+                    variant="secondary"
+                    disabled={loading}
+                >
+                    Abbrechen
+                </Button>
+                <Button 
+                    onClick={handleSave} 
+                    variant="primary"
+                    disabled={loading}
+                >
+                    Änderungen speichern
                 </Button>
             </DialogActions>
         </Dialog>
