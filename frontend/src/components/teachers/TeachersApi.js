@@ -218,11 +218,11 @@ export const importTeachersCSV = async (file) => {
 };
 
 /**
- * Export teachers to CSV
+ * Export teachers to Excel (.xlsx)
  */
 export const exportTeachersCSV = async () => {
     try {
-        const response = await fetch(`${BASE_URL}/pls/export/`, {
+        const response = await fetch(`${BASE_URL}/pls/export_xlsx/`, {
             credentials: 'include',
         });
 
@@ -234,7 +234,7 @@ export const exportTeachersCSV = async () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'pls_export.csv';
+        link.download = 'pls_export.xlsx';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

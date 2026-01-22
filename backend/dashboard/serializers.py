@@ -3,14 +3,13 @@
 from rest_framework import serializers
 
 
-class AssignmentStatusSerializer(serializers.Serializer):
+class StudentSummarySerializer(serializers.Serializer):
     """
-    Serializer for individual assignment status by practicum type.
+    Serializer for student summary data.
     """
-    practicum_type = serializers.CharField()
-    demand_slots = serializers.IntegerField()
-    assigned_slots = serializers.IntegerField()
-    unassigned_slots = serializers.IntegerField()
+    total_students = serializers.IntegerField()
+    assigned_students = serializers.IntegerField()
+    unassigned_students = serializers.IntegerField()
 
 
 class BudgetSummarySerializer(serializers.Serializer):
@@ -44,7 +43,7 @@ class DashboardSummarySerializer(serializers.Serializer):
     Main serializer for the complete dashboard summary response.
     Validates and structures the final JSON output for the dashboard API.
     """
-    assignment_status = AssignmentStatusSerializer(many=True)
+    student_summary = StudentSummarySerializer()
     budget_summary = BudgetSummarySerializer()
     entity_counts = EntityCountsSerializer()
 

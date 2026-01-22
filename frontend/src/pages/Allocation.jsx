@@ -18,6 +18,7 @@ const STEPS = [
 export default function Allocation() {
 
     const [activeStep, setActiveStep] = useState(0);
+    const [solverResults, setSolverResults] = useState(null);
 
     useEffect(() => {
         const checkExistingAssignments = async () => {
@@ -35,7 +36,11 @@ export default function Allocation() {
         checkExistingAssignments();
     }, []);
 
-    const handleStepComplete = () => {
+    const handleStepComplete = (data) => {
+        // Store solver results if provided
+        if (data) {
+            setSolverResults(data);
+        }
         setActiveStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : 0));
     };
 
@@ -81,6 +86,7 @@ export default function Allocation() {
                         <AllocationResultsStep 
                             onComplete={handleStepComplete}
                             onReset={() => setActiveStep(0)}
+                            solverResults={solverResults}
                         />
                     )}
 

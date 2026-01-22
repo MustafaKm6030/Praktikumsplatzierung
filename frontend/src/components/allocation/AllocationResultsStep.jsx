@@ -14,7 +14,7 @@ import allocationService from '../../api/allocationService';
 import AdjustAssignmentDialog from '../assignments/AdjustAssignmentDialog';
 import KPICard from '../dashboard/KPICard';
 
-const AllocationResultsStep = ({ onComplete, onReset }) => {
+const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ const AllocationResultsStep = ({ onComplete, onReset }) => {
 
     useEffect(() => {
         fetchAssignments();
-    }, []);
+    }, [solverResults]);
 
     const fetchAssignments = async () => {
         try {
@@ -51,12 +51,24 @@ const AllocationResultsStep = ({ onComplete, onReset }) => {
             setAssignments(assignmentData);
             
             // Calculate statistics
-            const totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
-            const totalUnassigned = assignmentData.filter(a => a.status === 'unallocated').length;
-            const totalMentors = totalAssigned + totalUnassigned;
-            const matchRate = totalMentors > 0
-                ? Math.round((totalAssigned / totalMentors) * 100)
-                : 0;
+            // Use solver results if available, otherwise calculate from assignments
+            let totalAssigned, totalUnassigned, matchRate;
+            
+            if (solverResults) {
+                totalAssigned = solverResults.total_assignments || 0;
+                totalUnassigned = solverResults.total_unassigned || 0;
+                const totalMentors = totalAssigned + totalUnassigned;
+                matchRate = totalMentors > 0
+                    ? Math.round((totalAssigned / totalMentors) * 100)
+                    : 0;
+            } else {
+                totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
+                totalUnassigned = assignmentData.filter(a => a.status === 'unallocated').length;
+                const totalMentors = totalAssigned + totalUnassigned;
+                matchRate = totalMentors > 0
+                    ? Math.round((totalAssigned / totalMentors) * 100)
+                    : 0;
+            }
             
             setStats({
                 matchRate: `${matchRate}%`,

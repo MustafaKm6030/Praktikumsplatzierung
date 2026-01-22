@@ -15,6 +15,7 @@ from .services import (
     get_pls_by_subject,
     import_pls_from_csv,
     export_pls_to_csv,
+    export_pls_to_xlsx,
 )
 from assignments.models import Assignment
 from assignments.services import calculate_eligibility_for_pl
@@ -224,6 +225,22 @@ class PLViewSet(viewsets.ModelViewSet):
 
         csv_data = export_pls_to_csv()
         response.write(csv_data)
+
+        return response
+
+    @action(detail=False, methods=["get"])
+    def export_xlsx(self, request):
+        """
+        GET /api/pls/export_xlsx/ - Export PLs to Excel (.xlsx).
+        Business Logic: Generates Excel file with all PLs data.
+        """
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="pls_export.xlsx"'
+
+        xlsx_data = export_pls_to_xlsx()
+        response.write(xlsx_data.getvalue())
 
         return response
 

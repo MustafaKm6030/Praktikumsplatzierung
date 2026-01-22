@@ -362,3 +362,60 @@ def _get_pl_row(pl):
         pl.created_at.isoformat() if pl.created_at else "",
         pl.updated_at.isoformat() if pl.updated_at else "",
     ]
+
+
+def export_pls_to_xlsx():
+    """
+    Business Logic: Exports all PLs to Excel (.xlsx) format.
+    Returns BytesIO object containing Excel file data.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    import io
+
+    # Create workbook and active sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Praktikumslehrkräfte"
+
+    # Write headers with styling
+    headers = _get_pl_csv_headers()
+    ws.append(headers)
+    
+    # Style header row
+    header_fill = PatternFill(start_color="F8971C", end_color="F8971C", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+
+    # Fetch and write data rows
+    pls = (
+        PraktikumsLehrkraft.objects.all()
+        .select_related("school", "main_subject")
+        .prefetch_related("available_praktikum_types", "available_subjects")
+        .order_by("last_name", "first_name")
+    )
+    
+    for pl in pls:
+        ws.append(_get_pl_row(pl))
+
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Save to BytesIO
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return output
