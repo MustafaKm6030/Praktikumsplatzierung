@@ -1,8 +1,13 @@
-from .models import School
-from praktikums_lehrkraft.models import PraktikumsLehrkraft
+import time
+import csv
+import io
+import openpyxl 
+from io import BytesIO  
+from django.db import transaction
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
-import time
+from .models import School
+from praktikums_lehrkraft.models import PraktikumsLehrkraft
 
 
 class GeocodingConnectionError(Exception):
@@ -38,10 +43,6 @@ def get_school_capacity(school_id: int) -> dict:
 def get_schools_for_wednesday_praktika():
     """
     Returns all schools that are logistically feasible for Wednesday internships (SFP/ZSP).
-
-    Business Logic (from slides):
-    - Must be in Zone 1 or Zone 2.
-    - Must have a valid ÖPNV code ('4a' or '4b').
     """
     return School.objects.filter(
         zone__in=[1, 2], opnv_code__in=["4a", "4b"], is_active=True
@@ -53,20 +54,15 @@ def get_reachable_schools(praktikum_type_code: str):
     Returns a queryset of schools that are logistically reachable for a given
     internship type, based on Zone and ÖPNV rules.
     """
-
     # Rule for Block Internships (PDP I, PDP II)
-    # All active schools in any zone are considered reachable.
-    # The 'heimatnah' (close to home) logic is a soft constraint handled later by the solver.
     if praktikum_type_code in ["PDP_I", "PDP_II"]:
         return School.objects.filter(is_active=True)
 
     # Rule for Wednesday Internships (SFP, ZSP)
-    # These have strict constraints based on the project briefing.
     if praktikum_type_code in ["SFP", "ZSP"]:
         return School.objects.filter(
             is_active=True,
             zone__in=[1, 2],
-            # opnv_code__in=["4a", "4b"]
         )
 
     # For any other or unknown type, return an empty queryset
@@ -78,10 +74,6 @@ def import_schools_from_csv(file_obj):
     Business Logic: Imports schools from CSV file.
     Creates or updates schools based on name as unique identifier.
     """
-    import csv
-    import io
-    from django.db import transaction
-
     decoded_file = file_obj.read().decode("utf-8")
     io_string = io.StringIO(decoded_file)
     reader = csv.DictReader(io_string)
@@ -131,72 +123,62 @@ def _build_school_data(row):
         "longitude": float(row.get("longitude", 0)) if row.get("longitude") else None,
     }
 
+# ---------------------------------------------------------
+# EXCEL EXPORT LOGIC
+# ---------------------------------------------------------
 
-def export_schools_to_csv():
+def export_schools_to_excel():
     """
-    Business Logic: Exports all schools to CSV format.
-    Returns CSV string content ready for download.
+    Generates an Excel file containing all schools.
+    Returns: BytesIO buffer containing the .xlsx file
     """
-    import csv
-    import io
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Schools'
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Define headers
+    headers = [
+        'ID', 'Name', 'Type', 'City', 'District', 'Zone', 
+        'Opnv Code', 'Distance (km)', 'Active', 'Notes', 
+        'Latitude', 'Longitude'
+    ]
+    worksheet.append(headers)
 
-    writer.writerow(_get_school_csv_headers())
+    # Fetch data
+    schools = School.objects.all().order_by('name')
 
-    schools = School.objects.all().order_by("name")
     for school in schools:
-        writer.writerow(_get_school_row(school))
+        row = [
+            school.id,
+            school.name,
+            school.school_type,
+            school.city,
+            school.district,
+            school.zone,
+            school.opnv_code,
+            school.distance_km,
+            'Yes' if school.is_active else 'No',
+            school.notes,
+            school.latitude,
+            school.longitude
+        ]
+        worksheet.append(row)
 
-    return output.getvalue()
-
-
-def _get_school_csv_headers():
-    """Helper: Returns CSV header row for schools."""
-    return [
-        "id",
-        "name",
-        "school_type",
-        "city",
-        "district",
-        "zone",
-        "opnv_code",
-        "distance_km",
-        "is_active",
-        "notes",
-        "latitude",
-        "longitude",
-        "created_at",
-        "updated_at",
-    ]
+    # Save to buffer
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 
-def _get_school_row(school):
-    """Helper: Formats a School instance as CSV row."""
-    return [
-        school.id,
-        school.name,
-        school.school_type,
-        school.city,
-        school.district,
-        school.zone,
-        school.opnv_code,
-        school.distance_km,
-        school.is_active,
-        school.notes or "",
-        school.latitude or "",
-        school.longitude or "",
-        school.created_at.isoformat() if school.created_at else "",
-        school.updated_at.isoformat() if school.updated_at else "",
-    ]
-
+# ---------------------------------------------------------
+# GEOCODING LOGIC
+# ---------------------------------------------------------
 
 def geocode_school(school):
     """
     Attempts to find lat/lon for a single school object using geopy.
     """
-    # 1. Check prerequisites (missing fields, already done, etc.)
     should_stop, result = _check_geocoding_prerequisites(school)
     if should_stop:
         return result
@@ -210,11 +192,7 @@ def geocode_school(school):
         return _process_geocoding_result(school, location)
 
     except Exception as e:
-        # Consolidates all error handling (Service, OS, and Generic)
         return _handle_geocoding_exception(school, e)
-
-
-# --- Helper Methods ---
 
 
 def _check_geocoding_prerequisites(school):
@@ -272,14 +250,6 @@ def _update_school_status(school, status, fields=None):
 def geocode_schools_batch(schools_queryset=None, delay_between_requests=1):
     """
     Geocodes multiple schools in batch with rate limiting.
-    Stops processing if connection is lost.
-
-    Args:
-        schools_queryset: QuerySet of schools to geocode. If None, geocodes all pending schools.
-        delay_between_requests: Delay in seconds between geocoding requests
-
-    Returns:
-        dict: Statistics about the geocoding operation, including connection_error if applicable
     """
     if schools_queryset is None:
         schools_queryset = School.objects.filter(

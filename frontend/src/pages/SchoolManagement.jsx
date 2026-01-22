@@ -9,7 +9,7 @@ import SchoolFormDialog from '../components/school_management/SchoolFormDialog';
 import SchoolViewDialog from '../components/school_management/SchoolViewDialog';
 import Loader from '../components/ui/Loader';
 import MapView from "../components/school_management/MapView";
-import { exportSchoolsCSV, importSchoolsCSV, deleteSchool, runGeocodingTask } from '../components/school_management/SchoolsApi';
+import { exportSchoolsExcel, importSchoolsCSV, deleteSchool, runGeocodingTask } from '../components/school_management/SchoolsApi';
 
 /**
  * Main School Management Component
@@ -88,17 +88,19 @@ const SchoolManagement = () => {
                 console.error('Import error:', error);
                 showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
             }
+            e.target.value = '';
         };
         input.click();
     };
 
     const handleExportSchoolList = async () => {
         try {
-            await exportSchoolsCSV();
+            await exportSchoolsExcel();
             showNotification('Schulliste erfolgreich exportiert', 'success');
         } catch (error) {
             console.error('Export error:', error);
-            showNotification(`Export fehlgeschlagen: ${error.message}`, 'error');
+            const msg = error.message || "Excel-Export fehlgeschlagen";
+            showNotification(msg, 'error');
         }
     };
 
@@ -180,8 +182,6 @@ const SchoolManagement = () => {
             <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
                 <Alert severity="error" sx={{ mb: 3 }}>
                     Fehler beim Laden der Schulen: {error}
-                    <br />
-                    Stellen Sie sicher, dass das Backend läuft und CORS richtig konfiguriert ist.
                 </Alert>
             </Box>
         );
