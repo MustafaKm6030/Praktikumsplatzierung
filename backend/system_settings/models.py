@@ -3,6 +3,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from subjects.models import TimeStampedModel
 
 
+def default_core_subjects():
+    return ["D", "MA"]
+
+
 class SystemSettings(TimeStampedModel):
     """
     System-wide configuration and settings.
@@ -54,6 +58,10 @@ class SystemSettings(TimeStampedModel):
     is_active = models.BooleanField(
         default=True,
         help_text="Is this the active academic year?"
+    )
+    core_subjects = models.JSONField(
+        default=default_core_subjects,
+        help_text="List of core subject codes (e.g., ['D', 'MA'])"
     )
     
     class Meta:

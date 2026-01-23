@@ -16,7 +16,8 @@ def get_active_settings():
             gs_budget_percentage=80.48,
             ms_budget_percentage=19.52,
             university_name='Universität Passau',
-            is_active=True
+            is_active=True,
+            core_subjects=["D", "MA"]
         )
     
     return settings

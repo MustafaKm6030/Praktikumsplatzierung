@@ -22,7 +22,8 @@ class SystemSettingsModelTests(TestCase):
             university_name='Universität Passau',
             contact_email='test@uni-passau.de',
             contact_phone='+49851509',
-            is_active=True
+            is_active=True,
+            core_subjects=['D', 'MA']
         )
     
     def test_settings_creation(self):
@@ -57,6 +58,29 @@ class SystemSettingsModelTests(TestCase):
     def test_university_default_name(self):
         """Test default university name."""
         self.assertEqual(self.settings.university_name, 'Universität Passau')
+    
+    def test_core_subjects_field(self):
+        """Test core_subjects field can be set and retrieved."""
+        self.assertEqual(self.settings.core_subjects, ['D', 'MA'])
+        self.assertIsInstance(self.settings.core_subjects, list)
+    
+    def test_core_subjects_default(self):
+        """Test core_subjects default value."""
+        new_settings = SystemSettings.objects.create(
+            current_academic_year='2025/2026',
+            total_anrechnungsstunden_budget=210.0,
+            gs_budget_percentage=80.0,
+            ms_budget_percentage=20.0,
+            is_active=False
+        )
+        self.assertEqual(new_settings.core_subjects, ['D', 'MA'])
+    
+    def test_core_subjects_can_be_updated(self):
+        """Test core_subjects can be updated."""
+        self.settings.core_subjects = ['D', 'MA', 'E']
+        self.settings.save()
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.core_subjects, ['D', 'MA', 'E'])
 
 
 class SystemSettingsAPITests(APITestCase):
@@ -86,7 +110,8 @@ class SystemSettingsAPITests(APITestCase):
             gs_budget_percentage=80.0,
             ms_budget_percentage=20.0,
             university_name='Universität Passau',
-            is_active=False
+            is_active=False,
+            core_subjects=['D']
         )
     
     def test_get_active_settings(self):
@@ -95,6 +120,8 @@ class SystemSettingsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['current_academic_year'], '2024/2025')
         self.assertTrue(response.data['is_active'])
+        self.assertIn('core_subjects', response.data)
+        self.assertEqual(response.data['core_subjects'], ['D', 'MA'])
     
     def test_get_specific_settings(self):
         """Test GET /api/settings/{id}/ - Retrieve specific settings."""
@@ -110,12 +137,14 @@ class SystemSettingsAPITests(APITestCase):
             'gs_budget_percentage': 81.0,
             'ms_budget_percentage': 19.0,
             'university_name': 'Universität Passau',
-            'is_active': False
+            'is_active': False,
+            'core_subjects': ['D', 'MA', 'E']
         }
         response = self.client.post('/api/settings/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SystemSettings.objects.count(), 3)
         self.assertEqual(response.data['current_academic_year'], '2025/2026')
+        self.assertEqual(response.data['core_subjects'], ['D', 'MA', 'E'])
     
     def test_update_settings(self):
         """Test PUT /api/settings/{id}/ - Update settings."""
@@ -147,6 +176,51 @@ class SystemSettingsAPITests(APITestCase):
         self.assertEqual(self.settings1.contact_phone, '+49851509999')
         # Other fields should remain unchanged
         self.assertEqual(self.settings1.current_academic_year, '2024/2025')
+    
+    def test_update_core_subjects(self):
+        """Test PATCH /api/settings/{id}/ - Update core_subjects."""
+        data = {
+            'core_subjects': ['D', 'MA', 'E', 'MU']
+        }
+        response = self.client.patch(f'/api/settings/{self.settings1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.settings1.refresh_from_db()
+        self.assertEqual(self.settings1.core_subjects, ['D', 'MA', 'E', 'MU'])
+        self.assertEqual(response.data['core_subjects'], ['D', 'MA', 'E', 'MU'])
+    
+    def test_core_subjects_validation_must_be_list(self):
+        """Test core_subjects validation - must be a list."""
+        data = {
+            'core_subjects': 'D, MA'
+        }
+        response = self.client.patch(f'/api/settings/{self.settings1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_core_subjects_validation_must_be_strings(self):
+        """Test core_subjects validation - must contain strings."""
+        data = {
+            'core_subjects': ['D', 123, 'MA']
+        }
+        response = self.client.patch(f'/api/settings/{self.settings1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_core_subjects_validation_no_empty_strings(self):
+        """Test core_subjects validation - cannot contain empty strings."""
+        data = {
+            'core_subjects': ['D', '', 'MA']
+        }
+        response = self.client.patch(f'/api/settings/{self.settings1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_core_subjects_can_be_empty_list(self):
+        """Test core_subjects can be an empty list."""
+        data = {
+            'core_subjects': []
+        }
+        response = self.client.patch(f'/api/settings/{self.settings1.id}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.settings1.refresh_from_db()
+        self.assertEqual(self.settings1.core_subjects, [])
     
     def test_delete_inactive_settings(self):
         """Test DELETE /api/settings/{id}/ - Delete inactive settings."""
