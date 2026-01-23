@@ -62,4 +62,20 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid year format")
         
         return value
+    
+    def validate_core_subjects(self, value):
+        """
+        Validate core subjects format.
+        Business Logic: Must be a list of strings (subject codes).
+        """
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Core subjects must be a list")
+        
+        for item in value:
+            if not isinstance(item, str):
+                raise serializers.ValidationError("All core subjects must be strings (subject codes)")
+            if not item.strip():
+                raise serializers.ValidationError("Core subjects cannot contain empty strings")
+        
+        return value
 

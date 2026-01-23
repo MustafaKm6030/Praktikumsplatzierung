@@ -1,8 +1,10 @@
 from django.test import TestCase
+from rest_framework.test import APITestCase, APIClient
+from rest_framework import status
 from .models import Subject, PraktikumType
 
 # Import the new, specific functions to be tested
-from .services import get_subject_code, get_subject_display_name
+from .services import get_subject_code, get_subject_display_name, get_all_subjects_from_rules
 
 
 class SubjectModelTests(TestCase):
@@ -149,3 +151,75 @@ class SubjectServicesTests(TestCase):
         self.assertEqual(
             get_subject_display_name("GS", "UNKNOWN_PRAKTIKUM", "Deutsch"), "Deutsch"
         )
+
+
+class GetAllSubjectsFromRulesTests(TestCase):
+    """Test cases for get_all_subjects_from_rules function."""
+
+    def test_returns_unique_subjects(self):
+        """Test that function returns unique subjects by code."""
+        subjects = get_all_subjects_from_rules()
+        
+        codes = [s['code'] for s in subjects]
+        self.assertEqual(len(codes), len(set(codes)))
+    
+    def test_subjects_have_required_fields(self):
+        """Test that all returned subjects have code, name, and display_name."""
+        subjects = get_all_subjects_from_rules()
+        
+        for subject in subjects:
+            self.assertIn('code', subject)
+            self.assertIn('name', subject)
+            self.assertIn('display_name', subject)
+            self.assertIsInstance(subject['code'], str)
+            self.assertIsInstance(subject['name'], str)
+            self.assertIsInstance(subject['display_name'], str)
+    
+    def test_contains_expected_subjects(self):
+        """Test that function returns expected subject codes."""
+        subjects = get_all_subjects_from_rules()
+        codes = [s['code'] for s in subjects]
+        
+        self.assertIn('D', codes)
+        self.assertIn('MA', codes)
+        self.assertIn('HSU', codes)
+        self.assertIn('SK/PuG', codes)
+    
+    def test_no_duplicate_codes(self):
+        """Test that no duplicate codes are returned."""
+        subjects = get_all_subjects_from_rules()
+        codes = [s['code'] for s in subjects]
+        
+        seen = set()
+        for code in codes:
+            self.assertNotIn(code, seen, f"Duplicate code found: {code}")
+            seen.add(code)
+
+
+class SubjectAPITests(APITestCase):
+    """Test cases for Subject API endpoints."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.client = APIClient()
+    
+    def test_get_subjects_from_rules_endpoint(self):
+        """Test GET /api/subjects/from_rules/ - Returns subjects from JSON."""
+        response = self.client.get('/api/subjects/from_rules/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        
+        if len(response.data) > 0:
+            subject = response.data[0]
+            self.assertIn('code', subject)
+            self.assertIn('name', subject)
+            self.assertIn('display_name', subject)
+    
+    def test_from_rules_returns_unique_subjects(self):
+        """Test that from_rules endpoint returns unique subjects."""
+        response = self.client.get('/api/subjects/from_rules/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        codes = [s['code'] for s in response.data]
+        self.assertEqual(len(codes), len(set(codes)))

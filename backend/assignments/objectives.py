@@ -1,20 +1,20 @@
 from collections import defaultdict
+from system_settings.services import get_active_settings
 
 
-def add_soft_subject_caps(model, assignment_vars, objective_terms):
+def add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects):
     """
     SOFT CONSTRAINT: 'Diminishing Returns'
     - The first N assignments are free (and earn bonuses).
     - The (N+1)th assignment triggers a massive penalty.
     """
     # 1. CONFIGURATION
-    STANDARD_CAP = 20  # Limit for Music, Sport, Art, etc.
-    CORE_CAP = 30  # Limit for Math (MA), German (D)
+    STANDARD_CAP = 20
+    CORE_CAP = 30
 
-    # Must be > (Specific Bonus + Scarcity Bonus) to stop assignment effectively
     OVERFLOW_PENALTY = -70
 
-    CORE_SUBJECTS = {"D", "MA"}
+    CORE_SUBJECTS = set(core_subjects) if core_subjects else {"D", "MA"}
 
     # 2. GROUP VARIABLES BY SUBJECT
     vars_by_subject = defaultdict(list)
@@ -50,7 +50,10 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     """
     objective_terms = []
 
-    # Configuration
+    settings = get_active_settings()
+    core_subjects_list = settings.core_subjects if settings.core_subjects else ["D", "MA"]
+    core_subjects_set = set(core_subjects_list)
+
     config = {
         "UTILIZATION_WEIGHT": 100,
         "DIVERSITY_WEIGHT": 70,
@@ -60,27 +63,22 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
         "SAME_SUBJECT_PENALTY": -35,
         "WEDNESDAY_BONUS": 30,
         "MIXED_TYPE_BONUS": 20,
-        "CORE_SUBJECTS": {"D", "MA"},
+        "CORE_SUBJECTS": core_subjects_set,
     }
 
-    # 1. Base Scores & Scarcity
     _add_individual_scores(objective_terms, assignment_vars, mentor_data, config)
 
-    # 2. School Diversity (Variety of types per school)
     _add_school_diversity_bonus(
         model, objective_terms, assignment_vars, mentor_data, config
     )
 
-    # 3. Mentor Variety (Avoid duplicate subjects for one mentor)
     _add_mentor_subject_penalty(model, objective_terms, assignment_vars, config)
 
-    # 4. Mentor Mixing (Reward taking both Block and Wednesday types)
     _add_mentor_mixing_bonus(
         model, objective_terms, assignment_vars, mentor_data, config
     )
 
-    # 5. Soft Caps (Diminishing returns)
-    add_soft_subject_caps(model, assignment_vars, objective_terms)
+    add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects_list)
 
     model.Maximize(sum(objective_terms))
 

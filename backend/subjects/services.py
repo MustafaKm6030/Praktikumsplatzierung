@@ -96,6 +96,28 @@ def get_active_subjects():
     return Subject.objects.filter(is_active=True)
 
 
+def get_all_subjects_from_rules():
+    """
+    Extract all unique subjects from subject_grouping_rules.json.
+    Returns a list of unique subjects with code and display_name.
+    """
+    subjects_dict = {}
+    
+    for school_type in _rules.values():
+        for praktikum_type in school_type.values():
+            for subject_name, rule in praktikum_type.items():
+                code = rule.get('code')
+                display_name = rule.get('display_name')
+                if code and display_name:
+                    subjects_dict[code] = {
+                        'code': code,
+                        'name': display_name,
+                        'display_name': display_name
+                    }
+    
+    return list(subjects_dict.values())
+
+
 def get_subjects_by_group(subject_group):
     """
     Get subjects filtered by subject group.

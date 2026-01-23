@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Subject, PraktikumType
 from .serializers import SubjectSerializer, PraktikumTypeSerializer
-from .services import get_filtered_subjects_for_assignment
+from .services import get_filtered_subjects_for_assignment, get_all_subjects_from_rules
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
@@ -50,6 +50,15 @@ class SubjectViewSet(viewsets.ModelViewSet):
             school_type=school_type
         )
         
+        return Response(subjects)
+    
+    @action(detail=False, methods=['get'])
+    def from_rules(self, request):
+        """
+        Get all unique subjects from subject_grouping_rules.json.
+        Returns subjects with code and display_name.
+        """
+        subjects = get_all_subjects_from_rules()
         return Response(subjects)
 
 

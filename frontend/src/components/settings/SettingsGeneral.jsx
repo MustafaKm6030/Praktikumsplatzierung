@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Paper, Box, Typography, Grid, Stack, Snackbar, Alert } from '@mui/material';
+import { Paper, Box, Typography, Grid, Stack, Snackbar, Alert, Autocomplete, TextField as MuiTextField } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import settingsService from '../../api/settingsService';
+import subjectService from '../../api/subjectService';
 import { getErrorMessage } from '../../api/config';
 import TextField from '../ui/TextField';
 import Button from '../ui/Button';
@@ -37,8 +38,11 @@ function SettingsGeneral() {
         totalBudget: '',
         gsPercentage: '',
         msPercentage: '',
+        coreSubjects: [],
     });
 
+    const [subjects, setSubjects] = useState([]);
+    const [loadingSubjects, setLoadingSubjects] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({
@@ -62,12 +66,25 @@ function SettingsGeneral() {
         setSettings(prev => ({ ...prev, [field]: value }));
     };
 
-    // 3. Data Loading (Wrapped in useCallback)
-    const loadSettings = useCallback(async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
+        setLoadingSubjects(true);
         try {
-            const response = await settingsService.getActive();
-            const data = response.data;
+            const [subjectsResponse, settingsResponse] = await Promise.all([
+                subjectService.getFromRules(),
+                settingsService.getActive()
+            ]);
+            
+            const subjectsData = subjectsResponse.data.results || subjectsResponse.data;
+            setSubjects(subjectsData);
+            
+            const data = settingsResponse.data;
+            const coreSubjectsCodes = data.core_subjects || ['D', 'MA'];
+            
+            const selectedSubjects = subjectsData.filter(subject => 
+                coreSubjectsCodes.includes(subject.code)
+            );
+            
             setSettings({
                 id: data.id,
                 academicYear: data.current_academic_year || '',
@@ -80,20 +97,20 @@ function SettingsGeneral() {
                 totalBudget: data.total_anrechnungsstunden_budget || '',
                 gsPercentage: data.gs_budget_percentage || '',
                 msPercentage: data.ms_budget_percentage || '',
+                coreSubjects: selectedSubjects,
             });
         } catch (error) {
-            console.error('Error loading settings:', error);
-            // Now safe to use because showSnackbar is stable
-            showSnackbar('Fehler beim Laden der Einstellungen: ' + getErrorMessage(error), 'error');
+            console.error('Error loading data:', error);
+            showSnackbar('Fehler beim Laden der Daten: ' + getErrorMessage(error), 'error');
         } finally {
             setLoading(false);
+            setLoadingSubjects(false);
         }
-    }, [showSnackbar]); // Dependency is safe now
+    }, [showSnackbar]);
 
-    // 4. Effect
     useEffect(() => {
-        loadSettings();
-    }, [loadSettings]);
+        loadData();
+    }, [loadData]);
 
     // 5. Action Handlers
     const handleSave = async (e) => {
@@ -108,6 +125,8 @@ function SettingsGeneral() {
         try {
             if (!settings.id) throw new Error('No active settings found.');
 
+            const coreSubjectsCodes = settings.coreSubjects.map(subject => subject.code);
+
             const updateData = {
                 current_academic_year: settings.academicYear,
                 pdp_i_demand_deadline: settings.pdpDefaultDeadline,
@@ -118,11 +137,12 @@ function SettingsGeneral() {
                 total_anrechnungsstunden_budget: settings.totalBudget,
                 gs_budget_percentage: settings.gsPercentage,
                 ms_budget_percentage: settings.msPercentage,
+                core_subjects: coreSubjectsCodes,
             };
 
             await settingsService.partialUpdate(settings.id, updateData);
             showSnackbar('Einstellungen erfolgreich gespeichert!', 'success');
-            await loadSettings();
+            await loadData();
         } catch (error) {
             console.error('Error saving settings:', error);
             showSnackbar('Fehler beim Speichern: ' + getErrorMessage(error), 'error');
@@ -271,6 +291,43 @@ function SettingsGeneral() {
                                     onChange={(e) => handleChange('msPercentage', e.target.value)}
                                     step="0.01"
                                     helperText="Mittelschule-Prozentsatz"
+                                />
+                            </Grid>
+                        </Grid>
+                    </SettingsSection>
+
+                    <SettingsSection title="Kernfächer">
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Autocomplete
+                                    multiple
+                                    options={subjects}
+                                    getOptionLabel={(option) => `${option.code} - ${option.name}`}
+                                    value={settings.coreSubjects}
+                                    onChange={(event, newValue) => {
+                                        handleChange('coreSubjects', newValue);
+                                    }}
+                                    loading={loadingSubjects}
+                                    isOptionEqualToValue={(option, value) => option.code === value.code}
+                                    renderInput={(params) => (
+                                        <MuiTextField
+                                            {...params}
+                                            label="Kernfächer"
+                                            placeholder="Fächer auswählen"
+                                            helperText="Wählen Sie die Fächer aus, die als Kernfächer gelten sollen"
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '10px',
+                                                    backgroundColor: 'white',
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                    sx={{
+                                        '& .MuiChip-root': {
+                                            borderRadius: '8px',
+                                        },
+                                    }}
                                 />
                             </Grid>
                         </Grid>
