@@ -8,11 +8,15 @@ import {
     FormControlLabel,
     Checkbox,
     Typography,
+    Autocomplete,
+    TextField as MuiTextField,
 } from '@mui/material';
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
 import Select from '../ui/Select';
 import { createTeacher, updateTeacher } from './TeachersApi';
+import subjectService from '../../api/subjectService';
+import schoolService from '../../api/schoolService';
 
 const PROGRAM_OPTIONS = [
     { value: 'GS', label: 'Grundschule' },
@@ -34,10 +38,32 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
         anrechnungsstunden: 0,
         preferred_praktika_raw: '',
         is_active: true,
+        available_subjects: [],
     });
 
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
+    const [subjects, setSubjects] = useState([]);
+    const [selectedSubjects, setSelectedSubjects] = useState([]);
+    const [schools, setSchools] = useState([]);
+    const [selectedSchool, setSelectedSchool] = useState(null);
+
+    // Fetch subjects and schools on component mount
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [subjectsResponse, schoolsResponse] = await Promise.all([
+                    subjectService.getActive(),
+                    schoolService.getAll()
+                ]);
+                setSubjects(subjectsResponse.data || []);
+                setSchools(schoolsResponse.data || []);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData();
+    }, []);
 
     // Initialize form data
     useEffect(() => {
@@ -53,7 +79,26 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                 anrechnungsstunden: teacher.anrechnungsstunden || 0,
                 preferred_praktika_raw: teacher.preferred_praktika_raw || '',
                 is_active: teacher.is_active !== undefined ? teacher.is_active : true,
+                available_subjects: teacher.available_subjects || [],
             });
+            
+            // Set selected school for Autocomplete
+            if (teacher.school && schools.length > 0) {
+                const school = schools.find(s => s.id === teacher.school);
+                setSelectedSchool(school || null);
+            } else {
+                setSelectedSchool(null);
+            }
+            
+            // Set selected subjects for Autocomplete
+            if (teacher.available_subjects && Array.isArray(teacher.available_subjects)) {
+                const selected = subjects.filter(subj => 
+                    teacher.available_subjects.includes(subj.id)
+                );
+                setSelectedSubjects(selected);
+            } else {
+                setSelectedSubjects([]);
+            }
         } else {
             setFormData({
                 first_name: '',
@@ -66,10 +111,13 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                 anrechnungsstunden: 0,
                 preferred_praktika_raw: '',
                 is_active: true,
+                available_subjects: [],
             });
+            setSelectedSchool(null);
+            setSelectedSubjects([]);
         }
         setErrors({});
-    }, [teacher, open]);
+    }, [teacher, open, subjects, schools]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -91,8 +139,29 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Ungültige E-Mail-Adresse';
         }
+        if (!formData.school) newErrors.school = 'Schule ist erforderlich';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSchoolChange = (event, newValue) => {
+        setSelectedSchool(newValue);
+        setFormData(prev => ({
+            ...prev,
+            school: newValue ? newValue.id : null
+        }));
+        // Clear school error if school is selected
+        if (newValue && errors.school) {
+            setErrors(prev => ({ ...prev, school: '' }));
+        }
+    };
+
+    const handleSubjectsChange = (event, newValue) => {
+        setSelectedSubjects(newValue);
+        setFormData(prev => ({
+            ...prev,
+            available_subjects: newValue.map(subj => subj.id)
+        }));
     };
 
     const handleSubmit = async () => {
@@ -103,6 +172,7 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
             const dataToSend = {
                 ...formData,
                 anrechnungsstunden: parseFloat(formData.anrechnungsstunden) || 0,
+                available_subjects: formData.available_subjects,
             };
 
             if (teacher) {
@@ -168,6 +238,25 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>
+                        <Autocomplete
+                            value={selectedSchool}
+                            onChange={handleSchoolChange}
+                            options={schools}
+                            getOptionLabel={(option) => option.name || ''}
+                            renderInput={(params) => (
+                                <MuiTextField
+                                    {...params}
+                                    label="Schule *"
+                                    placeholder="Schule auswählen..."
+                                    error={!!errors.school}
+                                    helperText={errors.school}
+                                />
+                            )}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            fullWidth
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
                         <Select
                             name="program"
                             label="Studiengang *"
@@ -206,6 +295,23 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                             value={formData.preferred_praktika_raw}
                             onChange={handleChange}
                             placeholder="z.B. PDP I, SFP"
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Autocomplete
+                            multiple
+                            options={subjects}
+                            getOptionLabel={(option) => `${option.code} - ${option.name}`}
+                            value={selectedSubjects}
+                            onChange={handleSubjectsChange}
+                            renderInput={(params) => (
+                                <MuiTextField
+                                    {...params}
+                                    label="Verfügbare Fächer"
+                                    placeholder="Fächer auswählen..."
+                                />
+                            )}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
                         />
                     </Grid>
                     <Grid item xs={12}>
