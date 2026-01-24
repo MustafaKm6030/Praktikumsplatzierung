@@ -86,6 +86,14 @@ export const studentService = {
   getUnassignedStudents: (params = {}) => {
     return api.get('/students/unassigned/', { params });
   },
+
+  checkAssignmentsStatus: () => {
+    return api.get('/assignments/status/');
+  },
+
+  getAssignmentOptions: () => {
+    return api.get('/assignments/options/');
+  },
 };
 
 export default studentService;

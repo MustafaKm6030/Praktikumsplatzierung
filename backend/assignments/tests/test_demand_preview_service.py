@@ -11,8 +11,12 @@ from assignments.services import (
     _build_detailed_breakdown,
     _calculate_total_pl_capacity,
     _calculate_summary_cards,
+    reset_all_assignments,
 )
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
+from assignments.models import Assignment
+from students.models import Student
+from subjects.models import PraktikumType
 from .factories import (
     create_test_subjects,
     create_test_school,
@@ -208,4 +212,46 @@ class DemandPreviewServiceTests(TestCase):
         for item in result["detailed_breakdown"]:
             self.assertIn("available_pls", item)
             self.assertIn("required_slots", item)
+
+    def test_reset_all_assignments_updates_students_to_unplaced(self):
+        """Test that reset_all_assignments sets all PLACED students to UNPLACED."""
+        # Create test data
+        student1 = create_test_student("S001", "s1@test.com", "GS", placement_status="PLACED")
+        student2 = create_test_student("S002", "s2@test.com", "MS", placement_status="PLACED")
+        student3 = create_test_student("S003", "s3@test.com", "GS", placement_status="UNPLACED")
+        
+        # Create some assignments
+        pl1 = create_test_pl("PL1", "pl1@test.de", self.school_gs, "GS")
+        ptype = PraktikumType.objects.create(code="PDP_I", name="PDP I", is_block_praktikum=True)
+        Assignment.objects.create(
+            mentor=pl1,
+            practicum_type=ptype,
+            subject=None,
+            school=self.school_gs,
+            academic_year="2025/26"
+        )
+        
+        # Verify initial state
+        self.assertEqual(Assignment.objects.count(), 1)
+        self.assertEqual(Student.objects.filter(placement_status="PLACED").count(), 2)
+        self.assertEqual(Student.objects.filter(placement_status="UNPLACED").count(), 1)
+        
+        # Reset assignments
+        result = reset_all_assignments()
+        
+        # Verify assignments are deleted
+        self.assertEqual(Assignment.objects.count(), 0)
+        self.assertEqual(result["deleted_count"], 1)
+        self.assertEqual(result["students_updated"], 2)
+        
+        # Verify all students are now UNPLACED
+        student1.refresh_from_db()
+        student2.refresh_from_db()
+        student3.refresh_from_db()
+        
+        self.assertEqual(student1.placement_status, "UNPLACED")
+        self.assertEqual(student2.placement_status, "UNPLACED")
+        self.assertEqual(student3.placement_status, "UNPLACED")
+        self.assertEqual(Student.objects.filter(placement_status="PLACED").count(), 0)
+        self.assertEqual(Student.objects.filter(placement_status="UNPLACED").count(), 3)
 

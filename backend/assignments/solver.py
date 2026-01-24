@@ -144,7 +144,11 @@ def _validate_mentor_data(mentor, capacity, eligibilities):
 
 
 def _save_assignments_to_db(solver, assignment_vars, mentor_data):
+    from students.models import Student
+    
+    # Reset all assignments and update students to UNPLACED
     Assignment.objects.all().delete()
+    Student.objects.filter(placement_status="PLACED").update(placement_status="UNPLACED")
 
     subjects_map = {s.code: s for s in Subject.objects.all()}
     ptypes_map = {p.code: p for p in PraktikumType.objects.all()}
