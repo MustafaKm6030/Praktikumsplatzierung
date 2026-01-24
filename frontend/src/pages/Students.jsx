@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton } from '@mui/material';
 import StudentsActionButtons from '../components/students/StudentsActionButtons';
 import StudentsFilterBar from '../components/students/StudentsFilterBar';
@@ -17,18 +17,17 @@ export default function StudentsPage() {
     filteredStudents,
     loading,
     refetch,
-    // filters
     searchQuery, setSearchQuery,
     selectedProgram, setSelectedProgram,
     selectedRegion, setSelectedRegion,
     programs, regions,
-    // stats
     stats,
   } = useStudentData();
 
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [hasAssignments, setHasAssignments] = useState(false);
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
   
-  // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
@@ -36,6 +35,22 @@ export default function StudentsPage() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openExportDialog, setOpenExportDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+
+  useEffect(() => {
+    const checkAssignments = async () => {
+      try {
+        setLoadingAssignments(true);
+        const response = await studentService.checkAssignmentsStatus();
+        setHasAssignments(response.data.has_assignments || false);
+      } catch (error) {
+        console.error('Error checking assignments status:', error);
+        setHasAssignments(false);
+      } finally {
+        setLoadingAssignments(false);
+      }
+    };
+    checkAssignments();
+  }, []);
 
   const showNotification = (message, severity = 'success') => {
     setNotification({ open: true, message, severity });
@@ -200,6 +215,7 @@ export default function StudentsPage() {
           onEdit={handleEditStudent}
           onAssign={handleAssignStudent}
           onDelete={handleDeleteStudent}
+          canAssign={hasAssignments}
         />
       )}
 

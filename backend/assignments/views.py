@@ -303,6 +303,89 @@ class ResetAssignmentsAPIView(APIView):
             )
 
 
+class AssignmentStatusAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        count = Assignment.objects.count()
+        return Response({"has_assignments": count > 0, "count": count}, status=status.HTTP_200_OK)
+
+
+class AssignmentOptionsAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        assignments = Assignment.objects.select_related(
+            "mentor", "practicum_type", "subject", "school"
+        ).all()
+        
+        if not assignments.exists():
+            return Response({
+                "assignments": [],
+                "practicum_types": [],
+                "subjects": [],
+                "schools": [],
+                "mentors": []
+            }, status=status.HTTP_200_OK)
+        
+        practicum_types_dict = {}
+        subjects_dict = {}
+        schools_dict = {}
+        mentors_dict = {}
+        assignments_list = []
+        
+        for assignment in assignments:
+            pt = assignment.practicum_type
+            if pt.id not in practicum_types_dict:
+                practicum_types_dict[pt.id] = {
+                    "id": pt.id,
+                    "code": pt.code,
+                    "name": pt.name
+                }
+            
+            subj_data = None
+            if assignment.subject:
+                subj = assignment.subject
+                if subj.id not in subjects_dict:
+                    subjects_dict[subj.id] = {
+                        "id": subj.id,
+                        "code": subj.code,
+                        "name": subj.name,
+                        "display_name": getattr(subj, 'display_name', subj.name)
+                    }
+                subj_data = {"id": subj.id}
+            
+            school = assignment.school
+            if school.id not in schools_dict:
+                schools_dict[school.id] = {
+                    "id": school.id,
+                    "name": school.name,
+                    "school_type": school.school_type
+                }
+            
+            mentor = assignment.mentor
+            if mentor.id not in mentors_dict:
+                mentors_dict[mentor.id] = {
+                    "id": mentor.id,
+                    "first_name": mentor.first_name,
+                    "last_name": mentor.last_name,
+                    "school_id": mentor.school.id if mentor.school else None,
+                    "program": mentor.program
+                }
+            
+            assignments_list.append({
+                "practicum_type_id": pt.id,
+                "subject_id": subj_data["id"] if subj_data else None,
+                "school_id": school.id,
+                "mentor_id": mentor.id,
+                "mentor_program": mentor.program
+            })
+        
+        return Response({
+            "assignments": assignments_list,
+            "practicum_types": list(practicum_types_dict.values()),
+            "subjects": list(subjects_dict.values()),
+            "schools": list(schools_dict.values()),
+            "mentors": list(mentors_dict.values())
+        }, status=status.HTTP_200_OK)
+
+
 class AssignmentViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing the final Assignment results.
@@ -333,10 +416,8 @@ class AssignmentViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(new_assignments, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
-            # Catch validation errors from the service
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
-            # Catch unexpected server errors
             return Response(
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
