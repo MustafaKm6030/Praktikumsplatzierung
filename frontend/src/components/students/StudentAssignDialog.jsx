@@ -11,7 +11,6 @@ import {
   TextField as MuiTextField,
 } from '@mui/material';
 import Button from '../ui/Button';
-import TextField from '../ui/TextField';
 import Select from '../ui/Select';
 import studentService from '../../api/studentService';
 
@@ -36,7 +35,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
   const [filteredSchools, setFilteredSchools] = useState([]);
   const [filteredMentors, setFilteredMentors] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
-  const [selectedSubject, setSelectedSubject] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -114,11 +112,11 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
     }
   }, [student]);
 
-  const isPDPType = () => {
+  const isPDPType = useCallback(() => {
     if (!formData.practicum_type || !assignmentData.practicum_types || assignmentData.practicum_types.length === 0) return false;
     const practicumType = assignmentData.practicum_types.find(pt => pt.id === parseInt(formData.practicum_type));
     return practicumType && (practicumType.code === 'PDP1' || practicumType.code === 'PDP2' || practicumType.code === 'PDP_I' || practicumType.code === 'PDP_II');
-  };
+  }, [formData.practicum_type, assignmentData.practicum_types]);
 
   useEffect(() => {
     if (open && student) {
@@ -130,7 +128,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
         subject_id: '',
       });
       setSelectedSchool(null);
-      setSelectedSubject(null);
       setFilteredSubjects([]);
       setFilteredSchools([]);
       setFilteredMentors([]);
@@ -143,7 +140,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
       setFilteredSubjects([]);
       setFilteredSchools([]);
       setFilteredMentors([]);
-      setSelectedSubject(null);
       setSelectedSchool(null);
       return;
     }
@@ -167,7 +163,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
     setFilteredSubjects(subjects);
     setFilteredSchools([]);
     setFilteredMentors([]);
-    setSelectedSubject(null);
     setSelectedSchool(null);
     setFormData(prev => ({
       ...prev,
@@ -269,7 +264,7 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
         mentor_id: '',
       }));
     }
-  }, [formData.practicum_type, formData.subject_id, assignmentData, student]);
+  }, [formData.practicum_type, formData.subject_id, assignmentData, student, isPDPType]);
 
   useEffect(() => {
     if (!formData.school_id || !assignmentData.assignments || assignmentData.assignments.length === 0) {
@@ -319,7 +314,7 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
     );
     
     setFilteredMentors(mentors);
-  }, [formData.school_id, formData.practicum_type, formData.subject_id, assignmentData]);
+  }, [formData.school_id, formData.practicum_type, formData.subject_id, assignmentData, isPDPType]);
 
   const handlePracticumTypeChange = (e) => {
     const { value } = e.target;
@@ -330,7 +325,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
       school_id: '',
       mentor_id: '',
     }));
-    setSelectedSubject(null);
     setSelectedSchool(null);
     if (errors.practicum_type) {
       setErrors(prev => ({ ...prev, practicum_type: null }));
@@ -345,8 +339,6 @@ const StudentAssignDialog = ({ open, onClose, onSave, student }) => {
       school_id: '',
       mentor_id: '',
     }));
-    const subject = filteredSubjects.find(s => s.id === parseInt(value));
-    setSelectedSubject(subject || null);
     setSelectedSchool(null);
     if (errors.subject_id) {
       setErrors(prev => ({ ...prev, subject_id: null }));

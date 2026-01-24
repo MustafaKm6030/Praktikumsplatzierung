@@ -26,7 +26,6 @@ export default function StudentsPage() {
 
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [hasAssignments, setHasAssignments] = useState(false);
-  const [loadingAssignments, setLoadingAssignments] = useState(true);
   
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -39,14 +38,11 @@ export default function StudentsPage() {
   useEffect(() => {
     const checkAssignments = async () => {
       try {
-        setLoadingAssignments(true);
         const response = await studentService.checkAssignmentsStatus();
         setHasAssignments(response.data.has_assignments || false);
       } catch (error) {
         console.error('Error checking assignments status:', error);
         setHasAssignments(false);
-      } finally {
-        setLoadingAssignments(false);
       }
     };
     checkAssignments();
