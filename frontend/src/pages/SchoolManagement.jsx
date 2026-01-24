@@ -67,10 +67,16 @@ const SchoolManagement = () => {
     const handleImportSchools = () => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.csv';
+        input.accept = '.xlsx,.xls';
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls'].includes(fileExtension)) {
+                showNotification('Bitte wählen Sie eine Excel-Datei (.xlsx oder .xls)', 'error');
+                return;
+            }
 
             try {
                 const result = await importSchoolsCSV(file);
