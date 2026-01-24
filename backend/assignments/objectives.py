@@ -1,5 +1,7 @@
 from collections import defaultdict
 from system_settings.services import get_active_settings
+from subjects.models import Subject
+import re
 
 
 def add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects):
@@ -51,7 +53,9 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     objective_terms = []
 
     settings = get_active_settings()
-    core_subjects_list = settings.core_subjects if settings.core_subjects else ["D", "MA"]
+    core_subjects_list = (
+        settings.core_subjects if settings.core_subjects else ["D", "MA"]
+    )
     core_subjects_set = set(core_subjects_list)
 
     config = {
@@ -63,6 +67,7 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
         "SAME_SUBJECT_PENALTY": -35,
         "WEDNESDAY_BONUS": 30,
         "MIXED_TYPE_BONUS": 20,
+        "CONTINUITY_BONUS": 0,
         "CORE_SUBJECTS": core_subjects_set,
     }
 
@@ -77,6 +82,8 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     _add_mentor_mixing_bonus(
         model, objective_terms, assignment_vars, mentor_data, config
     )
+
+    _add_continuity_scores(objective_terms, assignment_vars, mentor_data, config)
 
     add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects_list)
 
@@ -197,3 +204,68 @@ def _add_mentor_mixing_bonus(
         model.AddBoolOr([has_block.Not(), has_wed.Not()]).OnlyEnforceIf(is_mixed.Not())
 
         objective_terms.append(is_mixed * config["MIXED_TYPE_BONUS"])
+
+
+def _build_subject_name_map():
+    """Builds a cache to map 'deutsch' -> 'D', 'mathematik' -> 'MA', etc."""
+    if SUBJECT_NAME_TO_CODE_MAP:
+        return
+    for subject in Subject.objects.all():
+        SUBJECT_NAME_TO_CODE_MAP[subject.name.lower()] = subject.code
+
+
+def _get_historical_subject_code(history_text: str) -> str:
+    """Parses messy history text to find a specific subject code."""
+    text = history_text.lower()
+    for name, code in SUBJECT_NAME_TO_CODE_MAP.items():
+        if re.search(r"\b" + re.escape(name) + r"\b", text):
+            return code
+    return ""
+
+
+SUBJECT_NAME_TO_CODE_MAP = {}
+
+
+def _add_continuity_scores(objective_terms, assignment_vars, mentor_data, config):
+    """Reward assignments that match the mentor's history."""
+    if not SUBJECT_NAME_TO_CODE_MAP:
+        _build_subject_name_map()
+
+    bonus_value = config["CONTINUITY_BONUS"]
+
+    for (mentor_id, ptype, subject_code), var in assignment_vars.items():
+        mentor_obj = mentor_data[mentor_id]["object"]
+        history_value = _get_raw_history(mentor_obj, ptype)
+
+        if history_value and _is_continuity_match(history_value, ptype, subject_code):
+            objective_terms.append(var * bonus_value)
+
+
+def _get_raw_history(mentor_obj, ptype):
+    """Maps project type to the corresponding mentor attribute."""
+    mapping = {
+        "PDP_I": mentor_obj.history_pdp1,
+        "PDP_II": mentor_obj.history_pdp2,
+        "SFP": mentor_obj.history_sfp,
+        "ZSP": mentor_obj.history_zsp,
+    }
+    return mapping.get(ptype, "")
+
+
+def _is_continuity_match(history_value, ptype, subject_code):
+    """Determines if the history string constitutes a match."""
+    val_lower = history_value.lower().strip()
+
+    # Quick exit for negatives
+    if any(kw in val_lower for kw in ["nicht", "nein", "keine"]):
+        return False
+
+    # Generic markers
+    is_generic = val_lower in ["ja", "hier", "x"]
+
+    if ptype in ["PDP_I", "PDP_II"]:
+        return subject_code == "N/A" and is_generic
+
+    # Specific Subject Match for SFP/ZSP
+    historical_code = _get_historical_subject_code(history_value)
+    return (historical_code == subject_code) if historical_code else is_generic

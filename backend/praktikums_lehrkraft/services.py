@@ -112,17 +112,19 @@ def _extract_school_data(row):
 
 def _save_pl_data(index, row, school, first_name, last_name):
     """Prepares the dictionary for PraktikumsLehrkraft."""
-    # 1. Flatten numeric parsing using pd.to_numeric to avoid try/except blocks
     raw_anre = row.get("Anre-Std.SJ 25_26") or row.get("Anre-Std. SJ 25_26")
     anre_std = pd.to_numeric(raw_anre, errors="coerce")
     if pd.isna(anre_std):
         anre_std = 1.0
 
-    # 2. Clean strings and handle slicing in-place
     prog = str(row.get("LA", "GS")).strip()
     email = f"{first_name.lower()}.{last_name.lower()}.{index}@placeholder.local"
 
-    # 3. Return the flat structure
+    history_pdp1 = str(row.get("PDP I SJ 22_23", "")).strip()
+    history_pdp2 = str(row.get("PDP II SJ 22_23", "")).strip()
+    history_sfp = str(row.get("SFP SJ 22_23", "")).strip()
+    history_zsp = str(row.get("ZSP SJ 22_23", "")).strip()
+
     return {
         "email": email,
         "defaults": {
@@ -135,6 +137,10 @@ def _save_pl_data(index, row, school, first_name, last_name):
             "schulamt": str(row.get("Schul-amt", "")).strip(),
             "current_year_notes": str(row.get("Besonderheiten SJ 25_26", "")),
             "is_active": str(row.get("Status", "ok")).lower() == "ok",
+            "history_pdp1": history_pdp1,
+            "history_pdp2": history_pdp2,
+            "history_sfp": history_sfp,
+            "history_zsp": history_zsp,
         },
     }
 

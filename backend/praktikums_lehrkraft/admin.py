@@ -14,6 +14,10 @@ class PraktikumsLehrkraftAdmin(admin.ModelAdmin):
         "anrechnungsstunden",
         "capacity",
         "is_active",
+        "history_pdp1",
+        "history_pdp2",
+        "history_sfp",
+        "history_zsp",
     ]
     list_filter = ["program", "is_active", "school__school_type"]
     search_fields = ["first_name", "last_name", "email", "school__name"]

@@ -88,6 +88,10 @@ class PraktikumsLehrkraft(TimeStampedModel):
         default=True, help_text="Master availability switch"
     )
 
+    history_pdp1 = models.CharField(max_length=100, blank=True)
+    history_pdp2 = models.CharField(max_length=100, blank=True)
+    history_sfp = models.CharField(max_length=100, blank=True)
+    history_zsp = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True, help_text="Internal system notes")
 
     # Data Lineage

@@ -5,9 +5,7 @@ export const subjectService = {
     return api.get('/subjects/');
   },
 
-  getById: (id) => {
-    return api.get(`/subjects/${id}/`);
-  },
+  getById: (id) => api.get(`/subjects/${id}/`),
 
   getActive: () => {
     return api.get('/subjects/?is_active=true');
@@ -17,9 +15,7 @@ export const subjectService = {
     return api.get('/subjects/from_rules/');
   },
 
-  create: (data) => {
-    return api.post('/subjects/', data);
-  },
+  create: (data) => api.post('/subjects/', data),
 
   update: (id, data) => {
     return api.put(`/subjects/${id}/`, data);
@@ -29,9 +25,7 @@ export const subjectService = {
     return api.patch(`/subjects/${id}/`, data);
   },
 
-  delete: (id) => {
-    return api.delete(`/subjects/${id}/`);
-  },
+  delete: (id) => api.delete(`/subjects/${id}/`),
 };
 
 export default subjectService;
