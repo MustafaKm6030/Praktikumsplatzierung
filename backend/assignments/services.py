@@ -707,15 +707,22 @@ def reset_all_assignments():
     Deletes all Assignment records from the database.
     Business Logic: Allows complete reset of allocation results.
     Used when starting a new allocation cycle.
+    Also updates all Student objects to UNPLACED status.
     
     Returns:
         dict: Success message with count of deleted records
     """
+    from students.models import Student
+    
     deleted_count = Assignment.objects.count()
     Assignment.objects.all().delete()
+    
+    # Update all students to UNPLACED when assignments are reset
+    updated_count = Student.objects.filter(placement_status="PLACED").update(placement_status="UNPLACED")
     
     return {
         "success": True,
         "deleted_count": deleted_count,
-        "message": f"Successfully deleted {deleted_count} assignment(s)."
+        "students_updated": updated_count,
+        "message": f"Successfully deleted {deleted_count} assignment(s) and updated {updated_count} student(s) to UNPLACED."
     }

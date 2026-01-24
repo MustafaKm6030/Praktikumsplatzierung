@@ -17,7 +17,7 @@ import {
   AssignmentInd as AssignIcon,
 } from '@mui/icons-material';
 
-const StudentsTable = ({ students, onView, onEdit, onDelete, onAssign }) => {
+const StudentsTable = ({ students, onView, onEdit, onDelete, onAssign, canAssign = false }) => {
   return (
     <TableContainer component={Paper} sx={{
       borderRadius: '12px',
@@ -89,8 +89,9 @@ const StudentsTable = ({ students, onView, onEdit, onDelete, onAssign }) => {
                   <IconButton
                     size="small"
                     color="secondary"
-                    title="Zuweisen"
-                    onClick={() => onAssign && onAssign(s)}
+                    title={canAssign ? "Zuweisen" : "Zuweisung nicht verfügbar - PLs-Zuteilung muss zuerst durchgeführt werden"}
+                    onClick={() => canAssign && onAssign && onAssign(s)}
+                    disabled={!canAssign}
                   >
                     <AssignIcon fontSize="small" />
                   </IconButton>

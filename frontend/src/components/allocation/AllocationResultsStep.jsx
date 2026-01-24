@@ -19,21 +19,21 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // State to track which mentor is being adjusted (opens the modal)
     const [adjustingMentorId, setAdjustingMentorId] = useState(null);
-    
+
     // Pagination state
     const [page, setPage] = useState(0);
     const [rowsPerPage] = useState(25);
-    
+
     // Reset confirmation dialog state
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
     const [resetting, setResetting] = useState(false);
 
     // Filter dialog state
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-    
+
     // Filter state
     const [filters, setFilters] = useState({
         subject: '',
@@ -56,15 +56,15 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             const response = await allocationService.getAssignments();
             const assignmentData = response.data || [];
             setAssignments(assignmentData);
-            
+
             // Calculate statistics
             // Use solver results if available, otherwise calculate from assignments
             let totalAssigned, totalUnassigned, matchRate;
-            
+
             if (solverResults) {
                 totalAssigned = solverResults.total_assignments || 0;
                 totalUnassigned = solverResults.total_unassigned || 0;
-                
+
                 // Calculate match rate using total unallocated slots from actual data
                 const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
                 const total = totalAssigned + totalUnallocatedSlots;
@@ -74,10 +74,10 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             } else {
                 // Count all assignments with status = 'ok'
                 totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
-                
+
                 // Count all unallocated slots for percentage calculation
                 const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
-                
+
                 // Count unique unassigned mentors for display
                 const unallocatedMentorIds = new Set(
                     assignmentData
@@ -85,14 +85,14 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                         .map(a => a.mentor_id)
                 );
                 totalUnassigned = unallocatedMentorIds.size;
-                
+
                 // Calculate match rate: assigned / (assigned + unallocated_slots) * 100
                 const total = totalAssigned + totalUnallocatedSlots;
                 matchRate = total > 0
                     ? ((totalAssigned / total) * 100).toFixed(1)
                     : '0.0';
             }
-            
+
             setStats({
                 matchRate: `${matchRate}%`,
                 totalAssignments: totalAssigned,
@@ -129,7 +129,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
-            
+
             if (response.ok) {
                 await response.json();
                 setResetDialogOpen(false);
@@ -279,23 +279,23 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button 
-                        variant="secondary" 
+                    <Button
+                        variant="secondary"
                         startIcon={<DeleteForever />}
                         onClick={handleResetClick}
-                        sx={{ 
-                            color: '#dc2626', 
+                        sx={{
+                            color: '#dc2626',
                             borderColor: '#dc2626',
-                            '&:hover': { 
-                                bgcolor: '#fef2f2', 
-                                borderColor: '#b91c1c' 
-                            } 
+                            '&:hover': {
+                                bgcolor: '#fef2f2',
+                                borderColor: '#b91c1c'
+                            }
                         }}
                     >
                         Zurücksetzen
                     </Button>
-                    <Button 
-                        variant="secondary" 
+                    <Button
+                        variant="secondary"
                         startIcon={<FilterList />}
                         onClick={() => setFilterDialogOpen(true)}
                         sx={hasActiveFilters() ? {
@@ -415,7 +415,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                                             <Select
                                                 value={page}
                                                 onChange={handlePageJump}
-                                                sx={{ 
+                                                sx={{
                                                     height: 32,
                                                     fontSize: '0.875rem',
                                                     '& .MuiOutlinedInput-notchedOutline': {
@@ -441,7 +441,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                                 rowsPerPage={rowsPerPage}
                                 rowsPerPageOptions={[25]}
                                 labelDisplayedRows={() => ''}
-                                sx={{ 
+                                sx={{
                                     border: 'none',
                                     '& .MuiTablePagination-toolbar': {
                                         minHeight: 'auto',
@@ -472,13 +472,13 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                 onClose={() => setAdjustingMentorId(null)}
                 onSaveSuccess={(updatedAssignments) => {
                     setAdjustingMentorId(null);
-                    fetchAssignments(); 
+                    fetchAssignments();
                 }}
             />
 
             {/* Reset Confirmation Dialog */}
-            <Dialog 
-                open={resetDialogOpen} 
+            <Dialog
+                open={resetDialogOpen}
                 onClose={handleResetCancel}
                 maxWidth="sm"
                 fullWidth
@@ -493,25 +493,25 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                         </Typography>
                     </Alert>
                     <Typography variant="body2" sx={{ color: '#4b5563' }}>
-                        Alle Assignment-Datensätze werden dauerhaft aus der Datenbank gelöscht. 
-                        Dies umfasst Zuweisungen aus allen akademischen Jahren.
+                        Alle Assignment-Datensätze werden dauerhaft aus der Datenbank gelöscht.
+                        Diese Aktion setzt auch den Zuweisungsstatus aller Studierenden auf „nicht zugewiesen“ zurück
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#4b5563', mt: 2 }}>
                         Möchten Sie fortfahren?
                     </Typography>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button 
-                        onClick={handleResetCancel} 
+                    <Button
+                        onClick={handleResetCancel}
                         variant="secondary"
                         disabled={resetting}
                     >
                         Abbrechen
                     </Button>
-                    <Button 
+                    <Button
                         onClick={handleResetConfirm}
                         disabled={resetting}
-                        sx={{ 
+                        sx={{
                             bgcolor: '#dc2626',
                             color: 'white',
                             '&:hover': { bgcolor: '#b91c1c' }
@@ -523,8 +523,8 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             </Dialog>
 
             {/* Filter Dialog */}
-            <Dialog 
-                open={filterDialogOpen} 
+            <Dialog
+                open={filterDialogOpen}
                 onClose={() => setFilterDialogOpen(false)}
                 maxWidth="sm"
                 fullWidth
@@ -621,14 +621,14 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
-                    <Button 
-                        onClick={handleClearFilters} 
+                    <Button
+                        onClick={handleClearFilters}
                         variant="secondary"
                         disabled={!hasActiveFilters()}
                     >
                         Filter löschen
                     </Button>
-                    <Button 
+                    <Button
                         onClick={() => setFilterDialogOpen(false)}
                     >
                         Anwenden
