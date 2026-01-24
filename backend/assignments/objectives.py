@@ -1,5 +1,7 @@
 from collections import defaultdict
 from system_settings.services import get_active_settings
+from subjects.models import Subject
+import re
 
 
 def add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects):
@@ -51,7 +53,9 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     objective_terms = []
 
     settings = get_active_settings()
-    core_subjects_list = settings.core_subjects if settings.core_subjects else ["D", "MA"]
+    core_subjects_list = (
+        settings.core_subjects if settings.core_subjects else ["D", "MA"]
+    )
     core_subjects_set = set(core_subjects_list)
 
     config = {
@@ -63,6 +67,7 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
         "SAME_SUBJECT_PENALTY": -35,
         "WEDNESDAY_BONUS": 30,
         "MIXED_TYPE_BONUS": 20,
+        "CONTINUITY_BONUS": 0,
         "CORE_SUBJECTS": core_subjects_set,
     }
 
@@ -77,6 +82,8 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
     _add_mentor_mixing_bonus(
         model, objective_terms, assignment_vars, mentor_data, config
     )
+
+    _add_continuity_scores(objective_terms, assignment_vars, mentor_data, config)
 
     add_soft_subject_caps(model, assignment_vars, objective_terms, core_subjects_list)
 
@@ -197,3 +204,86 @@ def _add_mentor_mixing_bonus(
         model.AddBoolOr([has_block.Not(), has_wed.Not()]).OnlyEnforceIf(is_mixed.Not())
 
         objective_terms.append(is_mixed * config["MIXED_TYPE_BONUS"])
+
+
+def _build_subject_name_map():
+    """Builds a cache to map 'deutsch' -> 'D', 'mathematik' -> 'MA', etc."""
+    if SUBJECT_NAME_TO_CODE_MAP:
+        return
+    for subject in Subject.objects.all():
+        SUBJECT_NAME_TO_CODE_MAP[subject.name.lower()] = subject.code
+
+
+def _get_historical_subject_code(history_text: str) -> str:
+    """Parses messy history text to find a specific subject code."""
+    text = history_text.lower()
+    for name, code in SUBJECT_NAME_TO_CODE_MAP.items():
+        if re.search(r"\b" + re.escape(name) + r"\b", text):
+            return code
+    return ""
+
+
+SUBJECT_NAME_TO_CODE_MAP = {}
+
+
+def _add_continuity_scores(objective_terms, assignment_vars, mentor_data, config):
+    """
+    Reward assignments that match the mentor's history, with robust parsing.
+    """
+    # Build the name-to-code map once
+    if not SUBJECT_NAME_TO_CODE_MAP:
+        _build_subject_name_map()
+
+    for key, var in assignment_vars.items():
+        mentor_id, ptype, subject_code = key
+        mentor_obj = mentor_data[mentor_id]["object"]
+
+        # 1. Get the raw history value
+        history_value = ""
+        if ptype == "PDP_I":
+            history_value = mentor_obj.history_pdp1
+        elif ptype == "PDP_II":
+            history_value = mentor_obj.history_pdp2
+        elif ptype == "SFP":
+            history_value = mentor_obj.history_sfp
+        elif ptype == "ZSP":
+            history_value = mentor_obj.history_zsp
+
+        if not history_value:
+            continue
+
+        # 2. Check for Match
+        is_match = False
+
+        negative_keywords = ["nicht", "nein", "keine"]
+        if any(keyword in history_value.lower() for keyword in negative_keywords):
+            continue
+        # -------------------------------------
+
+        # A. Generic Match (for PDP or simple 'ja')
+        if ptype in ["PDP_I", "PDP_II"]:
+            if subject_code == "N/A" and history_value.lower().strip() in [
+                "ja",
+                "hier",
+            ]:
+                is_match = True
+
+        # B. Specific Subject Match (for SFP/ZSP)
+        else:  # It's an SFP or ZSP
+            historical_code = _get_historical_subject_code(history_value)
+            if historical_code and historical_code == subject_code:
+                is_match = True
+            # Also handle generic 'ja' for SFP/ZSP if no subject is mentioned
+            elif not historical_code and history_value.lower().strip() in [
+                "ja",
+                "hier",
+                "x",
+            ]:
+                # This is a weak match, but better than nothing.
+                # We can give it a smaller bonus if needed. For now, it's a full match.
+                is_match = True
+        # ----------------------------------------
+
+        # 3. Award Bonus
+        if is_match:
+            objective_terms.append(var * config["CONTINUITY_BONUS"])
