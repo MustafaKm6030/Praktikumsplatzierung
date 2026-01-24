@@ -46,17 +46,6 @@ const StudentsFilterBar = ({
           fullWidth={false}
           minWidth={150}
         />
-
-        {/* Placeholder to visually match Schools (disabled extra filter) */}
-        <Select
-          label="Filter"
-          value="all"
-          onChange={() => {}}
-          options={[]}
-          disabled
-          fullWidth={false}
-          minWidth={150}
-        />
       </Stack>
     </Paper>
   );
