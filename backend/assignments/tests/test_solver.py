@@ -315,3 +315,11 @@ class SolverHardConstraintsTests(TestCase):
             subject__code="D", practicum_type__code="SFP"
         ).exists()
         self.assertTrue(deutsch_covered, "The SFP-Deutsch slot must be covered.")
+        
+        # 4. Verify that PLACED students are reset to UNPLACED when solver runs
+        lukas = Student.objects.get(student_id="ST-004")
+        self.assertEqual(
+            lukas.placement_status,
+            "UNPLACED",
+            "PLACED students should be reset to UNPLACED when solver runs and resets assignments."
+        )
