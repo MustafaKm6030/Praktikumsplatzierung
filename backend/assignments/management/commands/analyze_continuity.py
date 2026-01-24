@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
 from assignments.models import Assignment
-from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from subjects.models import Subject
 import re
 

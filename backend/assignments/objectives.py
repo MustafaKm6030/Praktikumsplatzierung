@@ -227,63 +227,45 @@ SUBJECT_NAME_TO_CODE_MAP = {}
 
 
 def _add_continuity_scores(objective_terms, assignment_vars, mentor_data, config):
-    """
-    Reward assignments that match the mentor's history, with robust parsing.
-    """
-    # Build the name-to-code map once
+    """Reward assignments that match the mentor's history."""
     if not SUBJECT_NAME_TO_CODE_MAP:
         _build_subject_name_map()
 
-    for key, var in assignment_vars.items():
-        mentor_id, ptype, subject_code = key
+    bonus_value = config["CONTINUITY_BONUS"]
+
+    for (mentor_id, ptype, subject_code), var in assignment_vars.items():
         mentor_obj = mentor_data[mentor_id]["object"]
+        history_value = _get_raw_history(mentor_obj, ptype)
 
-        # 1. Get the raw history value
-        history_value = ""
-        if ptype == "PDP_I":
-            history_value = mentor_obj.history_pdp1
-        elif ptype == "PDP_II":
-            history_value = mentor_obj.history_pdp2
-        elif ptype == "SFP":
-            history_value = mentor_obj.history_sfp
-        elif ptype == "ZSP":
-            history_value = mentor_obj.history_zsp
+        if history_value and _is_continuity_match(history_value, ptype, subject_code):
+            objective_terms.append(var * bonus_value)
 
-        if not history_value:
-            continue
 
-        # 2. Check for Match
-        is_match = False
+def _get_raw_history(mentor_obj, ptype):
+    """Maps project type to the corresponding mentor attribute."""
+    mapping = {
+        "PDP_I": mentor_obj.history_pdp1,
+        "PDP_II": mentor_obj.history_pdp2,
+        "SFP": mentor_obj.history_sfp,
+        "ZSP": mentor_obj.history_zsp,
+    }
+    return mapping.get(ptype, "")
 
-        negative_keywords = ["nicht", "nein", "keine"]
-        if any(keyword in history_value.lower() for keyword in negative_keywords):
-            continue
-        # -------------------------------------
 
-        # A. Generic Match (for PDP or simple 'ja')
-        if ptype in ["PDP_I", "PDP_II"]:
-            if subject_code == "N/A" and history_value.lower().strip() in [
-                "ja",
-                "hier",
-            ]:
-                is_match = True
+def _is_continuity_match(history_value, ptype, subject_code):
+    """Determines if the history string constitutes a match."""
+    val_lower = history_value.lower().strip()
 
-        # B. Specific Subject Match (for SFP/ZSP)
-        else:  # It's an SFP or ZSP
-            historical_code = _get_historical_subject_code(history_value)
-            if historical_code and historical_code == subject_code:
-                is_match = True
-            # Also handle generic 'ja' for SFP/ZSP if no subject is mentioned
-            elif not historical_code and history_value.lower().strip() in [
-                "ja",
-                "hier",
-                "x",
-            ]:
-                # This is a weak match, but better than nothing.
-                # We can give it a smaller bonus if needed. For now, it's a full match.
-                is_match = True
-        # ----------------------------------------
+    # Quick exit for negatives
+    if any(kw in val_lower for kw in ["nicht", "nein", "keine"]):
+        return False
 
-        # 3. Award Bonus
-        if is_match:
-            objective_terms.append(var * config["CONTINUITY_BONUS"])
+    # Generic markers
+    is_generic = val_lower in ["ja", "hier", "x"]
+
+    if ptype in ["PDP_I", "PDP_II"]:
+        return subject_code == "N/A" and is_generic
+
+    # Specific Subject Match for SFP/ZSP
+    historical_code = _get_historical_subject_code(history_value)
+    return (historical_code == subject_code) if historical_code else is_generic
