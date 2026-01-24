@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton } from '@mui/material';
+import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton, TablePagination, Select, MenuItem, FormControl, Typography } from '@mui/material';
 import StudentsActionButtons from '../components/students/StudentsActionButtons';
 import StudentsFilterBar from '../components/students/StudentsFilterBar';
 import StudentsTable from '../components/students/StudentsTable';
@@ -34,6 +34,10 @@ export default function StudentsPage() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openExportDialog, setOpenExportDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage] = useState(20);
 
   useEffect(() => {
     const checkAssignments = async () => {
@@ -165,6 +169,29 @@ export default function StudentsPage() {
     }
   };
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handlePageJump = (event) => {
+    setPage(event.target.value);
+  };
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(0);
+  }, [searchQuery, selectedProgram, selectedRegion]);
+
+  // Paginate filtered students
+  const paginatedStudents = filteredStudents.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+
   return (
     <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
       {/* Buttons (left, same as Schools) */}
@@ -205,14 +232,79 @@ export default function StudentsPage() {
       {loading && <Loader message="Studierende werden geladen..." />}
 
       {!loading && (
-        <StudentsTable 
-          students={filteredStudents}
-          onView={handleViewStudent}
-          onEdit={handleEditStudent}
-          onAssign={handleAssignStudent}
-          onDelete={handleDeleteStudent}
-          canAssign={hasAssignments}
-        />
+        <>
+          <StudentsTable 
+            students={paginatedStudents}
+            onView={handleViewStudent}
+            onEdit={handleEditStudent}
+            onAssign={handleAssignStudent}
+            onDelete={handleDeleteStudent}
+            canAssign={hasAssignments}
+          />
+          
+          {/* Pagination Controls */}
+          {filteredStudents.length > 0 && (
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              px: 2, 
+              py: 2,
+              mt: 2,
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                  {`${page * rowsPerPage + 1}-${Math.min((page + 1) * rowsPerPage, filteredStudents.length)} von ${filteredStudents.length}`}
+                </Typography>
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                      Gehe zu Seite:
+                    </Typography>
+                    <FormControl size="small" sx={{ minWidth: 80 }}>
+                      <Select
+                        value={page}
+                        onChange={handlePageJump}
+                        sx={{ 
+                          height: 32,
+                          fontSize: '0.875rem',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#d1d5db'
+                          }
+                        }}
+                      >
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <MenuItem key={i} value={i}>
+                            {i + 1}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
+              </Box>
+              <TablePagination
+                component="div"
+                count={filteredStudents.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                rowsPerPageOptions={[20]}
+                labelDisplayedRows={() => ''}
+                sx={{ 
+                  border: 'none',
+                  '& .MuiTablePagination-toolbar': {
+                    minHeight: 'auto',
+                    padding: 0
+                  }
+                }}
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {/* Add Student Dialog */}

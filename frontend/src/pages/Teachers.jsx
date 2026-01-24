@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton } from '@mui/material';
+import { Box, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button as MuiButton, TablePagination, Select, MenuItem, FormControl, Typography } from '@mui/material';
 import TeachersActionButtons from '../components/teachers/TeachersActionButtons';
 import TeachersFilterBar from '../components/teachers/TeachersFilterBar';
 import TeachersTable from '../components/teachers/TeachersTable';
@@ -28,7 +28,11 @@ export default function Teachers() {
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [teacherToDelete, setTeacherToDelete] = useState(null);  
+  const [teacherToDelete, setTeacherToDelete] = useState(null);
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage] = useState(20);  
 
 
 
@@ -162,6 +166,29 @@ const handleConfirmDeleteTeacher = async () => {
     setSelectedTeacher(null);
   };
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handlePageJump = (event) => {
+    setPage(event.target.value);
+  };
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(0);
+  }, [searchQuery, selectedProgram, selectedSchulamt]);
+
+  // Paginate filtered teachers
+  const paginatedTeachers = filteredTeachers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredTeachers.length / rowsPerPage);
+
   if (error) {
     return (
         <Box sx={{ p: 3, minHeight: '100vh', paddingTop: '5vh' }}>
@@ -207,12 +234,77 @@ const handleConfirmDeleteTeacher = async () => {
         {loading ? (
             <Loader message="Praktikumslehrkräfte werden geladen..." />
         ) : (
-            <TeachersTable
-                teachers={filteredTeachers}
-                onView={handleViewTeacher}
-                onEdit={handleEditTeacher}
-                onDelete={handleDeleteTeacher}
-            />
+            <>
+              <TeachersTable
+                  teachers={paginatedTeachers}
+                  onView={handleViewTeacher}
+                  onEdit={handleEditTeacher}
+                  onDelete={handleDeleteTeacher}
+              />
+              
+              {/* Pagination Controls */}
+              {filteredTeachers.length > 0 && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  px: 2, 
+                  py: 2,
+                  mt: 2,
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)'
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                      {`${page * rowsPerPage + 1}-${Math.min((page + 1) * rowsPerPage, filteredTeachers.length)} von ${filteredTeachers.length}`}
+                    </Typography>
+                    {totalPages > 1 && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          Gehe zu Seite:
+                        </Typography>
+                        <FormControl size="small" sx={{ minWidth: 80 }}>
+                          <Select
+                            value={page}
+                            onChange={handlePageJump}
+                            sx={{ 
+                              height: 32,
+                              fontSize: '0.875rem',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#d1d5db'
+                              }
+                            }}
+                          >
+                            {Array.from({ length: totalPages }, (_, i) => (
+                              <MenuItem key={i} value={i}>
+                                {i + 1}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    )}
+                  </Box>
+                  <TablePagination
+                    component="div"
+                    count={filteredTeachers.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    rowsPerPageOptions={[20]}
+                    labelDisplayedRows={() => ''}
+                    sx={{ 
+                      border: 'none',
+                      '& .MuiTablePagination-toolbar': {
+                        minHeight: 'auto',
+                        padding: 0
+                      }
+                    }}
+                  />
+                </Box>
+              )}
+            </>
         )}
 
         <TeacherFormDialog
