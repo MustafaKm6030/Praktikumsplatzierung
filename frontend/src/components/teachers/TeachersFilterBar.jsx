@@ -46,17 +46,6 @@ const TeachersFilterBar = ({
           fullWidth={false}
           minWidth={150}
         />
-
-        {/* Placeholder to mirror Schools visually */}
-        <Select
-          label="Filter"
-          value="all"
-          onChange={() => {}}
-          options={[]}
-          disabled
-          fullWidth={false}
-          minWidth={150}
-        />
       </Stack>
     </Paper>
   );

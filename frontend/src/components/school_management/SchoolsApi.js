@@ -141,7 +141,7 @@ export const deleteSchool = async (id) => {
 };
 
 /**
- * Import schools from CSV
+ * Import schools from Excel (uses teacher import endpoint)
  */
 export const importSchoolsCSV = async (file) => {
     try {
@@ -149,7 +149,7 @@ export const importSchoolsCSV = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${BASE_URL}/schools/import_csv/`, {
+        const response = await fetch(`${BASE_URL}/pls/import_csv/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': csrftoken || '',
@@ -159,13 +159,22 @@ export const importSchoolsCSV = async (file) => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to import schools');
+            let errorMessage = 'Failed to import schools';
+            try {
+                const error = await response.json();
+                errorMessage = error.error || errorMessage;
+            } catch (e) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
         console.error('Import schools error:', error);
+        if (error.message === 'Failed to fetch') {
+            throw new Error('Verbindung zum Server fehlgeschlagen. Bitte stellen Sie sicher, dass der Backend-Server läuft.');
+        }
         throw error;
     }
 };

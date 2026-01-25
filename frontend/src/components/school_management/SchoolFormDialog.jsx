@@ -122,7 +122,7 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
             const dataToSend = {
                 ...formData,
                 zone: parseInt(formData.zone, 10),
-                distance_km: parseFloat(formData.distance_km) || 0,
+                distance_km: parseInt(formData.distance_km, 10) || 0,
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude) : null,
             };
@@ -229,7 +229,7 @@ const SchoolFormDialog = ({ open, onClose, onSave, school, title }) => {
                             type="number"
                             value={formData.distance_km}
                             onChange={handleChange}
-                            inputProps={{ step: 0.1, min: 0 }}
+                            inputProps={{ step: 1, min: 0 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>

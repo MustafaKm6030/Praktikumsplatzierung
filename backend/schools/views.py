@@ -144,7 +144,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
     )
     def import_csv(self, request):
         """
-        POST /api/schools/import_csv/ - Import schools from CSV.
+        POST /api/schools/import_csv/ - Import schools from Excel.
         """
         file_obj = request.FILES.get("file")
         if not file_obj:
@@ -152,9 +152,11 @@ class SchoolViewSet(viewsets.ModelViewSet):
                 {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not file_obj.name.endswith(".csv"):
+        allowed_extensions = ".xlsx", ".xls"
+        if not file_obj.name.endswith(allowed_extensions):
             return Response(
-                {"error": "File must be a CSV"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "File must be an Excel file (.xlsx or .xls)"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:

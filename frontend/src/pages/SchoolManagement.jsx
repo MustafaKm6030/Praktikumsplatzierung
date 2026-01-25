@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Snackbar, Alert, TablePagination, Select, MenuItem, FormControl } from '@mui/material';
 import ActionButtons from '../components/school_management/ActionButtons';
 import FilterBar from '../components/school_management/FilterBar';
 import ViewToggle from '../components/school_management/ViewToggle';
@@ -21,6 +21,11 @@ const SchoolManagement = () => {
     const [openViewDialog, setOpenViewDialog] = useState(false);
     const [selectedSchool, setSelectedSchool] = useState(null);
     const [isGeocoding, setIsGeocoding] = useState(false);
+    
+    // Pagination state
+    const [page, setPage] = useState(0);
+    const [rowsPerPage] = useState(20);
+    
     // Snackbar for notifications
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -67,10 +72,16 @@ const SchoolManagement = () => {
     const handleImportSchools = () => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.csv';
+        input.accept = '.xlsx,.xls';
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls'].includes(fileExtension)) {
+                showNotification('Bitte wählen Sie eine Excel-Datei (.xlsx oder .xls)', 'error');
+                return;
+            }
 
             try {
                 const result = await importSchoolsCSV(file);
@@ -84,6 +95,10 @@ const SchoolManagement = () => {
                 }
 
                 await refetchSchools();
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } catch (error) {
                 console.error('Import error:', error);
                 showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
@@ -176,6 +191,29 @@ const SchoolManagement = () => {
         setSelectedSchool(null);
     };
 
+    // Pagination handlers
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handlePageJump = (event) => {
+        setPage(event.target.value);
+    };
+
+    // Reset page when filters change
+    React.useEffect(() => {
+        setPage(0);
+    }, [searchQuery, selectedDistrict, selectedType, selectedZone]);
+
+    // Paginate filtered schools
+    const paginatedSchools = filteredSchools.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
+
+    // Calculate total pages
+    const totalPages = Math.ceil(filteredSchools.length / rowsPerPage);
+
     // Show error message if API fails
     if (error) {
         return (
@@ -239,12 +277,77 @@ const SchoolManagement = () => {
                 <>
                     {/* Table View */}
                     {viewMode === 'list' && (
-                        <SchoolTable
-                            schools={filteredSchools}
-                            onView={handleViewSchool}
-                            onEdit={handleEditSchool}
-                            onDelete={handleDeleteSchool}
-                        />
+                        <>
+                            <SchoolTable
+                                schools={paginatedSchools}
+                                onView={handleViewSchool}
+                                onEdit={handleEditSchool}
+                                onDelete={handleDeleteSchool}
+                            />
+                            
+                            {/* Pagination Controls */}
+                            {filteredSchools.length > 0 && (
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between', 
+                                    px: 2, 
+                                    py: 2,
+                                    mt: 2,
+                                    backgroundColor: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)'
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                            {`${page * rowsPerPage + 1}-${Math.min((page + 1) * rowsPerPage, filteredSchools.length)} von ${filteredSchools.length}`}
+                                        </Typography>
+                                        {totalPages > 1 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                                    Gehe zu Seite:
+                                                </Typography>
+                                                <FormControl size="small" sx={{ minWidth: 80 }}>
+                                                    <Select
+                                                        value={page}
+                                                        onChange={handlePageJump}
+                                                        sx={{ 
+                                                            height: 32,
+                                                            fontSize: '0.875rem',
+                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                borderColor: '#d1d5db'
+                                                            }
+                                                        }}
+                                                    >
+                                                        {Array.from({ length: totalPages }, (_, i) => (
+                                                            <MenuItem key={i} value={i}>
+                                                                {i + 1}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                    <TablePagination
+                                        component="div"
+                                        count={filteredSchools.length}
+                                        page={page}
+                                        onPageChange={handleChangePage}
+                                        rowsPerPage={rowsPerPage}
+                                        rowsPerPageOptions={[20]}
+                                        labelDisplayedRows={() => ''}
+                                        sx={{ 
+                                            border: 'none',
+                                            '& .MuiTablePagination-toolbar': {
+                                                minHeight: 'auto',
+                                                padding: 0
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            )}
+                        </>
                     )}
 
                     {/* Map View */}
