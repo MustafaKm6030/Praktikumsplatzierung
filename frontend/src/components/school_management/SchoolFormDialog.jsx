@@ -17,6 +17,7 @@ import { createSchool, updateSchool } from './SchoolsApi';
 const SCHOOL_TYPES = [
     { value: 'GS', label: 'Grundschule' },
     { value: 'MS', label: 'Mittelschule' },
+    { value: 'GMS', label: 'Grund- und Mittelschule' },
 ];
 
 /**
