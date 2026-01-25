@@ -1,6 +1,7 @@
 import time
 import csv
 import io
+import pandas as pd
 import openpyxl 
 from io import BytesIO  
 from django.db import transaction
@@ -71,39 +72,41 @@ def get_reachable_schools(praktikum_type_code: str):
 
 def import_schools_from_csv(file_obj):
     """
-    Business Logic: Imports schools from CSV file.
+    Business Logic: Imports schools from Excel file.
     Creates or updates schools based on name as unique identifier.
     """
-    decoded_file = file_obj.read().decode("utf-8")
-    io_string = io.StringIO(decoded_file)
-    reader = csv.DictReader(io_string)
+    try:
+        df = pd.read_excel(file_obj, engine="openpyxl")
+        df.columns = df.columns.astype(str).str.replace("\n", "", regex=False).str.strip()
+        
+        created_count = 0
+        updated_count = 0
+        errors = []
 
-    created_count = 0
-    updated_count = 0
-    errors = []
+        with transaction.atomic():
+            for index, row in df.iterrows():
+                try:
+                    name = str(row.get("name", "")).strip() if pd.notna(row.get("name")) else ""
+                    if not name:
+                        continue
 
-    with transaction.atomic():
-        for row_num, row in enumerate(reader, start=2):
-            try:
-                name = row.get("name", "").strip()
-                if not name:
-                    errors.append(f"Row {row_num}: name is required")
-                    continue
+                    school_data = _build_school_data_from_excel(row)
+                    school, created = School.objects.update_or_create(
+                        name=name, defaults=school_data
+                    )
 
-                school_data = _build_school_data(row)
-                school, created = School.objects.update_or_create(
-                    name=name, defaults=school_data
-                )
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
 
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                except Exception as e:
+                    errors.append(f"Row {index + 2}: {str(e)}")
 
-            except Exception as e:
-                errors.append(f"Row {row_num}: {str(e)}")
-
-    return {"created": created_count, "updated": updated_count, "errors": errors}
+        return {"created": created_count, "updated": updated_count, "errors": errors}
+        
+    except Exception as e:
+        return {"created": 0, "updated": 0, "errors": [f"Critical Error: {str(e)}"]}
 
 
 def _build_school_data(row):
@@ -121,6 +124,44 @@ def _build_school_data(row):
         "notes": row.get("notes", ""),
         "latitude": float(row.get("latitude", 0)) if row.get("latitude") else None,
         "longitude": float(row.get("longitude", 0)) if row.get("longitude") else None,
+    }
+
+
+def _build_school_data_from_excel(row):
+    """Helper: Builds school data dictionary from Excel row (pandas Series)."""
+    def safe_get(key, default=""):
+        val = row.get(key, default)
+        return str(val).strip() if pd.notna(val) else default
+    
+    def safe_get_int(key, default=1):
+        val = row.get(key)
+        if pd.notna(val):
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return default
+        return default
+    
+    def safe_get_float(key, default=0.0):
+        val = row.get(key)
+        if pd.notna(val):
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return default
+        return default
+    
+    return {
+        "school_type": safe_get("school_type", "GS"),
+        "city": safe_get("city", ""),
+        "district": safe_get("district", ""),
+        "zone": safe_get_int("zone", 1),
+        "opnv_code": safe_get("opnv_code", ""),
+        "distance_km": safe_get_float("distance_km", 0.0),
+        "is_active": safe_get("is_active", "true").lower() == "true",
+        "notes": safe_get("notes", ""),
+        "latitude": safe_get_float("latitude", 0.0) or None,
+        "longitude": safe_get_float("longitude", 0.0) or None,
     }
 
 # ---------------------------------------------------------

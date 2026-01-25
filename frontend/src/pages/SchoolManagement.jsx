@@ -95,6 +95,10 @@ const SchoolManagement = () => {
                 }
 
                 await refetchSchools();
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } catch (error) {
                 console.error('Import error:', error);
                 showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
