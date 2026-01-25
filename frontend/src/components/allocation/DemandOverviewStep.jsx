@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { School, Person, CalendarToday, EventAvailable, ArrowForward } from '@mui/icons-material';
+import { School, CalendarToday, EventAvailable, ArrowForward } from '@mui/icons-material';
 import KPICard from '../dashboard/KPICard';
 import Button from '../ui/Button';
 import Loader from '../ui/Loader';
@@ -34,7 +34,6 @@ const DemandOverviewStep = ({ onComplete }) => {
 
             const transformedData = {
                 summary_cards: {
-                    total_demand: apiData.summary_cards.total_demand_slots,
                     pl_capacity: apiData.summary_cards.total_pl_capacity_slots,
                     pdp_slots: apiData.summary_cards.total_pdp_demand,
                     wednesday_slots: apiData.summary_cards.total_wednesday_demand
@@ -43,7 +42,6 @@ const DemandOverviewStep = ({ onComplete }) => {
                     practicum_type: formatPracticumType(item.practicum_type),
                     program_type: item.program_type,
                     subject_display_name: item.subject_display_name,
-                    required_slots: item.required_slots,
                     available_pls: item.available_pls
                 }))
             };
@@ -66,30 +64,27 @@ const DemandOverviewStep = ({ onComplete }) => {
         return data.detailed_breakdown.filter(item => item.program_type === programFilter);
     }, [data, programFilter]);
 
-    // 2. Aggregate Data for the Bar Chart
     const chartData = useMemo(() => {
         const aggregation = {};
         programData.forEach(item => {
             if (!aggregation[item.practicum_type]) {
                 aggregation[item.practicum_type] = { name: item.practicum_type, value: 0 };
             }
-            aggregation[item.practicum_type].value += item.required_slots;
+            aggregation[item.practicum_type].value += item.available_pls;
         });
         return Object.values(aggregation);
     }, [programData]);
 
-    // 3. Filter Table Data based on Chart Selection
     const tableData = useMemo(() => {
         if (selectedPracticum === 'ALL') return programData;
         return programData.filter(item => item.practicum_type === selectedPracticum);
     }, [programData, selectedPracticum]);
 
-    // Color logic for the table availability
-    const getAvailabilityColor = (req, avail) => {
-        if (avail >= req) return '#10b981'; // Green (Enough)
-        if (avail >= req * 0.8) return '#F59E0B'; // Yellow (Tight)
-        return '#dc2626'; // Red (Shortage)
+    const getAvailabilityColor = (avail) => {
+        if (avail < 5) return '#dc2626';
+        return '#10b981';
     };
+
 
     if (loading) {
         return <Loader message="Bedarfsübersicht wird geladen..." />;
@@ -122,16 +117,13 @@ const DemandOverviewStep = ({ onComplete }) => {
                 Systemkapazität-Übersicht
             </Typography>
             <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={3}>
-                    <KPICard label="Gesamtbedarf" value={data.summary_cards.total_demand} icon={<Person />} color="#3b82f6" />
-                </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={4}>
                     <KPICard label="PL-Kapazität" value={data.summary_cards.pl_capacity} icon={<School />} color="#8b5cf6" />
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={4}>
                     <KPICard label="Block-Praktika PLs" value={data.summary_cards.pdp_slots} icon={<CalendarToday />} color="#F8971C" />
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={4}>
                     <KPICard label="Mittwochs-Praktika PLs" value={data.summary_cards.wednesday_slots} icon={<EventAvailable />} color="#10b981" />
                 </Grid>
             </Grid>
@@ -169,7 +161,7 @@ const DemandOverviewStep = ({ onComplete }) => {
                     {/* LEFT: Bar Chart */}
                     <Grid item xs={12} md={5}>
                         <Typography variant="subtitle2" sx={{ mb: 2, color: '#6b7280', textAlign: 'center' }}>
-                            Bedarf nach Praktikumstyp ({programFilter})
+                            Angebot nach Praktikumstyp ({programFilter})
                         </Typography>
                         <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={chartData}>
@@ -193,7 +185,7 @@ const DemandOverviewStep = ({ onComplete }) => {
                             </BarChart>
                         </ResponsiveContainer>
                         <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 1, color: '#9ca3af' }}>
-                            * Klicken Sie auf einen Balken, um die Tabelle zu filtern
+                            * Klicken Sie auf einen Balken, um die Tabelle nach Angebot zu filtern
                         </Typography>
                     </Grid>
 
@@ -208,7 +200,6 @@ const DemandOverviewStep = ({ onComplete }) => {
                                     <TableRow>
                                         <TableCell>Fach</TableCell>
                                         <TableCell>Typ</TableCell>
-                                        <TableCell align="right">Bedarf</TableCell>
                                         <TableCell align="right">Angebot (PLs)</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -217,8 +208,7 @@ const DemandOverviewStep = ({ onComplete }) => {
                                         <TableRow key={index} hover>
                                             <TableCell sx={{ fontWeight: 500 }}>{row.subject_display_name}</TableCell>
                                             <TableCell><Chip label={row.practicum_type} size="small" /></TableCell>
-                                            <TableCell align="right">{row.required_slots}</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 700, color: getAvailabilityColor(row.required_slots, row.available_pls) }}>
+                                            <TableCell align="right" sx={{ fontWeight: 700, color: getAvailabilityColor(row.available_pls) }}>
                                                 {row.available_pls}
                                             </TableCell>
                                         </TableRow>

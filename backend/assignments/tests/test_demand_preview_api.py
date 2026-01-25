@@ -113,7 +113,6 @@ class DemandPreviewAPITests(APITestCase):
         response = self.client.get(url)
 
         summary = response.data["summary_cards"]
-        self.assertIn("total_demand_slots", summary)
         self.assertIn("total_pl_capacity_slots", summary)
         self.assertIn("total_pdp_demand", summary)
         self.assertIn("total_wednesday_demand", summary)
@@ -128,20 +127,8 @@ class DemandPreviewAPITests(APITestCase):
             self.assertIn("program_type", item)
             self.assertIn("subject_code", item)
             self.assertIn("subject_display_name", item)
-            self.assertIn("required_slots", item)
             self.assertIn("available_pls", item)
 
-    def test_demand_preview_total_demand_calculation(self):
-        """Test total_demand_slots is sum of all required_slots."""
-        url = reverse("demand-preview-api")
-        response = self.client.get(url)
-
-        breakdown = response.data["detailed_breakdown"]
-        expected_total = sum(item["required_slots"] for item in breakdown)
-
-        self.assertEqual(
-            response.data["summary_cards"]["total_demand_slots"], expected_total
-        )
 
     def test_demand_preview_pdp_demand_calculation(self):
         """Test total_pdp_demand returns count of PLs who can supervise PDP_I and PDP_II."""

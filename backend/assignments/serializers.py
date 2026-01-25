@@ -46,14 +46,13 @@ class DemandSerializer(serializers.Serializer):
 class DetailedBreakdownSerializer(serializers.Serializer):
     """
     Serializer for each item in the detailed_breakdown array.
-    Business Logic: Represents demand vs supply for each practicum group.
+    Business Logic: Represents supply for each practicum group.
     """
 
     practicum_type = serializers.CharField()
     program_type = serializers.CharField()
     subject_code = serializers.CharField()
     subject_display_name = serializers.CharField()
-    required_slots = serializers.IntegerField()
     available_pls = serializers.IntegerField()
 
 
@@ -63,7 +62,6 @@ class SummaryCardsSerializer(serializers.Serializer):
     Business Logic: Aggregated metrics for allocation overview.
     """
 
-    total_demand_slots = serializers.IntegerField()
     total_pl_capacity_slots = serializers.IntegerField()
     total_pdp_demand = serializers.IntegerField()
     total_wednesday_demand = serializers.IntegerField()

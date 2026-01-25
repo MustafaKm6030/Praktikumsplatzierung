@@ -6,31 +6,30 @@ import {
 } from '@mui/material';
 import Button from '../ui/Button';
 
-const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
+const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSaveSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
     const [selections, setSelections] = useState([]); 
     const [forceOverride, setForceOverride] = useState(false);
     const [error, setError] = useState(null);
 
-    // 1. Fetch Data when Modal Opens
     useEffect(() => {
         if (open && mentorId) {
             setLoading(true);
             setError(null);
-            // Fetch the eligibility data for this specific mentor
-            fetch(`/api/pls/${mentorId}/adjustment_data/`)
+            const url = showAll 
+                ? `/api/pls/${mentorId}/adjustment_data/?show_all=true`
+                : `/api/pls/${mentorId}/adjustment_data/`;
+            fetch(url)
                 .then(res => {
                     if (!res.ok) throw new Error("Failed to load data");
                     return res.json();
                 })
                 .then(apiData => {
                     setData(apiData);
-                    // Pre-fill selections: Create slots based on capacity
                     const current = apiData.current_assignments || [];
                     const slots = [];
                     for (let i = 0; i < apiData.capacity; i++) {
-                        // Use existing assignment or empty placeholder
                         slots.push(current[i] || { practicum_type: '', subject_code: '' });
                     }
                     setSelections(slots);
@@ -41,7 +40,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, onSaveSuccess }) => {
                     setLoading(false);
                 });
         }
-    }, [open, mentorId]);
+    }, [open, mentorId, showAll]);
 
     // 2. Handle Dropdown Changes
     const handleSelectionChange = (index, valueString) => {

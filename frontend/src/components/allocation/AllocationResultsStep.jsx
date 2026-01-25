@@ -20,7 +20,6 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // State to track which mentor is being adjusted (opens the modal)
     const [adjustingMentorId, setAdjustingMentorId] = useState(null);
 
     // Pagination state
@@ -110,12 +109,12 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         fetchAssignments();
     }, [fetchAssignments]);
 
-    const handleManualAdjust = (mentorId) => {
+    const handleManualAdjust = (mentorId, assignmentStatus) => {
         if (!mentorId) {
             console.warn("No Mentor ID found for this row");
             return;
         }
-        setAdjustingMentorId(mentorId);
+        setAdjustingMentorId({ mentorId, isFailed: assignmentStatus === 'unallocated' });
     };
 
     const handleResetClick = () => {
@@ -389,7 +388,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                                             <Button
                                                 variant="secondary"
                                                 size="small"
-                                                onClick={() => handleManualAdjust(assignment.mentor_id)}
+                                                onClick={() => handleManualAdjust(assignment.mentor_id, assignment.status)}
                                                 startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                                             >
                                                 Anpassen
@@ -468,7 +467,8 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             {/* The Adjust Assignment Dialog */}
             <AdjustAssignmentDialog
                 open={!!adjustingMentorId}
-                mentorId={adjustingMentorId}
+                mentorId={adjustingMentorId?.mentorId}
+                showAll={adjustingMentorId?.isFailed || false}
                 onClose={() => setAdjustingMentorId(null)}
                 onSaveSuccess={(updatedAssignments) => {
                     setAdjustingMentorId(null);
