@@ -19,6 +19,7 @@ from .services import (
 )
 from assignments.models import Assignment
 from assignments.services import calculate_eligibility_for_pl
+from subjects.models import PraktikumType, Subject
 
 
 class PLViewSet(viewsets.ModelViewSet):
@@ -249,6 +250,9 @@ class PLViewSet(viewsets.ModelViewSet):
         """
         GET /api/pls/{id}/adjustment-data/
         Returns all data needed for the manual adjustment modal.
+        
+        Query parameters:
+        - show_all: If true, returns all possible combinations (not just eligible ones)
         """
         try:
             mentor = self.get_object()
@@ -257,7 +261,8 @@ class PLViewSet(viewsets.ModelViewSet):
                 {"error": "Mentor not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # 1. Get current assignments from the DB
+        show_all = request.query_params.get('show_all', 'false').lower() == 'true'
+
         current_assignments = Assignment.objects.filter(mentor=mentor)
         assigned_data = [
             {
@@ -267,14 +272,38 @@ class PLViewSet(viewsets.ModelViewSet):
             for assign in current_assignments
         ]
 
-        # 2. Get all possible legal assignments
-        all_eligibilities = calculate_eligibility_for_pl(mentor)
-        eligibilities_data = [
-            {"practicum_type": p_type, "subject_code": s_code}
-            for p_type, s_code in all_eligibilities
-        ]
+        def get_all_combinations():
+            all_combinations = []
+            all_praktikum_types = PraktikumType.objects.filter(is_active=True)
+            all_subjects = Subject.objects.filter(is_active=True)
+            
+            for p_type in all_praktikum_types:
+                if p_type.is_block_praktikum:
+                    all_combinations.append({
+                        "practicum_type": p_type.code,
+                        "subject_code": "N/A"
+                    })
+                else:
+                    for subject in all_subjects:
+                        all_combinations.append({
+                            "practicum_type": p_type.code,
+                            "subject_code": subject.code
+                        })
+            
+            return all_combinations
 
-        # 3. Assemble the response payload
+        if show_all:
+            eligibilities_data = get_all_combinations()
+        else:
+            all_eligibilities = calculate_eligibility_for_pl(mentor)
+            if not all_eligibilities:
+                eligibilities_data = get_all_combinations()
+            else:
+                eligibilities_data = [
+                    {"practicum_type": p_type, "subject_code": s_code}
+                    for p_type, s_code in all_eligibilities
+                ]
+
         response_data = {
             "mentor_id": mentor.id,
             "mentor_name": f"{mentor.first_name} {mentor.last_name}",
