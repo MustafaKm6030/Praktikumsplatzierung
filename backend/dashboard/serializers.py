@@ -34,7 +34,7 @@ class BudgetSummarySerializer(serializers.Serializer):
 
 class EntityCountsSerializer(serializers.Serializer):
     """
-    Serializer for entity counts (students, PLs).
+    Serializer for entity counts (students, PLs, schools).
     """
     total_students = serializers.IntegerField()
     unplaced_students = serializers.IntegerField()
@@ -46,6 +46,12 @@ class EntityCountsSerializer(serializers.Serializer):
     active_pls_total = serializers.IntegerField()
     active_pls_gs = serializers.IntegerField()
     active_pls_ms = serializers.IntegerField()
+    total_students_gs = serializers.IntegerField()
+    total_students_ms = serializers.IntegerField()
+    active_schools_total = serializers.IntegerField()
+    active_schools_gs = serializers.IntegerField()
+    active_schools_ms = serializers.IntegerField()
+    active_schools_gms = serializers.IntegerField()
 
 
 class DashboardSummarySerializer(serializers.Serializer):

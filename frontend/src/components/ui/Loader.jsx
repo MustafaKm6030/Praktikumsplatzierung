@@ -11,7 +11,7 @@ const loaderKeyframes = {
     }
 };
 
-const Loader = ({ message = 'Loading...', variant = "default" }) => {
+const Loader = ({ message = 'Wird geladen...', variant = "default" }) => {
     // Map variant to colors
     const colors = {
         default: '#e38d13',

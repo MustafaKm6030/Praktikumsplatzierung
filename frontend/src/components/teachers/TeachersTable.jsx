@@ -9,6 +9,7 @@ import {
   Paper,
   Chip,
   IconButton,
+  Box,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -59,7 +60,31 @@ const TeachersTable = ({ teachers, onView, onEdit, onDelete }) => {
                             color={pl.program === 'GS' ? 'info' : 'warning'}
                         />
                       </TableCell>
-                      <TableCell>{pl.preferred_praktika_raw || '—'}</TableCell>
+                      <TableCell>
+                        {pl.available_praktikum_types_display && pl.available_praktikum_types_display.length > 0 ? (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {pl.available_praktikum_types_display.map((pt) => {
+                              const codeMap = {
+                                'PDP_I': 'PDP I',
+                                'PDP_II': 'PDP II',
+                                'SFP': 'SFP',
+                                'ZSP': 'ZSP'
+                              };
+                              const displayCode = codeMap[pt.code] || pt.code;
+                              return (
+                                <Chip
+                                  key={pt.id}
+                                  label={displayCode}
+                                  size="small"
+                                  sx={{ fontSize: '0.75rem', height: '24px' }}
+                                />
+                              );
+                            })}
+                          </Box>
+                        ) : (
+                          pl.preferred_praktika_raw || '—'
+                        )}
+                      </TableCell>
                       <TableCell align="center">{pl.anrechnungsstunden || 0}</TableCell>
                       <TableCell align="center">{pl.capacity || 0}</TableCell>
                       <TableCell>{pl.schulamt || '—'}</TableCell>

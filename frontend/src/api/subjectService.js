@@ -26,6 +26,10 @@ export const subjectService = {
   },
 
   delete: (id) => api.delete(`/subjects/${id}/`),
+
+  getPraktikumTypes: () => {
+    return api.get('/praktikum-types/');
+  },
 };
 
 export default subjectService;

@@ -124,7 +124,7 @@ const Select = ({
                 {...rest}
             >
                 {showAllOption && (
-                    <MenuItem value="all">All {label}s</MenuItem>
+                    <MenuItem value="all">Alle</MenuItem>
                 )}
                 {options.map((option) => (
                     <MenuItem

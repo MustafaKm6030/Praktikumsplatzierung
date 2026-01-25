@@ -5,6 +5,7 @@ from students.models import Student
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
 from assignments.services import aggregate_demand
 from assignments.models import Assignment
+from schools.models import School
 
 
 def get_dashboard_summary_data():
@@ -109,6 +110,8 @@ def get_entity_counts():
         placed_students_ms=Count(
             "id", filter=Q(placement_status="PLACED", program="MS")
         ),
+        total_students_gs=Count("id", filter=Q(program="GS")),
+        total_students_ms=Count("id", filter=Q(program="MS")),
     )
 
     # Query 2: Fetch all PL metrics at once
@@ -118,7 +121,15 @@ def get_entity_counts():
         active_pls_ms=Count("id", filter=Q(program="MS")),
     )
 
-    return {**student_stats, **pl_stats}
+    # Query 3: Fetch all active School metrics at once
+    school_stats = School.objects.filter(is_active=True).aggregate(
+        active_schools_total=Count("id"),
+        active_schools_gs=Count("id", filter=Q(school_type="GS")),
+        active_schools_ms=Count("id", filter=Q(school_type="MS")),
+        active_schools_gms=Count("id", filter=Q(school_type="GMS")),
+    )
+
+    return {**student_stats, **pl_stats, **school_stats}
 
 
 def get_assignment_status():

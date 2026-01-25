@@ -42,7 +42,7 @@ async function sendRequest(endpoint, method, data = null) {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.error || `Request failed: ${response.statusText}`);
+            throw new Error(error.error || `Anfrage fehlgeschlagen: ${response.statusText}`);
         }
 
         // Handle 204 No Content (common for Delete/Update)
@@ -86,7 +86,7 @@ export const fetchSchoolById = async (id) => {
         credentials: 'include',
     });
     if (!response.ok) {
-        throw new Error('Failed to fetch school');
+            throw new Error('Fehler beim Laden der Schule');
     }
     return response.json();
 };
@@ -129,7 +129,7 @@ export const deleteSchool = async (id) => {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.error || 'Failed to delete school');
+            throw new Error(error.error || 'Fehler beim Löschen der Schule');
         }
 
         // Backend returns 200 with message for soft delete
@@ -159,7 +159,7 @@ export const importSchoolsCSV = async (file) => {
         });
 
         if (!response.ok) {
-            let errorMessage = 'Failed to import schools';
+            let errorMessage = 'Fehler beim Importieren der Schulen';
             try {
                 const error = await response.json();
                 errorMessage = error.error || errorMessage;
@@ -189,7 +189,7 @@ export const exportSchoolsExcel = async () => {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to export schools');
+            throw new Error('Fehler beim Exportieren der Schulen');
         }
 
         const blob = await response.blob();

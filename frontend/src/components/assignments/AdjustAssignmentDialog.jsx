@@ -22,7 +22,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                 : `/api/pls/${mentorId}/adjustment_data/`;
             fetch(url)
                 .then(res => {
-                    if (!res.ok) throw new Error("Failed to load data");
+                    if (!res.ok) throw new Error("Fehler beim Laden der Daten");
                     return res.json();
                 })
                 .then(apiData => {
@@ -36,7 +36,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                     setLoading(false);
                 })
                 .catch(err => {
-                    setError("Could not load mentor data.");
+                    setError("Mentor-Daten konnten nicht geladen werden.");
                     setLoading(false);
                 });
         }
@@ -71,10 +71,10 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                 onClose();
             } else {
                 const errData = await res.json();
-                setError(errData.message || "Failed to save assignments.");
+                setError(errData.message || "Fehler beim Speichern der Zuweisungen.");
             }
         })
-        .catch(err => setError("Network error occurred."));
+        .catch(err => setError("Netzwerkfehler aufgetreten."));
     };
 
     if (!open) return null;

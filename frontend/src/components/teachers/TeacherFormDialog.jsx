@@ -14,7 +14,7 @@ import {
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
 import Select from '../ui/Select';
-import { createTeacher, updateTeacher } from './TeachersApi';
+import { createTeacher, patchTeacher } from './TeachersApi';
 import subjectService from '../../api/subjectService';
 import schoolService from '../../api/schoolService';
 
@@ -47,17 +47,21 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [schools, setSchools] = useState([]);
     const [selectedSchool, setSelectedSchool] = useState(null);
+    const [praktikumTypes, setPraktikumTypes] = useState([]);
+    const [selectedPraktikumTypes, setSelectedPraktikumTypes] = useState([]);
 
-    // Fetch subjects and schools on component mount
+    // Fetch subjects, schools, and praktikum types on component mount
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [subjectsResponse, schoolsResponse] = await Promise.all([
+                const [subjectsResponse, schoolsResponse, praktikumTypesResponse] = await Promise.all([
                     subjectService.getActive(),
-                    schoolService.getAll()
+                    schoolService.getAll(),
+                    subjectService.getPraktikumTypes()
                 ]);
                 setSubjects(subjectsResponse.data || []);
                 setSchools(schoolsResponse.data || []);
+                setPraktikumTypes(praktikumTypesResponse.data || []);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -80,6 +84,7 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                 preferred_praktika_raw: teacher.preferred_praktika_raw || '',
                 is_active: teacher.is_active !== undefined ? teacher.is_active : true,
                 available_subjects: teacher.available_subjects || [],
+                available_praktikum_types: teacher.available_praktikum_types || [],
             });
             
             // Set selected school for Autocomplete
@@ -99,6 +104,16 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
             } else {
                 setSelectedSubjects([]);
             }
+            
+            // Set selected praktikum types for Autocomplete
+            if (teacher.available_praktikum_types && Array.isArray(teacher.available_praktikum_types)) {
+                const selected = praktikumTypes.filter(pt => 
+                    teacher.available_praktikum_types.includes(pt.id)
+                );
+                setSelectedPraktikumTypes(selected);
+            } else {
+                setSelectedPraktikumTypes([]);
+            }
         } else {
             setFormData({
                 first_name: '',
@@ -112,12 +127,14 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                 preferred_praktika_raw: '',
                 is_active: true,
                 available_subjects: [],
+                available_praktikum_types: [],
             });
             setSelectedSchool(null);
             setSelectedSubjects([]);
+            setSelectedPraktikumTypes([]);
         }
         setErrors({});
-    }, [teacher, open, subjects, schools]);
+    }, [teacher, open, subjects, schools, praktikumTypes]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -164,19 +181,35 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
         }));
     };
 
+    const handlePraktikumTypesChange = (event, newValue) => {
+        setSelectedPraktikumTypes(newValue);
+        setFormData(prev => ({
+            ...prev,
+            available_praktikum_types: newValue.map(pt => pt.id)
+        }));
+    };
+
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
         setSaving(true);
         try {
             const dataToSend = {
-                ...formData,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                email: formData.email,
+                phone: formData.phone || '',
+                school: formData.school,
+                program: formData.program,
+                schulamt: formData.schulamt || '',
                 anrechnungsstunden: parseFloat(formData.anrechnungsstunden) || 0,
-                available_subjects: formData.available_subjects,
+                is_active: formData.is_active,
+                available_subjects: formData.available_subjects || [],
+                available_praktikum_types: formData.available_praktikum_types || [],
             };
 
             if (teacher) {
-                await updateTeacher(teacher.id, dataToSend);
+                await patchTeacher(teacher.id, dataToSend);
             } else {
                 await createTeacher(dataToSend);
             }
@@ -287,14 +320,33 @@ const TeacherFormDialog = ({ open, onClose, onSave, teacher, title }) => {
                             step="0.5"
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            name="preferred_praktika_raw"
-                            label="Bevorzugte Praktika"
-                            fullWidth
-                            value={formData.preferred_praktika_raw}
-                            onChange={handleChange}
-                            placeholder="z.B. PDP I, SFP"
+                    <Grid item xs={12}>
+                        <Autocomplete
+                            multiple
+                            options={praktikumTypes}
+                            getOptionLabel={(option) => {
+                                if (option.name) return option.name;
+                                if (option.code) {
+                                    const codeMap = {
+                                        'PDP_I': 'PDP I (Pädagogisch-didaktisches Praktikum I)',
+                                        'PDP_II': 'PDP II (Pädagogisch-didaktisches Praktikum II)',
+                                        'SFP': 'SFP (Studienbegleitendes Fachpraktikum)',
+                                        'ZSP': 'ZSP (Zusätzliches studienbegleitendes Praktikum)'
+                                    };
+                                    return codeMap[option.code] || option.code;
+                                }
+                                return String(option);
+                            }}
+                            value={selectedPraktikumTypes}
+                            onChange={handlePraktikumTypesChange}
+                            renderInput={(params) => (
+                                <MuiTextField
+                                    {...params}
+                                    label="Bevorzugte Praktika"
+                                    placeholder="Praktika auswählen..."
+                                />
+                            )}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
                         />
                     </Grid>
                     <Grid item xs={12}>

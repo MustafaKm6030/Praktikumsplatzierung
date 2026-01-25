@@ -92,7 +92,7 @@ class PLViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return Response(
-            {"message": "PL deleted successfully"}, status=status.HTTP_204_NO_CONTENT
+            {"message": "Praktikumslehrkraft erfolgreich gelöscht"}, status=status.HTTP_204_NO_CONTENT
         )
 
     @action(detail=False, methods=["get"])
@@ -103,7 +103,7 @@ class PLViewSet(viewsets.ModelViewSet):
         school_id = request.query_params.get("school_id")
         if not school_id:
             return Response(
-                {"error": "school_id parameter is required"},
+                {"error": "school_id-Parameter ist erforderlich"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -119,7 +119,7 @@ class PLViewSet(viewsets.ModelViewSet):
         program = request.query_params.get("program")
         if not program:
             return Response(
-                {"error": "program parameter is required"},
+                {"error": "program-Parameter ist erforderlich"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -135,7 +135,7 @@ class PLViewSet(viewsets.ModelViewSet):
         search_term = request.query_params.get("q", "")
         if not search_term:
             return Response(
-                {"error": "q parameter is required"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "q-Parameter ist erforderlich"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         pls = search_pls(search_term)
@@ -152,7 +152,7 @@ class PLViewSet(viewsets.ModelViewSet):
 
         if not praktikum_type_id:
             return Response(
-                {"error": "praktikum_type_id parameter is required"},
+                {"error": "praktikum_type_id-Parameter ist erforderlich"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -169,7 +169,7 @@ class PLViewSet(viewsets.ModelViewSet):
             capacity_info = get_pl_capacity_info(pk)
             return Response(capacity_info)
         except PraktikumsLehrkraft.DoesNotExist:
-            return Response({"error": "PL not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Praktikumslehrkraft nicht gefunden"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=["get"])
     def by_subject(self, request):
@@ -180,7 +180,7 @@ class PLViewSet(viewsets.ModelViewSet):
 
         if not subject_id:
             return Response(
-                {"error": "subject_id parameter is required"},
+                {"error": "subject_id-Parameter ist erforderlich"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -199,13 +199,13 @@ class PLViewSet(viewsets.ModelViewSet):
         file_obj = request.FILES.get("file")
         if not file_obj:
             return Response(
-                {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Keine Datei bereitgestellt"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         allowed_extensions = ".xlsx", ".xls"
         if not file_obj.name.endswith(allowed_extensions):
             return Response(
-                {"error": "File must be an Excel file (.xlsx or .xls)"},
+                {"error": "Datei muss eine Excel-Datei sein (.xlsx oder .xls)"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -258,7 +258,7 @@ class PLViewSet(viewsets.ModelViewSet):
             mentor = self.get_object()
         except PraktikumsLehrkraft.DoesNotExist:
             return Response(
-                {"error": "Mentor not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Mentor nicht gefunden"}, status=status.HTTP_404_NOT_FOUND
             )
 
         show_all = request.query_params.get('show_all', 'false').lower() == 'true'

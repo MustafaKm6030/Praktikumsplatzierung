@@ -100,13 +100,22 @@ def _extract_school_data(row):
         zone, dist = 1, None
 
     opnv = str(row.get("ÖPNV", "")).strip()
+    
+    name_lower = name_raw.lower()
+    if "grund- und mittelschule" in name_lower or "gms" in name_lower:
+        school_type = "GMS"
+    elif "grundschule" in name_lower or "grund" in name_lower:
+        school_type = "GS"
+    else:
+        school_type = "MS"
+    
     return {
         "unique_name": f"{name_raw} {ort_raw}".strip() or name_raw,
         "city": ort_raw,
         "zone": zone,
         "dist": dist,
         "opnv": opnv if opnv in ["4a", "4b"] else "",
-        "type": "GS" if "grund" in name_raw.lower() else "MS",
+        "type": school_type,
     }
 
 
