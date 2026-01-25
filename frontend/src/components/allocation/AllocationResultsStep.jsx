@@ -104,7 +104,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             });
         } catch (err) {
             console.error('Failed to fetch assignments:', err);
-            setError(err.message || 'Failed to load assignments');
+            setError(err.message || 'Fehler beim Laden der Zuweisungen');
         } finally {
             setLoading(false);
         }
@@ -147,7 +147,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                 setError(errData.error || 'Failed to reset assignments');
             }
         } catch (err) {
-            setError('Network error occurred while resetting assignments');
+            setError('Netzwerkfehler beim Zurücksetzen der Zuweisungen');
         } finally {
             setResetting(false);
         }

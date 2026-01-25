@@ -143,10 +143,10 @@ class PLCreateUpdateSerializer(serializers.ModelSerializer):
                 .filter(email=value)
                 .exists()
             ):
-                raise serializers.ValidationError("Email already exists.")
+                raise serializers.ValidationError("E-Mail existiert bereits.")
         else:
             if PraktikumsLehrkraft.objects.filter(email=value).exists():
-                raise serializers.ValidationError("Email already exists.")
+                raise serializers.ValidationError("E-Mail existiert bereits.")
         return value
 
     def _parse_praktikum_types_from_raw(self, preferred_praktika_raw):

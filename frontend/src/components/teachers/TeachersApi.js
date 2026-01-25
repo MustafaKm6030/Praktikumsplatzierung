@@ -53,7 +53,7 @@ export const fetchTeacherById = async (id) => {
         credentials: 'include',
     });
     if (!response.ok) {
-        throw new Error('Failed to fetch teacher');
+            throw new Error('Fehler beim Laden der Praktikumslehrkraft');
     }
     return response.json();
 };
@@ -106,7 +106,7 @@ export const updateTeacher = async (id, teacherData) => {
         });
 
         if (!response.ok) {
-            let errorMessage = 'Failed to update teacher';
+            let errorMessage = 'Fehler beim Aktualisieren der Praktikumslehrkraft';
             try {
                 const errorText = await response.text();
                 try {
@@ -146,7 +146,7 @@ export const patchTeacher = async (id, teacherData) => {
         });
 
         if (!response.ok) {
-            let errorMessage = 'Failed to update teacher';
+            let errorMessage = 'Fehler beim Aktualisieren der Praktikumslehrkraft';
             try {
                 const errorText = await response.text();
                 try {
@@ -219,7 +219,7 @@ export const importTeachersCSV = async (file) => {
         });
 
         if (!response.ok) {
-            let errorMessage = 'Failed to import teachers';
+            let errorMessage = 'Fehler beim Importieren der Praktikumslehrkräfte';
             try {
                 const error = await response.json();
                 errorMessage = error.error || errorMessage;
@@ -249,7 +249,7 @@ export const exportTeachersCSV = async () => {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to export teachers');
+            throw new Error('Fehler beim Exportieren der Praktikumslehrkräfte');
         }
 
         const blob = await response.blob();

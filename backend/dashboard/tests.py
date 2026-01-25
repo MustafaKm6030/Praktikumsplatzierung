@@ -1065,6 +1065,12 @@ class SerializerTestCase(TestCase):
             "active_pls_total": 200,
             "active_pls_gs": 120,
             "active_pls_ms": 80,
+            "total_students_gs": 600,
+            "total_students_ms": 400,
+            "active_schools_total": 150,
+            "active_schools_gs": 80,
+            "active_schools_ms": 50,
+            "active_schools_gms": 20,
         }
 
         serializer = EntityCountsSerializer(data=data)
@@ -1122,6 +1128,12 @@ class SerializerTestCase(TestCase):
                 "active_pls_total": 200,
                 "active_pls_gs": 120,
                 "active_pls_ms": 80,
+                "total_students_gs": 600,
+                "total_students_ms": 400,
+                "active_schools_total": 150,
+                "active_schools_gs": 80,
+                "active_schools_ms": 50,
+                "active_schools_gms": 20,
             },
         }
 
@@ -1166,6 +1178,12 @@ class SerializerTestCase(TestCase):
                 "active_pls_total": 200,
                 "active_pls_gs": 120,
                 "active_pls_ms": 80,
+                "total_students_gs": 600,
+                "total_students_ms": 400,
+                "active_schools_total": 150,
+                "active_schools_gs": 80,
+                "active_schools_ms": 50,
+                "active_schools_gms": 20,
             },
         }
 
@@ -1201,6 +1219,12 @@ class SerializerTestCase(TestCase):
                 "active_pls_total": 0,
                 "active_pls_gs": 0,
                 "active_pls_ms": 0,
+                "total_students_gs": 0,
+                "total_students_ms": 0,
+                "active_schools_total": 0,
+                "active_schools_gs": 0,
+                "active_schools_ms": 0,
+                "active_schools_gms": 0,
             },
         }
 

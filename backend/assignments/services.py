@@ -537,20 +537,20 @@ def update_assignment(assignment_id, update_data):
     try:
         assignment = Assignment.objects.get(id=assignment_id)
     except Assignment.DoesNotExist:
-        return {"error": "Assignment not found"}, 404
+        return {"error": "Zuweisung nicht gefunden"}, 404
 
     # Update mentor if provided
     if "mentor_id" in update_data:
         mentor = _get_mentor(update_data["mentor_id"])
         if not mentor:
-            return {"error": "Mentor not found"}, 400
+            return {"error": "Mentor nicht gefunden"}, 400
         assignment.mentor = mentor
 
     # Update school if provided
     if "school_id" in update_data:
         school = _get_school(update_data["school_id"])
         if not school:
-            return {"error": "School not found"}, 400
+            return {"error": "Schule nicht gefunden"}, 400
         assignment.school = school
 
     # Update subject if provided
@@ -562,7 +562,7 @@ def update_assignment(assignment_id, update_data):
     if "practicum_type_id" in update_data:
         practicum_type = _get_practicum_type(update_data["practicum_type_id"])
         if not practicum_type:
-            return {"error": "Practicum type not found"}, 400
+            return {"error": "Praktikumstyp nicht gefunden"}, 400
         assignment.practicum_type = practicum_type
 
     assignment.save()
@@ -637,7 +637,7 @@ def adjust_mentor_assignments(
     try:
         mentor = PraktikumsLehrkraft.objects.get(id=mentor_id)
     except PraktikumsLehrkraft.DoesNotExist:
-        raise ValueError("Mentor not found.")
+        raise ValueError("Mentor nicht gefunden.")
 
     _validate_assignment_rules(mentor, proposed_assignments, force_override)
     return _update_mentor_assignments(mentor, proposed_assignments)
@@ -647,7 +647,7 @@ def _validate_assignment_rules(mentor, assignments: list, force_override: bool):
     """Internal helper: Handles capacity and rule validation."""
     if len(assignments) > mentor.capacity:
         raise ValueError(
-            f"Capacity exceeded. This mentor can only have {mentor.capacity} assignments."
+            f"Kapazität überschritten. Dieser Mentor kann nur {mentor.capacity} Zuweisungen haben."
         )
 
     if not force_override:
@@ -655,12 +655,12 @@ def _validate_assignment_rules(mentor, assignments: list, force_override: bool):
             types = [a["practicum_type"] for a in assignments]
             if not _is_valid_pair(tuple(types)):
                 raise ValueError(
-                    f"Invalid Pair: {types[0]} + {types[1]} is not allowed."
+                    f"Ungültiges Paar: {types[0]} + {types[1]} ist nicht erlaubt."
                 )
 
         if _has_duplicate_subjects(assignments):
             raise ValueError(
-                "Same subject assigned multiple times. Use 'Force Override' to allow this."
+                "Gleiches Fach mehrfach zugewiesen. Verwenden Sie 'Überschreibung erzwingen', um dies zu erlauben."
             )
 
 
@@ -677,7 +677,7 @@ def _update_mentor_assignments(mentor, assignments: list) -> list:
             p_code = data["practicum_type"]
             ptype = ptypes_map.get(p_code)
             if not ptype:
-                raise ValueError(f"Invalid practicum type: {p_code}")
+                raise ValueError(f"Ungültiger Praktikumstyp: {p_code}")
 
             s_code = data["subject_code"]
             subject = subjects_map.get(s_code) if s_code != "N/A" else None
@@ -717,5 +717,5 @@ def reset_all_assignments():
         "success": True,
         "deleted_count": deleted_count,
         "students_updated": updated_count,
-        "message": f"Successfully deleted {deleted_count} assignment(s) and updated {updated_count} student(s) to UNPLACED."
+        "message": f"Erfolgreich {deleted_count} Zuweisung(en) gelöscht und {updated_count} Studierende(n) auf NICHT ZUGEWIESEN gesetzt."
     }

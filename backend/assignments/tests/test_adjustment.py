@@ -157,7 +157,7 @@ class AssignmentAdjustmentAPITests(APITestCase):
 
         response = self.client.post(url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Invalid Pair", response.data["error"])
+        self.assertIn("Ungültiges Paar", response.data["error"])
 
     def test_adjust_assignment_succeeds_with_force_override(self):
         """

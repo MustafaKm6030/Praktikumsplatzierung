@@ -41,7 +41,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     def by_program(self, request):
         program = request.query_params.get("program")
         if not program:
-            return Response({"error": "program required"}, status=400)
+            return Response({"error": "program-Parameter ist erforderlich"}, status=400)
         students = get_students_by_program(program)
         serializer = self.get_serializer(students, many=True)
         return Response(serializer.data)
@@ -50,7 +50,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     def by_region(self, request):
         region = request.query_params.get("region")
         if not region:
-            return Response({"error": "region required"}, status=400)
+            return Response({"error": "region-Parameter ist erforderlich"}, status=400)
         students = get_students_by_region(region)
         serializer = self.get_serializer(students, many=True)
         return Response(serializer.data)
@@ -67,7 +67,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if not file_obj.name.endswith(".csv"):
             return Response(
-                {"error": "File must be a CSV"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Datei muss eine CSV-Datei sein"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -90,7 +90,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if not assignment:
             return Response(
-                {"message": "Student has no active assignment"},
+                {"message": "Studierende/r hat keine aktive Zuweisung"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -126,7 +126,7 @@ class StudentViewSet(viewsets.ModelViewSet):
                 data["practicum_type"] = praktikum_type.id
             except PraktikumType.DoesNotExist:
                 return Response(
-                    {"error": f"Invalid practicum type: {practicum_type_value}"},
+                    {"error": f"Ungültiger Praktikumstyp: {practicum_type_value}"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -153,7 +153,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         practicum_type_id = request.data.get("practicum_type")
         if not practicum_type_id:
             return Response(
-                {"error": "practicum_type is required"},
+                {"error": "practicum_type ist erforderlich"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -164,7 +164,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if not assignment:
             return Response(
-                {"error": "No active assignment found for this practicum type"},
+                {"error": "Keine aktive Zuweisung für diesen Praktikumstyp gefunden"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -199,7 +199,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if not assignment:
             return Response(
-                {"error": "No active assignment found"},
+                {"error": "Keine aktive Zuweisung gefunden"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

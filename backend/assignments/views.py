@@ -408,7 +408,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 
         if not mentor_id:
             return Response(
-                {"error": "mentor_id is required."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "mentor_id ist erforderlich."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -419,7 +419,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             return Response(
-                {"error": "An unexpected error occurred."},
+                {"error": "Ein unerwarteter Fehler ist aufgetreten."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

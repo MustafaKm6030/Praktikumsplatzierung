@@ -272,7 +272,7 @@ const SchoolManagement = () => {
 
             {/* Loading State */}
             {loading || isGeocoding ? (
-                <Loader message={isGeocoding ? "Geocoding schools... This may take several minutes." : "Loading schools..."} />
+                <Loader message={isGeocoding ? "Schulen werden geokodiert... Dies kann mehrere Minuten dauern." : "Schulen werden geladen..."} />
             ) : (
                 <>
                     {/* Table View */}

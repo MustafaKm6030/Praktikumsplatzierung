@@ -27,7 +27,7 @@ const useDashboardData = () => {
                     });
                 }
                 // eslint-disable-next-line no-throw-literal
-                throw new Error('Failed to fetch dashboard data');
+                throw new Error('Fehler beim Laden der Dashboard-Daten');
             }
 
             const dashboardData = await response.json();
@@ -43,7 +43,7 @@ const useDashboardData = () => {
                 });
             }
 
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
 
             // Fallback mock data for development
             setData({
