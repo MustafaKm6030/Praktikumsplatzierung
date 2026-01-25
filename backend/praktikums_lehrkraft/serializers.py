@@ -18,6 +18,7 @@ class PLListSerializer(serializers.ModelSerializer):
     main_subject_name = serializers.CharField(
         source="main_subject.name", read_only=True, allow_null=True
     )
+    available_praktikum_types_display = serializers.SerializerMethodField()
 
     class Meta:
         model = PraktikumsLehrkraft
@@ -37,8 +38,17 @@ class PLListSerializer(serializers.ModelSerializer):
             "is_active",
             "main_subject",
             "available_subjects",
+            "available_praktikum_types",
+            "available_praktikum_types_display",
             "main_subject_name",
             "preferred_praktika_raw",
+        ]
+
+    def get_available_praktikum_types_display(self, obj):
+        """Returns list of available praktikum types with display names."""
+        return [
+            {"id": pt.id, "code": pt.code, "name": pt.get_code_display()}
+            for pt in obj.available_praktikum_types.all()
         ]
 
 
@@ -138,3 +148,99 @@ class PLCreateUpdateSerializer(serializers.ModelSerializer):
             if PraktikumsLehrkraft.objects.filter(email=value).exists():
                 raise serializers.ValidationError("Email already exists.")
         return value
+
+    def _parse_praktikum_types_from_raw(self, preferred_praktika_raw):
+        """Parses preferred_praktika_raw and returns list of PraktikumType objects."""
+        if not preferred_praktika_raw:
+            return []
+        
+        pref_raw_upper = preferred_praktika_raw.upper()
+        all_praktikum_types = PraktikumType.objects.all()
+        
+        ptypes = []
+        for ptype in all_praktikum_types:
+            code_normalized = ptype.code.replace("_", " ")
+            if code_normalized in pref_raw_upper:
+                ptypes.append(ptype)
+        
+        return ptypes
+
+    def create(self, validated_data):
+        """Creates a new PL and parses preferred_praktika_raw if needed."""
+        preferred_praktika_raw = validated_data.pop('preferred_praktika_raw', '')
+        available_praktikum_types = validated_data.pop('available_praktikum_types', None)
+        available_subjects = validated_data.pop('available_subjects', None)
+        
+        instance = PraktikumsLehrkraft.objects.create(
+            preferred_praktika_raw=preferred_praktika_raw,
+            **validated_data
+        )
+        
+        if available_praktikum_types is not None:
+            type_ids = []
+            if not isinstance(available_praktikum_types, list):
+                available_praktikum_types = [available_praktikum_types]
+            for item in available_praktikum_types:
+                if isinstance(item, PraktikumType):
+                    type_ids.append(item.id)
+                elif isinstance(item, (int, str)):
+                    type_ids.append(int(item))
+            instance.available_praktikum_types.set(type_ids)
+        elif preferred_praktika_raw:
+            parsed_types = self._parse_praktikum_types_from_raw(preferred_praktika_raw)
+            instance.available_praktikum_types.set(parsed_types)
+        
+        if available_subjects is not None:
+            from subjects.models import Subject
+            subject_ids = []
+            if not isinstance(available_subjects, list):
+                available_subjects = [available_subjects]
+            for item in available_subjects:
+                if isinstance(item, Subject):
+                    subject_ids.append(item.id)
+                elif isinstance(item, (int, str)):
+                    subject_ids.append(int(item))
+            instance.available_subjects.set(subject_ids)
+        
+        return instance
+
+    def update(self, instance, validated_data):
+        """Updates PL and parses preferred_praktika_raw if needed."""
+        preferred_praktika_raw = validated_data.pop('preferred_praktika_raw', None)
+        available_praktikum_types = validated_data.pop('available_praktikum_types', None)
+        available_subjects = validated_data.pop('available_subjects', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        
+        if available_praktikum_types is not None:
+            type_ids = []
+            if not isinstance(available_praktikum_types, list):
+                available_praktikum_types = [available_praktikum_types]
+            for item in available_praktikum_types:
+                if isinstance(item, PraktikumType):
+                    type_ids.append(item.id)
+                elif isinstance(item, (int, str)):
+                    type_ids.append(int(item))
+            instance.available_praktikum_types.set(type_ids)
+        elif preferred_praktika_raw is not None:
+            instance.preferred_praktika_raw = preferred_praktika_raw
+            parsed_types = self._parse_praktikum_types_from_raw(preferred_praktika_raw)
+            instance.available_praktikum_types.set(parsed_types)
+            instance.save()
+        
+        if available_subjects is not None:
+            from subjects.models import Subject
+            subject_ids = []
+            if not isinstance(available_subjects, list):
+                available_subjects = [available_subjects]
+            for item in available_subjects:
+                if isinstance(item, Subject):
+                    subject_ids.append(item.id)
+                elif isinstance(item, (int, str)):
+                    subject_ids.append(int(item))
+            instance.available_subjects.set(subject_ids)
+        
+        return instance

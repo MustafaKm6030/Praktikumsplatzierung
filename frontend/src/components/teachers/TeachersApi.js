@@ -106,8 +106,19 @@ export const updateTeacher = async (id, teacherData) => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update teacher');
+            let errorMessage = 'Failed to update teacher';
+            try {
+                const errorText = await response.text();
+                try {
+                    const error = JSON.parse(errorText);
+                    errorMessage = error.error || error.detail || errorMessage;
+                } catch {
+                    errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+                }
+            } catch (e) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
 
         return response.json();
@@ -135,8 +146,19 @@ export const patchTeacher = async (id, teacherData) => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update teacher');
+            let errorMessage = 'Failed to update teacher';
+            try {
+                const errorText = await response.text();
+                try {
+                    const error = JSON.parse(errorText);
+                    errorMessage = error.error || error.detail || errorMessage;
+                } catch {
+                    errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+                }
+            } catch (e) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
 
         return response.json();
