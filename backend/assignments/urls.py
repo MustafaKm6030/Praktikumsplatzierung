@@ -11,6 +11,7 @@ from .views import (
     ResetAssignmentsAPIView,
     AssignmentStatusAPIView,
     AssignmentOptionsAPIView,
+    AssignmentStatisticsAPIView,
 )
 from rest_framework.routers import DefaultRouter
 
@@ -33,5 +34,6 @@ urlpatterns = [
     path("reset/", ResetAssignmentsAPIView.as_view(), name="reset-assignments"),
     path("status/", AssignmentStatusAPIView.as_view(), name="assignment-status"),
     path("options/", AssignmentOptionsAPIView.as_view(), name="assignment-options"),
+    path("statistics/", AssignmentStatisticsAPIView.as_view(), name="assignment-statistics"),
     path("", include(router.urls)),
 ]

@@ -45,6 +45,14 @@ const allocationService = {
         return api.get('/assignments/export/pdf/', {
             responseType: 'blob'
         });
+    },
+
+    /**
+     * Get detailed statistics about assignments.
+     * Endpoint: GET /api/assignments/statistics/
+     */
+    getStatistics: () => {
+        return api.get('/assignments/statistics/');
     }
 };
 

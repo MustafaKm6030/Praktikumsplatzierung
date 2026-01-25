@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
     CheckCircle, Warning, Edit as EditIcon,
-    ArrowForward, FilterList, DeleteForever, Cancel
+    ArrowForward, FilterList, DeleteForever, Cancel, BarChart
 } from '@mui/icons-material';
 import Button from '../ui/Button';
 import TextField from '../ui/TextField';
@@ -32,6 +32,11 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
 
     // Filter dialog state
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+    // Statistics dialog state
+    const [statisticsDialogOpen, setStatisticsDialogOpen] = useState(false);
+    const [statisticsData, setStatisticsData] = useState(null);
+    const [loadingStatistics, setLoadingStatistics] = useState(false);
 
     // Filter state
     const [filters, setFilters] = useState({
@@ -185,6 +190,21 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         return Object.values(filters).some(value => value !== '');
     };
 
+    // Fetch statistics
+    const handleStatisticsClick = async () => {
+        try {
+            setLoadingStatistics(true);
+            const response = await allocationService.getStatistics();
+            setStatisticsData(response.data);
+            setStatisticsDialogOpen(true);
+        } catch (err) {
+            console.error('Failed to fetch statistics:', err);
+            setError(err.message || 'Fehler beim Laden der Statistiken');
+        } finally {
+            setLoadingStatistics(false);
+        }
+    };
+
     // Filter and sort assignments (unallocated first)
     const filteredAssignments = assignments
         .filter(assignment => {
@@ -307,6 +327,26 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                         } : {}}
                     >
                         Filter {hasActiveFilters() && `(${Object.values(filters).filter(v => v).length})`}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        startIcon={<BarChart />}
+                        onClick={handleStatisticsClick}
+                        disabled={loadingStatistics || assignments.length === 0}
+                        sx={{
+                            color: '#F8971C',
+                            borderColor: '#F8971C',
+                            '&:hover': {
+                                bgcolor: '#fef3c7',
+                                borderColor: '#F8971C'
+                            },
+                            '&:disabled': {
+                                color: '#d1d5db',
+                                borderColor: '#e5e7eb'
+                            }
+                        }}
+                    >
+                        Statistiken
                     </Button>
                     <TextField
                         placeholder="Suchen..."
@@ -632,6 +672,75 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
                         onClick={() => setFilterDialogOpen(false)}
                     >
                         Anwenden
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Statistics Dialog */}
+            <Dialog
+                open={statisticsDialogOpen}
+                onClose={() => setStatisticsDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle sx={{ fontWeight: 700, color: '#1f2937' }}>
+                    Detaillierte Statistiken
+                </DialogTitle>
+                <DialogContent dividers>
+                    {loadingStatistics ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : statisticsData ? (
+                        <Box>
+                            <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: '#1f2937', fontSize: '1.5rem' }}>
+                                Gesamtzuweisungen: {statisticsData.total_assignments}
+                            </Typography>
+
+                            {statisticsData.breakdown_by_type && statisticsData.breakdown_by_type.length > 0 && (
+                                <Box sx={{ mb: 4 }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151', fontSize: '1.25rem' }}>
+                                        Aufschlüsselung nach Typ
+                                    </Typography>
+                                    {statisticsData.breakdown_by_type.map((type) => (
+                                        <Typography key={type.type_code} variant="body1" sx={{ mb: 1, color: '#4b5563', fontSize: '1rem' }}>
+                                            • {type.type_code}: {type.total} [GS: {type.gs_count} | MS: {type.ms_count}]
+                                        </Typography>
+                                    ))}
+                                </Box>
+                            )}
+
+                            {statisticsData.detailed_breakdown && statisticsData.detailed_breakdown.length > 0 && (
+                                <Box>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151', fontSize: '1.25rem' }}>
+                                        Detaillierte Aufschlüsselung (Typ + Fach + Programm)
+                                    </Typography>
+                                    {statisticsData.detailed_breakdown.map((typeBreakdown) => (
+                                        <Box key={typeBreakdown.type_code} sx={{ mb: 3 }}>
+                                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937', mb: 1, fontSize: '1.125rem' }}>
+                                                [{typeBreakdown.type_code}]
+                                            </Typography>
+                                            {typeBreakdown.subjects.map((subject, idx) => (
+                                                <Typography key={idx} variant="body1" sx={{ ml: 2, mb: 0.5, color: '#4b5563', fontSize: '1rem' }}>
+                                                    • {subject.subject_name}: {subject.total} [GS: {subject.gs_count} | MS: {subject.ms_count}]
+                                                </Typography>
+                                            ))}
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Typography variant="body1" sx={{ color: '#6b7280', fontSize: '1rem' }}>
+                            Keine Statistiken verfügbar.
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button
+                        onClick={() => setStatisticsDialogOpen(false)}
+                    >
+                        Schließen
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -422,3 +422,103 @@ class AssignmentViewSet(viewsets.ModelViewSet):
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class AssignmentStatisticsAPIView(APIView):
+    """
+    API endpoint to get detailed statistics about assignments.
+    Returns breakdown by type, subject, and program (GS/MS).
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests to retrieve assignment statistics.
+        Returns detailed breakdown similar to analyze_results.py command.
+        """
+        from django.db.models import Count
+
+        total_assignments = Assignment.objects.count()
+        if total_assignments == 0:
+            return Response(
+                {
+                    "total_assignments": 0,
+                    "breakdown_by_type": [],
+                    "detailed_breakdown": []
+                },
+                status=status.HTTP_200_OK
+            )
+
+        type_order = ["PDP_I", "PDP_II", "SFP", "ZSP"]
+        
+        breakdown_by_type = []
+        detailed_breakdown = []
+
+        for type_code in type_order:
+            assignments_for_type = Assignment.objects.filter(
+                practicum_type__code=type_code
+            ).select_related("mentor", "subject", "practicum_type")
+
+            if not assignments_for_type.exists():
+                continue
+
+            total_count = assignments_for_type.count()
+            gs_count = assignments_for_type.filter(mentor__program="GS").count()
+            ms_count = assignments_for_type.filter(mentor__program="MS").count()
+
+            breakdown_by_type.append({
+                "type_code": type_code,
+                "total": total_count,
+                "gs_count": gs_count,
+                "ms_count": ms_count
+            })
+
+            subject_counts = (
+                assignments_for_type.values("subject__name", "subject__code")
+                .annotate(total=Count("id"))
+                .order_by("-total")
+            )
+
+            type_breakdown = {
+                "type_code": type_code,
+                "subjects": []
+            }
+
+            for entry in subject_counts:
+                subj_name = entry["subject__name"]
+                subj_code = entry["subject__code"]
+                count = entry["total"]
+
+                filters = (
+                    {"subject__code": subj_code} if subj_code else {"subject__isnull": True}
+                )
+
+                gs_count_subj = assignments_for_type.filter(
+                    mentor__program="GS", **filters
+                ).count()
+                ms_count_subj = assignments_for_type.filter(
+                    mentor__program="MS", **filters
+                ).count()
+
+                if subj_name is None:
+                    display_name = "Allgemein / Kein Fach"
+                else:
+                    display_name = f"{subj_name} ({subj_code})"
+
+                type_breakdown["subjects"].append({
+                    "subject_name": display_name,
+                    "subject_code": subj_code or None,
+                    "total": count,
+                    "gs_count": gs_count_subj,
+                    "ms_count": ms_count_subj
+                })
+
+            detailed_breakdown.append(type_breakdown)
+
+        return Response(
+            {
+                "total_assignments": total_assignments,
+                "breakdown_by_type": breakdown_by_type,
+                "detailed_breakdown": detailed_breakdown
+            },
+            status=status.HTTP_200_OK
+        )
