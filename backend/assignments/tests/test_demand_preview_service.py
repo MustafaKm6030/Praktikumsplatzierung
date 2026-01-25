@@ -141,7 +141,6 @@ class DemandPreviewServiceTests(TestCase):
 
         self.assertEqual(len(breakdown), 1)
         self.assertEqual(breakdown[0]["available_pls"], 1)
-        self.assertEqual(breakdown[0]["required_slots"], 5)
 
     def test_calculate_summary_cards_with_mixed_types(self):
         """Test summary cards calculation with different practicum types."""
@@ -159,15 +158,14 @@ class DemandPreviewServiceTests(TestCase):
         pl_wednesday.available_praktikum_types.add(sfp, zsp)
         
         detailed_breakdown = [
-            {"practicum_type": "PDP_I", "required_slots": 10},
-            {"practicum_type": "PDP_II", "required_slots": 15},
-            {"practicum_type": "SFP", "required_slots": 20},
-            {"practicum_type": "ZSP", "required_slots": 5},
+            {"practicum_type": "PDP_I"},
+            {"practicum_type": "PDP_II"},
+            {"practicum_type": "SFP"},
+            {"practicum_type": "ZSP"},
         ]
 
         summary = _calculate_summary_cards(detailed_breakdown, 100)
 
-        self.assertEqual(summary["total_demand_slots"], 50)
         self.assertEqual(summary["total_pdp_demand"], 1)
         self.assertEqual(summary["total_wednesday_demand"], 1)
         self.assertEqual(summary["total_pl_capacity_slots"], 100)
@@ -176,7 +174,6 @@ class DemandPreviewServiceTests(TestCase):
         """Test summary cards calculation with empty breakdown."""
         summary = _calculate_summary_cards([], 50)
 
-        self.assertEqual(summary["total_demand_slots"], 0)
         pdp_pls = PraktikumsLehrkraft.objects.filter(
             is_active=True,
             available_praktikum_types__code__in=['PDP_I', 'PDP_II']
@@ -211,7 +208,6 @@ class DemandPreviewServiceTests(TestCase):
 
         for item in result["detailed_breakdown"]:
             self.assertIn("available_pls", item)
-            self.assertIn("required_slots", item)
 
     def test_reset_all_assignments_updates_students_to_unplaced(self):
         """Test that reset_all_assignments sets all PLACED students to UNPLACED."""

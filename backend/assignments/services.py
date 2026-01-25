@@ -283,7 +283,6 @@ def _build_detailed_breakdown(raw_demand):
             "program_type": item["program_type"],
             "subject_code": item["subject_code"],
             "subject_display_name": item["subject_display_name"],
-            "required_slots": item["required_slots"],
             "available_pls": available_pls,
         }
         detailed_breakdown.append(breakdown_item)
@@ -340,25 +339,19 @@ def _count_pls_for_wednesday_praktikums():
 def _calculate_summary_cards(detailed_breakdown, total_pl_capacity):
     """
     Calculate summary card metrics from detailed breakdown.
-    Business Logic: Aggregate demand counts and PL supply by practicum type categories.
+    Business Logic: Aggregate PL supply by practicum type categories.
 
     Args:
-        detailed_breakdown: list of demand items with required_slots
+        detailed_breakdown: list of demand items
         total_pl_capacity: pre-calculated total PL capacity
 
     Returns:
         dict: summary_cards with all metrics
     """
-    total_demand_slots = 0
-
-    for item in detailed_breakdown:
-        total_demand_slots += item["required_slots"]
-
     total_pdp_pls = _count_pls_for_block_praktikums()
     total_wednesday_pls = _count_pls_for_wednesday_praktikums()
 
     return {
-        "total_demand_slots": total_demand_slots,
         "total_pl_capacity_slots": total_pl_capacity,
         "total_pdp_demand": total_pdp_pls,
         "total_wednesday_demand": total_wednesday_pls,

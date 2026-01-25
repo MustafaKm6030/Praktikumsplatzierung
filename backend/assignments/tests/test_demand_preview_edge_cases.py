@@ -28,7 +28,6 @@ class DemandPreviewEdgeCaseTests(TestCase):
         result = get_demand_preview_data()
 
         self.assertEqual(result["detailed_breakdown"], [])
-        self.assertEqual(result["summary_cards"]["total_demand_slots"], 0)
 
     def test_no_pls_returns_zero_capacity(self):
         """Test API returns zero capacity when no PLs exist."""
@@ -48,7 +47,7 @@ class DemandPreviewEdgeCaseTests(TestCase):
         )
 
         result = get_demand_preview_data()
-        self.assertEqual(result["summary_cards"]["total_demand_slots"], 0)
+        self.assertEqual(len(result["detailed_breakdown"]), 0)
 
     def test_available_pls_returns_zero_for_no_matching_pls(self):
         """Test available_pls is 0 when no PLs match criteria."""
@@ -88,19 +87,17 @@ class DemandPreviewEdgeCaseTests(TestCase):
 
         result = get_demand_preview_data()
 
-        pdp1_demand = sum(
-            i["required_slots"]
-            for i in result["detailed_breakdown"]
+        pdp1_items = [
+            i for i in result["detailed_breakdown"]
             if i["practicum_type"] == "PDP_I"
-        )
-        pdp2_demand = sum(
-            i["required_slots"]
-            for i in result["detailed_breakdown"]
+        ]
+        pdp2_items = [
+            i for i in result["detailed_breakdown"]
             if i["practicum_type"] == "PDP_II"
-        )
+        ]
 
-        self.assertEqual(pdp1_demand, 1)
-        self.assertEqual(pdp2_demand, 0)
+        self.assertEqual(len(pdp1_items), 1)
+        self.assertEqual(len(pdp2_items), 0)
 
     def test_distinct_pl_count_no_duplicates(self):
         """Test that PL count is distinct (no duplicates)."""
@@ -130,12 +127,11 @@ class DemandPreviewEdgeCaseTests(TestCase):
         )
 
         result = get_demand_preview_data()
-        sfp_demand = sum(
-            i["required_slots"]
-            for i in result["detailed_breakdown"]
+        sfp_items = [
+            i for i in result["detailed_breakdown"]
             if i["practicum_type"] == "SFP"
-        )
-        self.assertEqual(sfp_demand, 0)
+        ]
+        self.assertEqual(len(sfp_items), 0)
 
     def test_zsp_requires_didactic_subject_3(self):
         """Test ZSP demand is not generated when didactic_subject_3 is None."""
@@ -149,12 +145,11 @@ class DemandPreviewEdgeCaseTests(TestCase):
         )
 
         result = get_demand_preview_data()
-        zsp_demand = sum(
-            i["required_slots"]
-            for i in result["detailed_breakdown"]
+        zsp_items = [
+            i for i in result["detailed_breakdown"]
             if i["practicum_type"] == "ZSP"
-        )
-        self.assertEqual(zsp_demand, 0)
+        ]
+        self.assertEqual(len(zsp_items), 0)
 
     def test_zsp_uses_didactic_subject_3(self):
         """Test ZSP demand correctly uses didactic_subject_3."""
@@ -175,5 +170,4 @@ class DemandPreviewEdgeCaseTests(TestCase):
         ]
 
         self.assertEqual(len(zsp_items), 1)
-        self.assertEqual(zsp_items[0]["required_slots"], 1)
 
