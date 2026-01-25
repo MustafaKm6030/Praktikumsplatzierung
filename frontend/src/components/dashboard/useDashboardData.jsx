@@ -67,7 +67,11 @@ const useDashboardData = () => {
                     active_pls_gs: 169,
                     active_pls_ms: 41,
                     unplaced_students_gs: 8,
-                    unplaced_students_ms: 4
+                    unplaced_students_ms: 4,
+                    active_schools_total: 45,
+                    active_schools_gs: 20,
+                    active_schools_ms: 15,
+                    active_schools_gms: 10
                 }
             });
         } finally {
