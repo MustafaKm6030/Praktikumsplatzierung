@@ -48,6 +48,10 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
         // We store the whole object in the value as a JSON string
         newSelections[index] = JSON.parse(valueString); 
         setSelections(newSelections);
+        // Clear error when user makes changes to give fresh validation attempt
+        if (error) {
+            setError(null);
+        }
     };
 
     // 3. Save Changes
@@ -67,6 +71,8 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
         .then(async res => {
             if (res.ok) {
                 const updatedList = await res.json();
+                // Clear error before closing to prevent React reconciliation issues
+                setError(null);
                 onSaveSuccess(updatedList); // Callback to refresh the parent table
                 onClose();
             } else {
@@ -116,7 +122,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                 {!loading && data && selections.map((selection, index) => (
-                    <Box key={index} sx={{ mb: 3 }}>
+                    <Box key={`slot-${mentorId}-${index}`} sx={{ mb: 3 }}>
                         <Typography 
                             variant="subtitle2" 
                             gutterBottom 
@@ -135,9 +141,9 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                                 }
                             }}
                         >
-                            <InputLabel id={`slot-label-${index}`}>Zuweisung</InputLabel>
+                            <InputLabel id={`slot-label-${mentorId}-${index}`}>Zuweisung</InputLabel>
                             <Select
-                                labelId={`slot-label-${index}`}
+                                labelId={`slot-label-${mentorId}-${index}`}
                                 label="Zuweisung"
                                 value={JSON.stringify(selection)}
                                 onChange={(e) => handleSelectionChange(index, e.target.value)}
@@ -149,7 +155,7 @@ const AdjustAssignmentDialog = ({ open, onClose, mentorId, showAll = false, onSa
                                 
                                 {/* Legal options from backend */}
                                 {data.all_eligibilities.map((option, i) => (
-                                    <MenuItem key={i} value={JSON.stringify(option)}>
+                                    <MenuItem key={`option-${i}-${option.practicum_type}-${option.subject_code}`} value={JSON.stringify(option)}>
                                         {option.practicum_type} 
                                         {option.subject_code && option.subject_code !== 'N/A' 
                                             ? ` - ${option.subject_code}` 
