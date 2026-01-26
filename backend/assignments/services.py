@@ -463,60 +463,103 @@ def generate_assignments_pdf():
     """
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.units import cm
     from io import BytesIO
     from .models import Assignment
     from datetime import datetime
 
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), 
+                           leftMargin=1*cm, rightMargin=1*cm, 
+                           topMargin=2*cm, bottomMargin=2*cm)
     elements = []
     styles = getSampleStyleSheet()
 
-    # Add title
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=0,
+        spaceAfter=0,
+    )
+
+    header_style = ParagraphStyle(
+        'HeaderStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=11,
+        alignment=0,
+        fontName='Helvetica-Bold',
+        spaceAfter=0,
+    )
+
     title = Paragraph(
         f"<b>Praktikumszuteilungen - {datetime.now().strftime('%d.%m.%Y')}</b>",
         styles["Title"],
     )
     elements.append(title)
-    elements.append(Paragraph("<br/><br/>", styles["Normal"]))
+    elements.append(Spacer(1, 0.5*cm))
 
-    # Prepare table data
-    data = [["ID", "Typ", "Fach", "PL", "Schule", "Status"]]
+    data = []
+    header_row = [
+        Paragraph("<b>ID</b>", header_style),
+        Paragraph("<b>Typ</b>", header_style),
+        Paragraph("<b>Fach</b>", header_style),
+        Paragraph("<b>PL</b>", header_style),
+        Paragraph("<b>Schule</b>", header_style),
+        Paragraph("<b>Status</b>", header_style),
+    ]
+    data.append(header_row)
 
     assignments = Assignment.objects.select_related(
         "mentor", "practicum_type", "subject", "school"
-    ).all()
+    ).all().order_by('id')
 
     for assignment in assignments:
-        data.append(
-            [
-                str(assignment.id),
-                assignment.practicum_type.get_code_display(),
-                assignment.subject.code if assignment.subject else "N/A",
-                f"{assignment.mentor.last_name}, {assignment.mentor.first_name}",
-                assignment.school.name[:30],  # Truncate long names
-                "OK",
-            ]
-        )
+        practicum_display = assignment.practicum_type.get_code_display() if assignment.practicum_type else "N/A"
+        subject_code = assignment.subject.code if assignment.subject else "N/A"
+        mentor_name = f"{assignment.mentor.last_name}, {assignment.mentor.first_name}" if assignment.mentor else "N/A"
+        school_name = assignment.school.name if assignment.school else "N/A"
+        
+        data.append([
+            Paragraph(str(assignment.id), cell_style),
+            Paragraph(practicum_display, cell_style),
+            Paragraph(subject_code, cell_style),
+            Paragraph(mentor_name, cell_style),
+            Paragraph(school_name, cell_style),
+            Paragraph("OK", cell_style),
+        ])
 
-    # Create and style table
-    table = Table(data, colWidths=[1.5 * cm, 3 * cm, 2 * cm, 5 * cm, 6 * cm, 2 * cm])
+    col_widths = [
+        1.2 * cm,
+        6.5 * cm,
+        2.5 * cm,
+        5.5 * cm,
+        6.5 * cm,
+        1.8 * cm,
+    ]
+
+    table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ]
-        )
+        TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4B5563")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 9),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ("TOPPADDING", (0, 0), (-1, 0), 8),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 1), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+        ])
     )
 
     elements.append(table)

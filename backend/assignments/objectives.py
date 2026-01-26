@@ -67,7 +67,7 @@ def set_objective_function(model, assignment_vars, mentor_data, demand_map):
         "SAME_SUBJECT_PENALTY": -35,
         "WEDNESDAY_BONUS": 30,
         "MIXED_TYPE_BONUS": 20,
-        "CONTINUITY_BONUS": 0,
+        "CONTINUITY_BONUS": 70,
         "CORE_SUBJECTS": core_subjects_set,
     }
 

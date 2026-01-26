@@ -175,11 +175,17 @@ const SchoolManagement = () => {
         }
     };
 
-    // Dialog handlers
     const handleSchoolSaved = async () => {
+        const isNewSchool = !selectedSchool;
         setOpenAddDialog(false);
         setOpenEditDialog(false);
         setSelectedSchool(null);
+        if (isNewSchool) {
+            setSearchQuery('');
+            setSelectedDistrict('all');
+            setSelectedType('all');
+            setSelectedZone('all');
+        }
         await refetchSchools();
         showNotification('Schule erfolgreich gespeichert', 'success');
     };

@@ -46,7 +46,7 @@ const Loader = ({ message = 'Wird geladen...', variant = "default" }) => {
                 }}
             />
             {message && (
-                <Box sx={{ color: 'text.secondary', fontSize: '14px', mt: 2 }}>
+                <Box sx={{ color: variant === 'light' ? '#ffffff' : 'text.secondary', fontSize: '14px', mt: 2 }}>
                     {message}
                 </Box>
             )}

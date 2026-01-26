@@ -83,11 +83,17 @@ export default function StudentsPage() {
 
   const handleSaveStudent = async () => {
     try {
-      showNotification('Student erfolgreich gespeichert', 'success');
+      const isNewStudent = !selectedStudent;
       setOpenAddDialog(false);
       setOpenEditDialog(false);
       setSelectedStudent(null);
+      if (isNewStudent) {
+        setSearchQuery('');
+        setSelectedProgram('all');
+        setSelectedRegion('all');
+      }
       refetch();
+      showNotification('Student erfolgreich gespeichert', 'success');
     } catch (error) {
       showNotification(`Fehler: ${error.message}`, 'error');
     }
