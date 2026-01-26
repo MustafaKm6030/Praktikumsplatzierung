@@ -62,40 +62,26 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
             setAssignments(assignmentData);
 
             // Calculate statistics
-            // Use solver results if available, otherwise calculate from assignments
-            let totalAssigned, totalUnassigned, matchRate;
+            // Always calculate from fresh data, not from stale solverResults
+            // Count all assignments with status = 'ok'
+            const totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
 
-            if (solverResults) {
-                totalAssigned = solverResults.total_assignments || 0;
-                totalUnassigned = solverResults.total_unassigned || 0;
+            // Count all unallocated slots for percentage calculation
+            const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
 
-                // Calculate match rate using total unallocated slots from actual data
-                const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
-                const total = totalAssigned + totalUnallocatedSlots;
-                matchRate = total > 0
-                    ? ((totalAssigned / total) * 100).toFixed(1)
-                    : '0.0';
-            } else {
-                // Count all assignments with status = 'ok'
-                totalAssigned = assignmentData.filter(a => a.status === 'ok').length;
+            // Count unique unassigned mentors for display
+            const unallocatedMentorIds = new Set(
+                assignmentData
+                    .filter(a => a.status === 'unallocated')
+                    .map(a => a.mentor_id)
+            );
+            const totalUnassigned = unallocatedMentorIds.size;
 
-                // Count all unallocated slots for percentage calculation
-                const totalUnallocatedSlots = assignmentData.filter(a => a.status === 'unallocated').length;
-
-                // Count unique unassigned mentors for display
-                const unallocatedMentorIds = new Set(
-                    assignmentData
-                        .filter(a => a.status === 'unallocated')
-                        .map(a => a.mentor_id)
-                );
-                totalUnassigned = unallocatedMentorIds.size;
-
-                // Calculate match rate: assigned / (assigned + unallocated_slots) * 100
-                const total = totalAssigned + totalUnallocatedSlots;
-                matchRate = total > 0
-                    ? ((totalAssigned / total) * 100).toFixed(1)
-                    : '0.0';
-            }
+            // Calculate match rate: assigned / (assigned + unallocated_slots) * 100
+            const total = totalAssigned + totalUnallocatedSlots;
+            const matchRate = total > 0
+                ? ((totalAssigned / total) * 100).toFixed(1)
+                : '0.0';
 
             setStats({
                 matchRate: `${matchRate}%`,
