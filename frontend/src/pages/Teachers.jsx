@@ -29,6 +29,7 @@ export default function Teachers() {
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   // Pagination state
   const [page, setPage] = useState(0);
@@ -69,6 +70,7 @@ export default function Teachers() {
         return;
       }
 
+      setIsImporting(true);
       try {
         const result = await importTeachersCSV(file);
         showNotification(
@@ -88,6 +90,8 @@ export default function Teachers() {
       } catch (error) {
         console.error('Import error:', error);
         showNotification(`Import fehlgeschlagen: ${error.message}`, 'error');
+      } finally {
+        setIsImporting(false);
       }
     };
     input.click();
@@ -152,9 +156,15 @@ const handleConfirmDeleteTeacher = async () => {
   
 
   const handleTeacherSaved = async () => {
+    const isNewTeacher = !selectedTeacher;
     setOpenAddDialog(false);
     setOpenEditDialog(false);
     setSelectedTeacher(null);
+    if (isNewTeacher) {
+      setSearchQuery('');
+      setSelectedProgram('all');
+      setSelectedSchulamt('all');
+    }
     await refetchTeachers();
     showNotification('Praktikumslehrkraft erfolgreich gespeichert', 'success');
   };
@@ -231,8 +241,8 @@ const handleConfirmDeleteTeacher = async () => {
         </span>
         </Box>
 
-        {loading ? (
-            <Loader message="Praktikumslehrkräfte werden geladen..." />
+        {loading || isImporting ? (
+            <Loader message={isImporting ? "Praktikumslehrkräfte werden importiert..." : "Praktikumslehrkräfte werden geladen..."} />
         ) : (
             <>
               <TeachersTable
