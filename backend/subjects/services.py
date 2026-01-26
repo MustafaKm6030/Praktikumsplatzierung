@@ -256,3 +256,49 @@ def get_filtered_subjects_for_assignment(praktikum_type: str, school_type: str) 
     subjects_list.sort(key=lambda x: x["display_name"])
 
     return subjects_list
+
+
+def get_all_subject_praktikum_combinations():
+    """
+    Get all possible subject-praktikum type combinations from subject_grouping_rules.json.
+    Returns a list of all combinations for SFP and ZSP, plus PDP_I and PDP_II for both GS and MS.
+    
+    Returns:
+        list: List of dicts with practicum_type, program_type, subject_code, subject_display_name
+    """
+    combinations = []
+    
+    for program_type in ["GS", "MS"]:
+        if program_type not in _rules:
+            continue
+            
+        for praktikum_type in ["SFP", "ZSP"]:
+            if praktikum_type not in _rules[program_type]:
+                continue
+                
+            type_rules = _rules[program_type][praktikum_type]
+            seen_codes = set()
+            
+            for subject_name, rule in type_rules.items():
+                code = rule.get("code")
+                display_name = rule.get("display_name")
+                
+                if code and display_name and code not in seen_codes:
+                    seen_codes.add(code)
+                    combinations.append({
+                        "practicum_type": praktikum_type,
+                        "program_type": program_type,
+                        "subject_code": code,
+                        "subject_display_name": display_name,
+                    })
+        
+        for praktikum_type in ["PDP_I", "PDP_II"]:
+            combinations.append({
+                "practicum_type": praktikum_type,
+                "program_type": program_type,
+                "subject_code": "N/A",
+                "subject_display_name": "N/A",
+            })
+    
+    combinations.sort(key=lambda x: (x["program_type"], x["practicum_type"], x["subject_display_name"]))
+    return combinations
