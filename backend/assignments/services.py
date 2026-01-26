@@ -6,6 +6,7 @@ from subjects.services import (
     get_subject_code,
     get_subject_display_name,
     get_allowed_subject_codes,
+    get_all_subject_praktikum_combinations,
 )
 from subjects.models import Subject, PraktikumType
 from praktikums_lehrkraft.models import PraktikumsLehrkraft
@@ -361,16 +362,26 @@ def _calculate_summary_cards(detailed_breakdown, total_pl_capacity):
 def get_demand_preview_data():
     """
     Main service function to get complete demand preview data.
-    Business Logic: Aggregates student demand and PL supply for allocation page.
+    Business Logic: Shows all possible subject-praktikum combinations from rules,
+    with available PL supply for each combination.
 
     Returns:
         dict: {summary_cards: {...}, detailed_breakdown: [...]}
     """
-    # Part 1: Get raw demand and build detailed breakdown
-    raw_demand = aggregate_demand()
-    detailed_breakdown = _build_detailed_breakdown(raw_demand)
+    all_combinations = get_all_subject_praktikum_combinations()
+    detailed_breakdown = []
+    
+    for combination in all_combinations:
+        available_pls = _calculate_available_pls_for_demand_item(combination)
+        breakdown_item = {
+            "practicum_type": combination["practicum_type"],
+            "program_type": combination["program_type"],
+            "subject_code": combination["subject_code"],
+            "subject_display_name": combination["subject_display_name"],
+            "available_pls": available_pls,
+        }
+        detailed_breakdown.append(breakdown_item)
 
-    # Part 2: Calculate summary cards
     total_pl_capacity = _calculate_total_pl_capacity()
     summary_cards = _calculate_summary_cards(detailed_breakdown, total_pl_capacity)
 

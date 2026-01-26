@@ -68,9 +68,15 @@ const DemandOverviewStep = ({ onComplete }) => {
         const aggregation = {};
         programData.forEach(item => {
             if (!aggregation[item.practicum_type]) {
-                aggregation[item.practicum_type] = { name: item.practicum_type, value: 0 };
+                aggregation[item.practicum_type] = { 
+                    name: item.practicum_type, 
+                    value: item.available_pls,
+                    subject: item.subject_display_name
+                };
+            } else if (item.available_pls > aggregation[item.practicum_type].value) {
+                aggregation[item.practicum_type].value = item.available_pls;
+                aggregation[item.practicum_type].subject = item.subject_display_name;
             }
-            aggregation[item.practicum_type].value += item.available_pls;
         });
         return Object.values(aggregation);
     }, [programData]);
