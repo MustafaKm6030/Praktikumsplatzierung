@@ -94,7 +94,7 @@ const AllocationResultsStep = ({ onComplete, onReset, solverResults }) => {
         } finally {
             setLoading(false);
         }
-    }, [solverResults]);
+    }, []);
 
     useEffect(() => {
         fetchAssignments();
